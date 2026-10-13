@@ -14,6 +14,16 @@ npm run dev
 
 Otevře se [http://localhost:5173](http://localhost:5173).
 
+Backend (FastAPI, Python přes [uv](https://docs.astral.sh/uv/)) v druhém terminálu:
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Vite přesměruje `/api` na backend. Rozdělení práce, smlouva API a milníky jsou v [docs/BACKEND.md](docs/BACKEND.md). Licence: [EUPL-1.2](LICENSE).
+
 - **Správa silnic** — žebříček priority, váhy, dopady uzavírky, návrh opravy a text oznámení.
 - **Veřejnost** — probíhající a plánované práce, „jede můj autobus?“, hlášení výtluku.
 

@@ -6,5 +6,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // Backend (FastAPI) běží na :8000, viz docs/BACKEND.md.
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
   },
 });

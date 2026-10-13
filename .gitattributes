@@ -1,0 +1,9 @@
+# Same line endings on macOS and Windows (Šimon: Mac + Cursor, Tomáš: Windows + Claude Code).
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.xlsx binary
+*.rar binary
+*.pdf binary
+*.png binary
+*.jpg binary
