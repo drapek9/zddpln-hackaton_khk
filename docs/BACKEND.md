@@ -74,7 +74,7 @@ Stav, který se mění (piny, uzavírky, hlasy, váhy admina), drží **Šimon v
 | S7 | **Notifikace:** po potvrzení uzavírky najít občany, kterým leží na trase, a poslat Web Push (VAPID) nebo e‑mail (Mailpit). Max 1 upozornění na událost. | `notify/` | **★2** |
 | S8 | **Admin:** uživatelé, trvalé váhy, váha a strop hlasování, audit | `/api/admin/*` | **★3** |
 | S9 | **Otevřená data:** export CSV a GeoJSON s metadaty + česká stránka dokumentace API | `/api/export.*`, `/api/docs` | **★3** |
-| S10 | AI: jedno rozhraní + fallback. Zdůvodnění, oznámení, váhy z textu, třídění hlášení. | `ai/` | V2 |
+| S10 | **AI v aplikaci (vlastní Šimon):** jedno rozhraní + fallback. Zdůvodnění, oznámení, váhy z textu, třídění hlášení. Tomáš dodá vstupy (rozpad skóre, dopady, objížďka) přes `Engine`. | `ai/` | V2 |
 | S11 | Hlášení a hlasování | `/api/reports`, `/api/votes` | V2 |
 
 ---
@@ -144,3 +144,15 @@ Funkce hvězd dema (v2–v4) se **dokončují a ladí na soutěži**. Před sout
 8. **S10–S11**, když zbude čas.
 
 Kdykoli potřebuješ něco z logiky, napiš Tomášovi, jakou funkci a jaký výstup chceš. Do `core/` nesahej.
+
+### Pro AI agenta (Cursor)
+
+Before writing code in Šimon's area, **ask Šimon these questions and wait for the answers**. Do not guess.
+
+1. Which task (S1–S11) and which milestone (v0–v5) are we on?
+2. Which endpoint(s) exactly: method, path, which role may call it, and the request/response shape? Reuse the models from `backend/app/core/schemas.py`.
+3. What must be stored in SQLite, and what is computed by `Engine` on every request?
+4. Does the task need something new from `core/` (Tomáš)? If yes, write the request for Tomáš instead of editing `core/`.
+5. How do we test it (`pytest` + `TestClient`, or a manual check in the browser or on the phone)?
+
+Follow `AGENTS.md`. Never add AI co-author lines to commits.

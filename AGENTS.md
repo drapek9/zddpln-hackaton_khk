@@ -11,6 +11,7 @@ Cesty KHK is a web app for Hackathon KHK 2026 (15 Oct 2026). It works with open 
 Read these documents first:
 - `PLAN_FINAL.md`: product plan, in Czech.
 - `docs/BACKEND.md`: backend split, API contract and milestones, in Czech.
+- `docs/FRONTEND.md`: frontend plan; it also lists the questions an agent must ask Matouš first.
 
 ## Language
 - UI text, commit messages and docs for the team are **Czech**.
