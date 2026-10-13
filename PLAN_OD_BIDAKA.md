@@ -3,6 +3,8 @@
 První pitch koncept a společný plán týmu na Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**.
 Živý dokument: každý si ho pullne, dopíše svou část a pushne. Nic tu není vytesané do kamene.
 
+> **Od 13. 10. platí [PLAN_FINAL.md](PLAN_FINAL.md).** Tento soubor zůstává jako historie a poznámky.
+
 Podklady: [docs/ROZBOR.md](docs/ROZBOR.md) (pravidla, porota, minulí vítězové), [docs/PLAN_SILNICE.md](docs/PLAN_SILNICE.md) (review nápadu se silnicemi), [docs/podklady/](docs/podklady/) (pravidla 2026, prezentace Data KHK).
 
 ---
