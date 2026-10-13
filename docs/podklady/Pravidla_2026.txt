@@ -1,0 +1,278 @@
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+1 
+ 
+Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026  
+Soutěže o nejlepší návrh opendatové aplikace 
+ 
+1. Pořadatel, spolupořadatel, partneři 
+ 
+1. 1. Pořadatelem soutěže je Královéhradecký kraj, IČO: 70889546 
+1. 2. Spolupořadatelem soutěže je Univerzita Hradec Králové, IČO: 62690094 
+1. 3. Partnerem soutěže je společnost EduCentre CZ s.r.o., IČO: 27935001 (zastupuje společnost 
+Microsoft s.r.o., IČO: 47123737, která navíc poskytne soutěžícím přístupy a podklady pro využití 
+umělé inteligence) 
+ 
+1. 4. Partnerem soutěže je společnost MICRORISC s.r.o., IČO: 25921681 
+ 
+1. 5. Partnerem soutěže je společnost Unicorn Systems a.s., IČO: 25110853 
+ 
+2. Užívané pojmy 
+ 
+2.1. Slova uvedená velkým písmenem mají pro účel soutěže dále uvedený význam: 
+Aplikace: Veřejně dostupná softwarová aplikace, pro tuto soutěž webová. 
+Soutěžící: Fyzické osoby v týmech v počtu od 3 do 4 osob, které splňují podmínky účasti v soutěži. 
+Podmínkou soutěže je, že soutěžící bude student střední školy (gymnázium, střední odborná škola a 
+střední odborné učiliště), vyšší odborné školy nebo vysoké školy. Je potřeba se prokázat studentským 
+průkazem nebo potvrzením školy při zahájení soutěže dne 15. 10. 2026. Z účasti jsou vyloučeny osoby 
+v pracovním či obdobném vztahu s partnery soutěže. 
+Výherce: Soutěžící v týmech, kteří se dle rozhodnutí poroty umístí na 1. místě, 2. a 3. místě. 
+Cena: Výherce (tým) na 1. místě obdrží 20 000 Kč, výherce (tým) na 2. místě obdrží 10 000 Kč, výherce 
+(tým) na 3. místě obdrží 5 000 Kč. Bude vyhlášena také cena diváků, a to první tři místa. Všichni přítomní 
+z řad soutěžících, mentorů, porotců a organizačního týmu soutěže budou moci dát hlas jednomu z týmů, 
+přičemž tým s největším počtem hlasů obdrží za 1. místo odměnu 2 500 Kč, na 2. místě 1 500 Kč a tým 
+na třetím místě 1 000 Kč. Hlasování o ceně diváků bude probíhat on-line formou. 
+Otevřená data: Data, která jsou dostupná na internetu ve strojově čitelné podobě, jejichž podmínky 
+užití umožňují je volně využívat, a to včetně různých softwarových aplikací. Jsou zpřístupněna 
+způsobem, který jejich využití neklade zbytečné technické či jiné překážky. 
+Open – Source: Software, poskytnutý s otevřeným zdrojovým kódem a s licencí specifikující, jaká práva 
+k otevřenému kódu získá jeho uživatel, a jak s ním může nakládat. Zdrojový kód, licence a základní 
+dokumentace popisující software musejí být dostupné na veřejné webové stránce nebo na veřejně 
+dostupném softwarovém repozitáři jako je například softwarová platforma GitHub. 
+Odborný garant (mentor) Zajišťuje odbornou a technickou kompetentnost soutěže. Je k dispozici všem 
+týmům, a to v průběhu programování. Svými podněty pomáhá soutěžícím k odevzdání kvalitního 
+výstupu. 
+Porota: Skupina hodnotitelů návrhů aplikací, přihlášených do soutěže. Členy poroty soutěže vybírá a 
+jmenuje pořadatel soutěže na základě odbornosti a s přihlédnutím k možnému střetu zájmů při 
+hodnocení příspěvků. Členství v porotě soutěže je čestné a není nijak honorováno. 
+ 
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+2 
+ 
+3. Účel a smysl soutěže 
+3.1. Účelem je podporovat vznik návrhů aplikací využívajících otevřená data a open-source. Smyslem 
+soutěže je rozvoj a zkvalitnění služeb pro společnost a zviditelnění přínosu otevřených dat a open-
+source. 
+3.2. Soutěž je založena na výběru nejlepších návrhů aplikací porotou dle stanovených kritérií (určených 
+v čl. 6 těchto pravidel). 
+4. Časový rámec soutěže 
+4.1. Soutěž se uskuteční 15. 10. 2026 v době 8:00 – 21:00 hod. na Fakultě informatiky a managementu 
+Univerzity Hradec Králové, na adrese Hradecká 1249/6 v Hradci Králové v budově J, místnosti J1 – 
+Aula FIM (II. nadzemní podlaží). Detailní harmonogram soutěže je uveden v Příloze č.1 k těmto 
+Pravidlům. 
+4.2. Oficiální přihlášení do soutěže je stanoveno ode dne 01. 09. 2026 od 08:00 hod. do dne 01. 10. 
+2026 do 08:00 hod., a to přes registrační formulář. Maximální počet soutěžících je stanoven na 80 osob, 
+a to z kapacitních důvodů spolupořadatele soutěže. Pořadí týmů před začátkem soutěže je sestaveno 
+chronologicky podle okamžiku nejstaršího přihlášení po nejnovější. Do registračního formuláře se 
+přihlašují celé týmy. Soutěžit se bude v týmech v počtu od 3 do 4 soutěžících. Při registraci celého týmu 
+je třeba uvést vedoucího týmu. Stanovuje se maximální počet jedné registrace na soutěžícího a na tým. 
+Soutěžící budou používat počítače a vybavení v místě konání, přičemž mohou používat i vlastní 
+počítače a další hardwarové vybavení při dodržování zásad kyberbezpečnosti. Připojení na internet 
+(wifi) zabezpečí po celou dobu trvání soutěže spolupořadatel (Univerzita Hradec Králové). Soutěžící 
+nejsou oprávněni po dobu trvání soutěže vynášet z místa konání soutěže žádné hardwarové vybavení 
+využívané pro řešení zadání soutěže. Účastníci jsou povinni pracovat na řešení zadání výlučně v 
+prostorách k tomu určených v místě konání soutěže pořadatelem. Pro odborné konzultace budou pro 
+všechny týmy k dispozici mentoři, kteří budou poskytovat konzultace napříč týmy během celé soutěže.  
+4.3. Slavnostní vyhlášení výsledků soutěže a zveřejnění jmen výherců proběhne 15. 10. 2026 ve 20:30 
+hod. Pokud se výherci nebudou moci zúčastnit slavnostního vyhlášení, budou o výsledcích soutěže 
+informování prostřednictvím e-mailu. Výherci bude vyplacena cena na základě schválení příslušného 
+orgánu pořadatele (a na základě podepsání příslušné smlouvy) do 60 dnů ode dne vyhlášení výsledků 
+soutěže, a to na bankovní účet, který uvede pořadateli soutěže vedoucí týmu v registračním formuláři 
+při oficiálním přihlášení do soutěže.  
+4.4. Všechny výše uvedené výhry budou náležet společně všem členům příslušného týmu, avšak 
+pořadatel uzavře příslušnou smlouvu pouze s vedoucím týmu a zašle uvedené výhry na bankovní účet 
+určený vedoucím týmu. Následně bude povinností vedoucího týmu se vypořádat s ostatními členy týmu. 
+Pořadatel neodpovídá za vypořádání vzájemných vztahů mezi členy týmu ani za řádné splnění 
+daňových a obdobných povinností souvisejících se získáním výhry na straně členů týmu.  
+4.5. Výhry nejsou právně vymahatelné ani přenositelné. Vymáhání účasti v soutěži nebo výhry soudní 
+cestou je vyloučeno.  
+ 
+5. Podmínky účasti pro soutěžící a parametry návrhu aplikace 
+5.1. Soutěžící se přihlásí do soutěže vyplněním registračního formuláře, který nalezne na stránkách 
+http://www.datakhk.cz/pages/hackathony ode dne 01. 09. 2026 od 08:00 hod. do dne 01. 10. 2026 
+do 08:00 hod. Podmínkou soutěže je, že soutěžící bude svéprávný student střední školy (gymnázium, 
+střední odborná škola a střední odborné učiliště), vyšší odborné školy nebo vysoké školy. Je potřeba se 
+prokázat studentským průkazem nebo potvrzením školy při zahájení soutěže dne 15. 10. 2026.  
+5.2. Návrh webová aplikace pro zařazení do soutěže musí splňovat tyto podmínky: 
+a) Musí být v českém jazyce. K řešení je dovoleno použít libovolný programovací jazyk.  
+b)   Musí použít otevřená data. Aspoň část funkcionality musí být postavena na otevřených datech nebo 
+sama otevřená data publikovat (pokud návrh aplikace není postaven na otevřených datech, musí 
+soutěžící alespoň část použitých dat publikovat jako otevřená data, a to na stejném místě, jako je 
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+3 
+ 
+umístěn návrh aplikace, popř. v návrhu aplikace uvést hypertextový odkaz na jejich umístění). Pokud 
+bude návrh aplikace využívat data, která nejsou ve formátu otevřených dat, musí se jednat o data 
+veřejně dostupná, která lze pro účely aplikace legálně využít, a jejichž podmínky užití umožňují 
+soutěžícímu legálně publikovat alespoň část používaných dat jako otevřená data. Vždy se musí jednat 
+o data, která jsou veřejně dostupná široké veřejnosti, což je jednou za základních podmínek soutěže. 
+c) Musí splňovat znaky autorského díla dle zákona č. 121/2000 Sb., autorský zákon, ve znění pozdějších 
+předpisů. Celé dílo (včetně jakékoli jeho části) všech soutěžících pak bude možné neomezeně užívat 
+(ve smyslu způsobů užití včetně jeho změny, časového vymezení a prostorového vymezení) v souladu 
+ s tzv. volnou licencí (GNU Public Domain, Open Data Commons Open Database Licence, open source)  
+5.3. Je vítána práce s umělou inteligencí (dále jen „AI“). Pořadatel spolupracuje se společností Microsoft 
+s.r.o., která pro tuto soutěž zajistila přístupy pro napojení na AI, se kterou budou moci všichni soutěžící 
+v rámci tvorby návrhu aplikace pracovat. Vedoucí soutěžních týmů dostanou po registraci do soutěže 
+postup, jakým způsobem se budou moci přihlásit do AI, takže již před samotnou soutěží budou soutěžící 
+poučeni, jak co nejefektivněji s AI pracovat. AI budou moci využít, ale také nemusejí, to už záleží na 
+nich, protože samotná soutěž vítá nápady vzniklé z AI, avšak není podmínkou AI pro návrh aplikace 
+využít.    
+5.4. Zdrojové kódy návrhů webové aplikace budou veřejně dostupné pro další využití zdarma na GitHub 
+účtu Královéhradeckého kraje https://github.com/krhk, který je otevřen pro tuto soutěž. Zdrojové kódy 
+včetně náhledů návrhů aplikací budou pořadateli předány ve formátu .pptx nebo .pdf na flash disk 
+pořadatele, a to ihned po ukončení odpolední části programování. Bez odevzdání výše uvedených 
+zdrojových kódů a náhledu návrhu aplikace nemohou soutěžní týmy prezentovat výsledky svojí práce 
+před porotou. 
+5.5. Pořadatel a odborný garant vyhodnotí návrhy aplikací, zda splňují pravidla soutěže. Pořadatel si 
+vyhrazuje právo návrhy aplikací, které pravidla soutěže nesplňují, vyloučit. 
+5.6. Otevřená data Královéhradeckého kraje jsou dostupná na https://www.datakhk.cz/search, případně 
+na výzkumné aplikaci ke katalogu otevřených dat na https://katalog.datakhk.tech 
+Dostupné sady otevřených dat jsou tematicky rozděleny do těchto sekcí: Ekonomika a trh práce, 
+Investice kraje, IZS a bezpečnost, Kraj a dotace, Kultura a cestovní ruch, Lidé a sociální služby, Obce, 
+Školství a výzkum, Veřejná doprava a silnice, Zdravotnictví a zdraví a Životní prostředí. 
+5.7. Pořadatel si vyhrazuje právo kdykoliv změnit pravidla soutěže či soutěž úplně zrušit bez udání 
+důvodu.  
+ 
+6. Hodnocení 
+6.1. Porota bude v hodnocení návrhů aplikací sledovat tato rámcová kritéria: 
+a) unikátnost – do jaké míry je návrh aplikace unikátní, hodnotí se nápad, jestli je to něco nového, co 
+obohatí širokou veřejnost, jestli je to to, co nám chybí;  
+b) otevřená data – jak moc návrh aplikace využívá otevřená data Královéhradeckého kraje a jaká, 
+případně otevřená data z Národního katalogu otevřených dat (v tomto případě v územním rozsahu 
+Královéhradeckého kraje); 
+c) využití pro Královéhradecký kraj – vhodnost využití návrhu aplikace pro Královéhradecký kraj pro 
+jeho další rozvoj a možnou publikaci na Datovém portálu Královéhradeckého kraje Data KHK; 
+d) využití pro veřejnost – využití návrhu aplikace pro širokou veřejnost, užitečnost a vhodnost pro 
+širokou veřejnost, posouzení jedinečnosti návrhu aplikace a vhodnosti jeho dalšího možného rozvoje. 
+6.2. Hodnocení aplikací je dvoukolové a provádí jej porota. Po ukončení programování předvedou týmy 
+funkčnost vytvořeného návrhu aplikace porotě. V prvním kole bude probíhat prezentace formou ukázky 
+fungování návrhu aplikace, na což bude mít soutěžní tým jednotný časový limit 5 minut. Prezentace 
+jednotlivých týmů bude probíhat podle čísla týmu (od čísla 1), které bude přiděleno při registraci.  
+Každý člen poroty individuálním hlasováním ohodnotí daný návrh aplikace z hlediska splnění výše 
+uvedených 4 kritérií. Každé kritérium porotce ohodnotí v bodovém rozmezí 0 až 10 bodů, tedy návrh 
+aplikace může od jednoho porotce získat maximálně počet 40 bodů. Počet bodů od všech porotců bude 
+sečten a na základě tohoto součtu bodů vznikne pořadí týmů po prvním kole. Při rovnosti bodů 
+rozhoduje o pořadí porota, a to na základě jejího odborného posouzení zahrnujícího kritéria viz uvedené 
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+4 
+ 
+v bodě 6.1. Do druhého kola postoupí 5 týmů s nejvyšším počtem bodů z kola prvního. Na základě svojí 
+odbornosti a znalostí určí porota týmy na prvních třech místech, přičemž nezáleží na bodovém 
+ohodnocení z prvního kola. Týmy na prvních třech místech získají finanční a věcné dary od pořadatele 
+a partnerů soutěže.  
+6.3 Nově bude udělena cena diváků, kdy všichni přítomní z řad soutěžících, mentorů, porotců a 
+organizačního týmu soutěže budou moci dát hlas jednomu z týmů, přičemž tým s největším počtem 
+hlasů obdrží za 1. místo odměnu 2 500 Kč, na 2. místě 1 500 Kč a tým na třetím místě 1 000 Kč. 
+Hlasování o ceně diváků bude probíhat on-line formou. 
+ 
+7. Souhlasy a prohlášení soutěžícího 
+7.1. Odesláním oficiální přihlášky přes registrační formulář soutěžící prohlašuje, že souhlasí s těmito 
+pravidly soutěže a zavazuje se je plně dodržovat. Pořadatel si vyhrazuje právo vyloučit z účasti na 
+soutěži kteréhokoliv ze soutěžících, u kterého má za to, že svým jednáním porušuje pravidla soutěže, 
+a to s okamžitou platností. V takovém případě budou členové týmu takto vyloučeného soutěžícího 
+oprávněni pokračovat v soutěži bez tohoto vyloučeného soutěžícího (za předpokladu, že v týmu 
+zůstanou alespoň 2 soutěžící).  
+Zároveň soutěžící souhlasí s tím, že zdrojové kódy návrhů aplikací, vizualizace a náhledy návrhů 
+aplikací vzniklých při soutěži jsou majetkem pořadatele. Pořadatel je zveřejní na svém GitHub profilu, 
+popřípadě na webové stránce soutěže a pořadatele. 
+7.2. Odesláním oficiální přihlášky přes registrační formulář soutěžící bere na vědomí, že pro účely 
+organizace soutěže bude pořadatel zpracovávat jeho e-mailovou adresu a jméno a příjmení, rok 
+narození, název školy, tedy údaje potřebné k organizaci soutěže, které pořadateli poskytne. 
+7.3. Soutěžící soutěže se zavazuje v místě publikace aplikace uvést hypertextový odkaz na otevřená 
+data, na základě kterých byla aplikace vytvořena, popř. otevřená data na tomto místě publikovat. 
+7.4. Pořadatel si vyhrazuje právo na uveřejnění fotografie výherců včetně jejich jmen a příjmení a 
+zveřejnění jména organizace, jména a příjmení zástupce organizace a sídla organizace na sociálních 
+sítích, médiích, na stránkách https://www.khk.cz/ a na stránkách Datového portálu Královéhradeckého 
+kraje https://www.datakhk.cz/pages/hackathony. Pořadatel si vyhrazuje právo průběh celé soutěže 
+zdokumentovat (fotografie, videa apod.) včetně možnosti prezentace na webových stránkách kraje, 
+Datovém portálu Královéhradeckého kraje a na sociálních sítích a médiích. 
+8. Závěrečná ustanovení 
+8.1. V případě, že počet přihlášených návrhů aplikací je příliš nízký nebo kvalita návrhů aplikací 
+nedosahuje výjimečné úrovně, má pořadatel právo cenu neudělit.  
+8.2. Pořadatel si vyhrazuje právo vyřadit návrh aplikace ze soutěže a zpětně odebrat titul z důvodu, že 
+návrh aplikace neoprávněně zasahuje do cizích práv.  
+8.3. Soutěžící nese plnou odpovědnost za svůj návrh aplikace. Pořadatel, porota ani žádný z jejích členů 
+nepřebírá odpovědnost za návrh aplikace v žádném rozsahu. Pořadatel, porota ani žádný z jejích členů 
+neodpovídá za škodu, jinou formu újmy ani za porušení zákona způsobené návrhy aplikací či jiným 
+jednáním soutěžícího. 
+8.4. Soutěžící se zavazuje, že bude dodržovat právní předpisy České republiky a dále veškeré 
+podmínky užití jakéhokoliv softwaru, zařízení nebo prostředku, který soutěžící využije v rámci soutěže. 
+Soutěžící dále prohlašuje, že bude jednat v souladu s dobrými mravy a takovým způsobem, aby svým 
+jednáním neporušil žádná práva třetích osob. V případě, že dojde během této soutěže ze strany 
+soutěžících k pokusu nebo k uskutečnění narušení tzv. kybernetické bezpečnosti či ke kybernetickému 
+útoku na softwarové vybavení poskytnuté Univerzitou Hradec Králové či dalšími subjekty, nese za tuto 
+skutečnost veškerou odpovědnost příslušný soutěžící včetně případné trestněprávní odpovědnosti ve 
+smyslu § 230 zákona č. 40/2009 Sb., trestní zákoník, v platné znění (Neoprávněný přístup k 
+počítačovému systému a neoprávněný zásah do počítačového systému nebo nosiče informací) či 
+náhrady škody. V takovém případě je pořadatel oprávněn k součinnosti s příslušnými orgány činnými 
+v trestním řízení. 
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+5 
+ 
+8.5. Soutěžící prohlašuje, že je držitelem (autorem) případně vykonavatelem všech majetkových a jiných 
+práv autora autorského díla, a že je oprávněn poskytnout pořadateli oprávnění k užití díla jako 
+autorského díla.  
+8.6. Soutěžící zodpovídá za to, že na dílu nebudou váznout žádná práva třetích osob bránící v budoucnu 
+pořadateli či hlavnímu partnerovi (a dalším partnerům) k užití díla a k výkonu jeho práv.  
+8.7. V případě, že v průběhu či po skončení soutěžení vznikne nutnost uzavření licenční smlouvy, 
+zavazuje se soutěžící uzavřít s pořadatelem jím předložený návrh na uzavření licenční smlouvy k 
+autorskému dílu, a to bez zbytečného odkladu poté, co bude pořadatelem vyzván k jejímu uzavření.  
+8.8. Pořadatel zajišťuje po dobu konání soutěže oběd a drobné občerstvení.  
+8.9. Pořadatel si vymezuje právo na úpravy pravidel i harmonogramu soutěže.  
+8.10. Soutěžící akceptují případně časové prodloužení soutěže z organizačních důvodů. Oficiální 
+zakončení soutěže (odchod z budovy) bude nejpozději ve 22:00, tedy v době, kdy se Fakulta informatiky 
+a managementu Univerzity Hradec Králové uzavírá pro veřejnost.   
+ 
+INFORMACE O ZPRACOVÁNÍ OSOBNÍCH ÚDAJŮ 
+Královéhradecký kraj, IČO: 70889546, Pivovarské náměstí 1245, Hradec Králové, (dále jen „pořadatel“) 
+zpracovává jako správce osobní údaje soutěžících soutěže Hackathon Královéhradeckého kraje 2026 
+v následujícím rozsahu a pro níže uvedené účely:  
+ 
+Účel zpracování  Registrace soutěžícího do soutěže a 
+vyhodnocení soutěže Hackathon 
+Královéhradeckého kraje 2026 a plnění práv a 
+povinností vyplývajících z pravidel soutěže v 
+souvislosti s účastí soutěžícího v soutěži.  
+Rozsah zpracovávaných údajů  Identifikační údaje, kontaktní údaje, fotografie  
+Doba zpracování  Osobní údaje pro tento účel jsou zpracovávány 
+na základě registrace do soutěže, a to po dobu 
+trvání soutěže a následně na základě 
+oprávněného zájmu po dobu nutnou k ochraně 
+práv pořadatele v souvislosti se soutěží, tj. po 
+dobu 3 let od ukončení soutěže, které se 
+soutěžící zúčastnil.  
+Účel zpracování  Prezentace výsledků soutěže Hackathon 
+Královéhradeckého kraje 2026, které se soutěžící 
+zúčastnil, v médiích a reklamních materiálech.  
+Rozsah zpracovávaných údajů  Identifikační údaje, podobizna a případné 
+obrazové či zvukové záznamy. 
+Doba zpracování  Osobní údaje pro tento účel zpracovává 
+pořadatel na základě souhlasu se zpracováním 
+osobních údajů, a to po dobu 3 let nebo do doby 
+odvolání souhlasu.  
+Souhlas se zpracováním osobních údajů může být kdykoliv odvolán, zákonnost zpracování osobních 
+údajů před odvoláním souhlasu tím však nebude dotčena.  
+ 
+V souvislosti se zpracováním osobních údajů bere soutěžící soutěže na vědomí, že má následující 
+práva:  
+ právo na přístup k osobním údajům,  
+ právo na opravu nepřesných či neúplných osobních údajů,  
+ právo na výmaz údajů,  
+ právo na přenositelnost údajů,  
+ právo žádat omezení zpracování,  
+ právo podat stížnost orgánu dohledu (Úřad pro ochranu osobních údajů). Více informací naleznete  
+    na www.uoou.cz,  
+ právo vznést námitku proti zpracování z důvodů týkajících se jeho konkrétní situace. 
+Soutěžící soutěže může výkon svých práv žádat prostřednictvím zaslání žádosti na adresu pořadatele. 
+Příloha č. 1 – Pravidla studentské soutěže Hackathon Královéhradeckého kraje 2026 
+6 
+ 
+Příloha č. 1: Harmonogram soutěže 
+   8:00 –   8:30   registrace týmů 
+   8:30 –   9:00   zahájení  
+   9:00 – 12:00   programování 
+ 12:00 – 12:30   oběd 
+ 12:30 – 17:00   programování 
+ 17:00 – 17:15   odevzdání prezentací a zdrojových kódů 
+ 17:15 – 20:15   prezentace návrhů aplikací 
+ 20:15 – 21:00   hodnocení poroty, vyhlášení výsledků 
+ 
