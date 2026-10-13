@@ -162,6 +162,33 @@ MHD (DPMHK) v datech kraje **není**. Mluvíme o „veřejné dopravě“ (IREDO
 
 Dopad na skóre: nový faktor „Intenzita dopravy“ (RPDI) a „Délka objížďky“. Silnice s dlouhou objížďkou je důležitější.
 
+### Zdroje dopravních dat a pravidla (rešerše Tomáš, 13. 10.)
+
+Doplnění k části výše: **předběžné výsledky sčítání 2025 už ŘSD zveřejnilo.**
+
+**Počet aut (intenzita):**
+- **ŘSD – sčítání 2025** (předběžné), CC BY‑SA 4.0. Stránka: [rsd.cz/silnice-a-dalnice/scitani-dopravy](https://www.rsd.cz/silnice-a-dalnice/scitani-dopravy), [XLSX](https://www.rsd.cz/documents/38144/3734982/V2_CSD_2025_20260826.xlsx/5a2163ce-1bcc-6264-8251-98e4dd34a9ec?t=1788264442427).
+  - KHK: 666 řádků (I. tř. 281, II. 264, III. 113, D 8). Medián SV na II./III. tř. 2 513 vozidel/den.
+  - Sloupce: SIL, ÚSEK, začátek/konec úseku, stanoviště sčítače, délka, TV, O, M, SV.
+  - Souřadnice chybí. Párování podle čísla silnice pokryje ~120 z 667 silnic, ~1 418 z 3 192 km. Zbytek = odhad.
+- **Sčítání 2020:** XLSX na stejné stránce, mapa [scitani.rsd.cz/CSD_2020](https://scitani.rsd.cz/CSD_2020). Starší roky (2016, 2010, …) taky.
+- **Precedent:** JMK publikuje sčítání jako open data: [data.jmk.cz](https://data.jmk.cz/content/42a4242cf141469692fff75a8291e51c). Argument pro porotu: KHK může totéž.
+
+**Živé uzavírky a stavby:**
+- **ŘSD SRTI** v NKOD, CC BY 4.0: [datová sada](https://data.gov.cz/datová-sada?iri=https://data.gov.cz/zdroj/datové-sady/65993390/1087749998), [snapshot + SPARQL](https://lod.tamtamresearch.com/srti/snapshot).
+  - Geometrie (WKT) a platnost od–do. V KHK ~140 záznamů, hlavně silnice I. třídy.
+- Plánované opravy kraje jako data nejsou. Jen PDF a články (např. [zpravodaj UNVK duben 2026](https://khk.cz/system/files/2026-03/UNVK_duben2026_final_small.pdf)). Použít jen jako ručně ověřený příklad.
+
+**Nehody:**
+- Policie ČR: [statistiky 2025](https://policie.gov.cz/statistiky-dopravni-nehodovosti-za-rok-2025), soubor `data2025.rar` (~6,3 MB). Má GPS a příčinu „stav vozovky (výtluky)“ a „závada komunikace“.
+- Archiv 2008–2025: [archiv.policie.gov.cz](https://archiv.policie.gov.cz/). [Open data katalog Policie](https://policie.gov.cz/opendata/catalogue): „bez licenčních omezení“. Obsahuje i sadu KŘP KHK, obsah zatím neověřen.
+
+**Pravidla (5.2b, 7.3):**
+- OK: CC BY, CC BY‑SA, data bez omezení. Každý zdroj uvést na stránce Zdroje dat s odkazem.
+- CC BY‑SA: náš export s intenzitami musí mít taky CC BY‑SA a uvést ŘSD.
+- Nelze: živé čítače NDIC/JSDI (DATEX II, nutná registrace), Waze, Google, TomTom, mýtná data.
+- V aplikaci psát: intenzita = roční průměr ze sčítání, ne živý tok.
+
 ---
 
 ## 7. Architektura
