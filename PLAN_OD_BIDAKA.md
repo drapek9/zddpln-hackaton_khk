@@ -62,7 +62,7 @@ React 19 + Vite + TypeScript + MapLibre, data z 18 vrstev Data KHK přes `npm ru
 | 6 | Vrstva HSOO (ohrožené oblasti) se stahuje, ale ve skóre není | Zbytečná data. | Přidat jako faktor „sociální dopad“, nebo vyhodit. ✅ opraveno (`c6de97f`) |
 | 7 | Chybí stránka **Zdroje dat** s odkazy na datasety | **Povinné** podle pravidel (5.2 b, 7.3). | Stránka + odkaz v patičce. ✅ opraveno (`c6de97f`) |
 | 8 | Chybí `LICENSE` | Pravidla 5.2 c chtějí volnou licenci. | Přidat MIT nebo EUPL‑1.2 (rozhodnout). |
-| 9 | Kód vzniká **před** soutěží ve veřejném repu s časovými razítky | Pravidla mluví o dílech „vzniklých při soutěži“. Riziko diskvalifikace nebo minimálně špatného dojmu. | **Rozhodnout v týmu** (kap. 12, otázka 1). |
+| 9 | Kód vzniká **před** soutěží | Pravidla mluví o dílech „vzniklých při soutěži“. | ✅ Rozhodnuto 13. 10.: připravený základ je v pořádku, hlavní práce (backend, AI, priorita, role, API) proběhne na soutěži. V pitchi to říct otevřeně. |
 
 Chybí vůči tomu, co chceme (kap. 4–5): backend a databáze, přihlášení a role, AI, třídy priority, ruční přepsání priority, dvě osy stavů, hlasování, sledování tras, veřejné API, widget, export otevřených dat.
 
@@ -232,7 +232,7 @@ Návrh rozdělení: **data + skóre**, **backend + API**, **frontend správa**, 
 
 ## 12. Otevřené otázky
 
-1. **Hotový kód před soutěží.** Pravidla mluví o dílech „vzniklých při soutěži“. Varianty: (a) zeptat se pořadatele, (b) brát v1 jako prototyp a na místě psát znovu, (c) přiznat přípravu v pitchi. Rozhodnout do středy.
+1. ✅ **Hotový kód před soutěží:** připravený základ smí vzniknout předem, na soutěži na něm stavíme hlavní funkce. V pitchi otevřeně říct, co bylo připravené a co vzniklo na místě. — Tomáš, 13. 10.
 2. **AI:** Azure OpenAI od Microsoftu (přístup dostane vedoucí týmu), nebo jiný poskytovatel?
 3. **Backend:** stihneme FastAPI + DB, nebo zůstat u frontendu a backend jen ukázat?
 4. **Dopravní nehody:** je otevřený dataset s polohou pro KHK? Kdo ověří?
