@@ -313,3 +313,51 @@ Návrh rozdělení: **data + skóre**, **backend + API**, **frontend správa**, 
 ### Doplňuje Přemysl
 
 ### Doplňuje matousada
+
+- 13. 10.: review plánu s Claude. **Pozor:** vychází jen z textu tohohle plánu. Kód ani `docs/` z gitu jsme neviděli (repo se nepodařilo připojit), takže tvrzení o kódu jsou otázky k ověření, ne fakta. Do původního textu jsem nic nezasahoval, vše je jen přidané tady. — matousada, 13. 10.
+
+#### M1. Co je podle mě v plánu rozpor nebo riziko
+
+1. **MVP vs. backend.** V kap. 8 je v MVP „připíchnutí priority + dvě osy stavů“ a „nahlášení výtluku“, ale FastAPI + DB je až vlna 2. Přitom harmonogram (kap. 10) počítá s „kostrou backendu“ už v 9:00–10:30. Je potřeba říct jedno: buď MVP ukládá do localStorage a backend je bonus, nebo backend stavíme od začátku a MVP na něm závisí. Teď plán říká obojí.
+2. **Věta „kraj má peníze na 90 km ročně“ (kap. 1).** 90 km/rok je historické tempo oprav 2015–2024 (906 km / 10 let), ne rozpočet. Porotce z kraje se může zeptat „odkud to máte“. Navrhuju „kraj opravuje zhruba 90 km ročně“.
+3. **„~15 let“ je spíš optimistický odhad.** Počítá se, že všech 90 km ročně půjde jen na havarijní úseky (část oprav je asi jinde) a že se zbytek sítě mezitím nezhorší. Reálně to bude déle. V pitchi doporučuju říkat „aspoň 15 let“ a vedle dát zdroj výpočtu.
+4. **Kap. 3 bod 9 (kód před soutěží)** je označený jako vyřešený, ale je to rozhodnutí jednoho člověka. Doporučuju napsat organizátorům a mít odpověď písemně (ať se nezpochybní až při hodnocení). Do té doby pořád platí „v pitchi otevřeně říct, co bylo předpřipravené“.
+5. **Stavy práce vs. simulace (kap. 3 bod 2 a kap. 5).** Skutečná jsou jen „Hotovo“ z dat o opravách. Navrženo / Schváleno / Naplánováno / Probíhá budou v demu vždy naše vymyšlená data. Ve UI to musí být vidět (štítek „demo data“), jinak se vracíme k problému z bodu 2 v kap. 3.
+6. **Prostorové spojení bodů s úseky (450 m, 120 m).** K ověření v kódu: jeden bod (nemocnice, škola) se může přiřadit k mnoha úsekům a zvýšit jim skóre a dopady uzavírky víckrát. Pak by byl žebříček zkreslený. Je potřeba vědět, zda se přiřazuje nejbližší úsek, nebo všechny v dosahu.
+7. **Výchozí váhy posuvníků.** Čím je zdůvodněno, že mají výchozí hodnoty právě takové? Porota se zeptá. Stačí věta „zvoleno expertním odhadem, úředník je mění“, ale musí být řečená.
+8. **Prázdná kap. 9 (kdo co dělá).** Dva dny před soutěží. Bez vlastníků oblastí se na místě budeme překrývat a mergovat konflikty.
+9. **Osobní údaje u hlášení (kap. 4B).** Foto, popis a případný účet občana jsou osobní údaje. Pro hackathon: hlášení bez účtu, foto volitelné a v pitchi jedna věta o tom, jak by se to řešilo (GDPR, odstranění SPZ a obličejů).
+10. **Hlasování a sledování tras už jsou ve vlně 3, ale v pitchi (kap. 11) o nich nic není.** To je v pořádku. Jen je nezmiňujme v pitchi jako hotové.
+11. **Pokud AI čte text hlášení od občanů,** může být text použit jako pokyn pro model (prompt injection). AI by měla dostávat jen strukturovaná data (faktory úseku, váhy), ne volný text od lidí.
+12. **Ověřit tvrzení v pitchi:** „RoadMapper vyhrál 2022“ a „Mapa stavu silnic už vyhrála“ (kap. 1) — má to někdo potvrzené z `docs/ROZBOR.md` s odkazem? Pokud ano, přidat zdroj.
+
+#### M2. Nápady, co by se sem hodilo
+
+1. **„Proč A před B“ (srovnání dvou úseků).** Úředník vybere dva úseky vedle sebe a vidí, které faktory rozhodly o pořadí. Pro transparentnost je to silnější než samotný rozpad skóre a v demu to jde ukázat za 20 sekund.
+2. **Stabilita žebříčku vůči vahám.** Při pohybu posuvníků označit úseky, které zůstávají v Top N při jakémkoli rozumném nastavení (jádro), a ty, které „skáčou“. Úředník pak ví, o čem se dá rozhodovat a co je jasné.
+3. **Scénář s rozpočtem.** Jeden vstup: „máme X km nebo Y mil. Kč“ → seřazený seznam úseků, které se za rok vejdou, a kolik havarijních km zůstane. Napojuje se přímo na hlavní tezi (90 km/rok). Cena za km musí být jasně označená jako předpoklad, ne fakt.
+4. **Zpětná kontrola modelu na datech 2018–2024.** Měly úseky, které se později opravily, vysoké skóre ještě před opravou? Ať vyjde jakkoli, je to jeden slajd s důvěrou v model. Pozor na pravidlo „vznik při soutěži“ (kap. 3 bod 9): jde o analýzu, ne o aplikaci, ale říct to otevřeně.
+5. **Záložní hosting jen frontendu.** Pokud jde MVP bez backendu, nahrát buildnutý frontend na statický hosting (např. GitHub Pages), aby porota mohla otevřít odkaz nebo QR kód na vlastním telefonu a nezáleželo na místní Wi‑Fi a notebooku. Řeší riziko z kap. 7 „Síť na místě“.
+6. **Offline kopie dat v repu.** `public/data/*.json` musí být v repu jako snímek, aby demo nezáviselo na dostupnosti ArcGIS API na místě. Ověřit, že je to tak a že není potřeba spouštět `fetch-data` před demem.
+7. **AI jen vysvětluje, nepočítá.** Pořadí vždy z deterministického skóre. AI zdůvodňuje a navrhuje posun o třídu. U každého AI textu štítek „návrh AI“ a vedle něj skutečné faktory. Tohle by mělo být v pitchi jako úmyslná volba, ne jako omezení.
+8. **Jedna věta o rozhodování člověka v pitchi.** „Úředník má poslední slovo a každé připíchnutí se zapisuje, kdo, kdy, proč.“ To je silný argument pro veřejnou správu.
+9. **Export dat s popisem (metadata).** U `export.csv` / `export.geojson` přidat popis sloupců, licenci a datum výpočtu. Datová porota to ocení víc než samotný soubor.
+10. **Mobil.** Pohled občana (kap. 4B) musí být použitelný na telefonu. Ověřit v prohlížeči na 375 px, než se dostaneme k widgetu.
+
+#### M3. Otázky na tým (odpovědi prosím vepsat přímo pod otázku nebo do kap. 12)
+
+1. Kdo bude mít které oblasti z kap. 9 (data + skóre, backend + API, frontend správa, frontend občan + pitch)? Kdo chce být ten, kdo od 15:00 dělá jen prezentaci?
+2. Backend: jdeme na MVP bez backendu s localStorage (rychlé, bezpečné), nebo od začátku FastAPI? Rozhodnout dnes ve večerním syncu, ne ve čtvrtek v 9:00.
+3. Má opravdu někdo funkční přístup k Azure OpenAI už teď (ne až na místě)? Pokud ne, počítáme, že AI vrstva bude hlavně fallback a AI přidáme až se klíč objeví?
+4. Licence (kap. 3 bod 8, kap. 12 otázka 6): MIT, nebo EUPL‑1.2? Rozhodnout dnes, soubor `LICENSE` je pět minut práce.
+5. Název aplikace: zůstává „Cesty KHK“? (U veřejné soutěže je lepší mít název, který se dobře vyslovuje a zapamatuje.)
+6. Kdo napíše organizátorům o předpřipraveném základu a o tom, co je a co není považováno za „vzniklé při soutěži“? Tomáš?
+7. Kdo ověří dopravní nehody (otázka 4 v kap. 12)? Pokud to do čtvrtka nikdo neověří, škrtáme to z pitche.
+8. Co přesně uvidí porota na „server kraje“ (kap. 7)? Pokud půjde jen o notebook, nemá se to v pitchi jmenovat tak, aby to znělo jako reálné nasazení.
+9. Kolik z tohohle opravdu stihneme? Navrhuji, aby každý do čtvrtka v 8:00 měl jasno, co v MVP **není** (seznam škrtů je důležitější než seznam funkcí).
+
+#### M4. Návrh pořadí práce, než začne soutěž (jen příprava, žádný nový kód)
+
+1. Dnes: rozdělit role (kap. 9), rozhodnout licenci a MVP bez/s backendem.
+2. Zítra (14. 10.): zkouška pitche nanečisto (5 min, měřit čas), ověřit, že demo běží bez internetu, připravit záložní video, ověřit klíč k AI.
+3. Čtvrtek ráno: zkontrolovat, že dataset a skóre v UI odpovídají číslům v pitchi (kap. 1), než se začne něco měnit.
