@@ -147,6 +147,21 @@ Zdroj všech vrstev Data KHK: `https://services6.arcgis.com/ogJAiK65nXL1mXAW/arc
 
 MHD (DPMHK) v datech kraje **není**. Mluvíme o „veřejné dopravě“ (IREDO), ne o MHD.
 
+### Intenzita dopravy a objížďky (návrh Tomáš, 13. 10.)
+
+**Data o počtu aut:** Data KHK je nemají. Má je **ŘSD – Celostátní sčítání dopravy 2020** ([scitani.rsd.cz/CSD_2020](https://scitani.rsd.cz/CSD_2020)), licence CC BY‑SA 4.0. Uvádí roční průměr vozidel za den (RPDI) po sčítacích úsecích. V KHK je ~460 sčítacích úseků na silnicích II. a III. třídy, medián ~3 000 vozidel/den. Pokrývá skoro všechny dvojky, trojky jen částečně. Sčítání 2025 už proběhlo, výsledky zatím nezveřejněné.
+- Kde sčítání není: **odhad** z třídy silnice, počtu linek a zastávek, obcí v okolí. V aplikaci označit „odhad“.
+- Živá data z dopravních čítačů otevřeně nejsou. Neslibovat.
+
+**Objížďka při uzavírce:**
+1. Ze silnic (Stav povrchu) + silnic I. třídy (OSM nebo ŘSD) postavit graf: uzly = konce úseků, hrany = úseky s délkou.
+2. Při uzavírce úsek z grafu odebrat a najít nejkratší cestu mezi jeho konci (Dijkstra).
+3. Ukázat: objížďku na mapě, kolik km a minut navíc, kolik aut/den se přesune (RPDI uzavřeného úseku).
+4. Upozornit: objížďka vede přes **havarijní** úsek, přes obec se školou, mění trasu autobusových linek.
+5. Poctivě říct: model posílá všechna auta jednou nejkratší objížďkou, ve skutečnosti se rozdělí.
+
+Dopad na skóre: nový faktor „Intenzita dopravy“ (RPDI) a „Délka objížďky“. Silnice s dlouhou objížďkou je důležitější.
+
 ---
 
 ## 7. Architektura
