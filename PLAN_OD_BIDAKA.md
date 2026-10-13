@@ -260,6 +260,8 @@ Návrh rozdělení: **data + skóre**, **backend + API**, **frontend správa**, 
 ### Doplňuje Šimon
 
 - 13. 10.: v datech je veřejná doprava (197 linek, 4 538 zastávek, 3 515 přípojů, linka na 1 842 z 1 993 úseků). Auta, intenzita provozu a nehody tam nejsou. Zapsáno v kap. 6 a v otázce 4a.
+- 13. 10.: Podívat se, jestli jde nějak zjistit provoz na těch silnicích, a případně zjistit nebo vymyslet, kudy by se to dalo objet.
+- 13. 10.: Jak to parametrizovat, aby se to filtrovalo líp, ale bylo to useful pro silniční správu.
 
 ### Doplňuje Tomáš (Bidák)
 - 13. 10.: rozbor pravidel a poroty v `docs/ROZBOR.md`, review nápadu v `docs/PLAN_SILNICE.md`, tento plán.
