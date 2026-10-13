@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Connection, Repair, Road, Weights } from "../lib/types";
-import { KIND_LABEL, STAV_COLOR, formatKm, formatSil, inSchoolYear } from "../lib/geo";
+import { KIND_LABEL, STAV_COLOR, STATUS_LABEL, formatKm, formatPeriod, formatSil, inSchoolYear, isoInDays } from "../lib/geo";
 import { impactAlerts, roadScore, scoreBreakdown } from "../lib/priority";
 import { buildAnnouncement } from "../lib/announce";
 
@@ -26,11 +26,11 @@ function uniqueSamples(rows?: Road["samples"][string]) {
 export default function RoadPanel({ road, weights, connections, existing, mode, onPlan }: Props) {
   const score = roadScore(road, weights);
   const alerts = useMemo(
-    () => impactAlerts(road, existing ?? { from: "2026-11-01", to: "2026-11-20", restriction: "úplná uzavírka" }, connections),
+    () => impactAlerts(road, existing ?? { from: isoInDays(21), to: isoInDays(40), restriction: "úplná uzavírka" }, connections),
     [road, existing, connections],
   );
-  const [from, setFrom] = useState(existing?.from || "2026-11-03");
-  const [to, setTo] = useState(existing?.to || "2026-11-21");
+  const [from, setFrom] = useState(existing?.from || isoInDays(21));
+  const [to, setTo] = useState(existing?.to || isoInDays(40));
   const [restriction, setRestriction] = useState(existing?.restriction || "úplná uzavírka");
   const [note, setNote] = useState(existing?.note || "");
   const [copied, setCopied] = useState(false);
@@ -46,6 +46,8 @@ export default function RoadPanel({ road, weights, connections, existing, mode, 
     to,
     restriction,
     note,
+    // Úprava ve správě už není ukázková data, ale vlastní návrh uživatele.
+    simulated: false,
   };
   const liveAlerts = impactAlerts(road, draft, connections);
   const text = buildAnnouncement(road, draft, connections);
@@ -62,7 +64,14 @@ export default function RoadPanel({ road, weights, connections, existing, mode, 
         <strong>{road.stav}</strong>
         <span>{formatKm(road.delka)}</span>
         <span>{road.trida}</span>
+        <span>měřeno {road.rok}</span>
       </div>
+      {existing && (
+        <p className="hint">
+          {STATUS_LABEL[existing.status]} · {formatPeriod(existing)} · {existing.restriction}
+          {existing.simulated && <span className="sim-tag">simulace</span>}
+        </p>
+      )}
       <div className="score-box">
         <div>
           <span>Skóre priority</span>
@@ -84,6 +93,7 @@ export default function RoadPanel({ road, weights, connections, existing, mode, 
             </span>
           ))}
         {road.lines.length > 0 && <span className="chip">{road.lines.length} linek</span>}
+        {road.hsoo?.length > 0 && <span className="chip">ohrožená oblast</span>}
       </div>
 
       <section>

@@ -1,5 +1,5 @@
 type Props = {
-  onChoose: (mode: "admin" | "public") => void;
+  onChoose: (mode: "admin" | "public" | "sources") => void;
 };
 
 export default function Landing({ onChoose }: Props) {
@@ -37,12 +37,15 @@ export default function Landing({ onChoose }: Props) {
         </button>
       </div>
       <p className="landing-note">
-        Data: stav povrchu 2024, opravy od 2016, zastávky a linky VDKHK, školy, nemocnice,
-        ZZS, HZS, policie a zaručené přípoje. Katalog{" "}
+        Data: stav povrchu (poslední měření každého úseku), opravy od 2016, zastávky a linky VDKHK,
+        školy, nemocnice, ZZS, HZS, policie a zaručené přípoje z katalogu{" "}
         <a href="https://www.datakhk.cz" target="_blank" rel="noreferrer">
           datakhk.cz
         </a>
-        .
+        .{" "}
+        <button className="link" onClick={() => onChoose("sources")}>
+          Všechny zdroje dat →
+        </button>
       </p>
     </div>
   );

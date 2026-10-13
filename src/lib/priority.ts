@@ -1,5 +1,5 @@
 import type { Connection, Repair, Road, Weights } from "./types";
-import { inSchoolYear } from "./geo";
+import { inSchoolYear, inWinter } from "./geo";
 
 const STAV_SCORE: Record<string, number> = {
   SUPERhavarijní: 100,
@@ -10,9 +10,11 @@ const STAV_SCORE: Record<string, number> = {
   výborný: 4,
 };
 
+const THIS_YEAR = new Date().getFullYear();
+
 export function roadScore(road: Road, weights: Weights) {
   const c = road.counts || {};
-  const yearsAgo = road.lastRepair ? Math.min(2026 - road.lastRepair, 12) : 10;
+  const yearsAgo = road.lastRepair ? Math.min(THIS_YEAR - road.lastRepair, 12) : 10;
   const raw =
     ((STAV_SCORE[road.stav] ?? 20) * weights.stav) / 100 +
     ((road.worse ? 18 : 0) * weights.worse) / 100 +
@@ -24,6 +26,7 @@ export function roadScore(road: Road, weights: Weights) {
       (weights.rescue / 100) +
     Math.min((c.stop || 0) * 1.2 + road.lines.length * 3, 28) * (weights.transit / 100) +
     Math.min((c.industry || 0) * 8, 20) * (weights.industry / 100) +
+    ((road.hsoo?.length ? 12 : 0) * weights.social) / 100 +
     Math.min(yearsAgo * 4, 32) * (weights.age / 100);
   return Math.round(raw);
 }
@@ -94,11 +97,11 @@ export function impactAlerts(
     });
   }
 
-  if (repair && road.winter && /12|01|02|03/.test(repair.from.slice(5, 7))) {
+  if (repair && road.winter && inWinter(repair.from, repair.to)) {
     alerts.push({
       level: "warning",
       title: "Kolize se zimní údržbou",
-      detail: `Úsek se v zimě udržuje (${road.winter}). Práce v lednu až březnu prodlužují výluky.`,
+      detail: `Úsek se v zimě udržuje (${road.winter}). Práce od listopadu do března prodlužují výluky.`,
     });
   }
 
@@ -153,6 +156,7 @@ export function scoreBreakdown(road: Road, weights: Weights) {
     { key: "IZS", value: String((road.counts.zzs || 0) + (road.counts.hzs || 0)), share: weights.rescue },
     { key: "Veřejná doprava", value: `${road.lines.length} linek / ${road.counts.stop || 0} zastávek`, share: weights.transit },
     { key: "Průmysl", value: String(road.counts.industry || 0), share: weights.industry },
-    { key: "Roky od opravy", value: road.lastRepair ? String(2026 - road.lastRepair) : "neznámo", share: weights.age },
+    { key: "Ohrožené oblasti (HSOO)", value: road.hsoo?.length ? road.hsoo.join(", ") : "ne", share: weights.social },
+    { key: "Roky od opravy", value: road.lastRepair ? String(THIS_YEAR - road.lastRepair) : "neznámo", share: weights.age },
   ].map((row) => ({ ...row, total }));
 }

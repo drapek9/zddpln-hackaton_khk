@@ -48,9 +48,40 @@ export function haversine(lat1: number, lon1: number, lat2: number, lon2: number
 }
 
 export function inSchoolYear(from: string, to: string) {
+  if (!from || !to) return true;
   const overlaps = (start: string, end: string) => from <= end && to >= start;
-  const y = Number((from || "2026").slice(0, 4));
-  return overlaps(`${y}-01-01`, `${y}-06-30`) || overlaps(`${y}-09-01`, `${y}-12-31`);
+  // Oprava může přesáhnout přes Nový rok, proto se kontrolují všechny roky termínu.
+  const y1 = Number(from.slice(0, 4));
+  const y2 = Math.max(y1, Number(to.slice(0, 4)));
+  for (let y = y1; y <= y2; y++) {
+    if (overlaps(`${y}-01-01`, `${y}-06-30`) || overlaps(`${y}-09-01`, `${y}-12-31`)) return true;
+  }
+  return false;
+}
+
+/** Zasahuje termín do zimní údržby (listopad až březen)? */
+export function inWinter(from: string, to: string) {
+  if (!from || !to) return false;
+  const overlaps = (start: string, end: string) => from <= end && to >= start;
+  const y1 = Number(from.slice(0, 4));
+  const y2 = Math.max(y1, Number(to.slice(0, 4)));
+  for (let y = y1 - 1; y <= y2; y++) {
+    if (overlaps(`${y}-11-01`, `${y + 1}-03-31`)) return true;
+  }
+  return false;
+}
+
+/** Datum ve formátu RRRR-MM-DD posunuté o n dní od dneška. */
+export function isoInDays(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Termín opravy pro výpis. U skutečných oprav z dat známe jen rok. */
+export function formatPeriod(repair: { from: string; to: string; simulated?: boolean; status: string }) {
+  if (repair.status === "done" && repair.simulated === false) return `rok ${repair.from.slice(0, 4)}`;
+  return `${repair.from} – ${repair.to}`;
 }
 
 export const KIND_LABEL: Record<string, string> = {

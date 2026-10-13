@@ -1,6 +1,7 @@
 import type { Repair, Report } from "./types";
 
-const REPAIR_KEY = "cesty-khk-repairs";
+// v2: starší uložené opravy neměly příznak simulace.
+const REPAIR_KEY = "cesty-khk-repairs-v2";
 const REPORT_KEY = "cesty-khk-reports";
 
 export function loadLocalRepairs(seed: Repair[]): Repair[] {

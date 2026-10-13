@@ -3,7 +3,7 @@ import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import type { Dataset, Repair, Report } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
-import { STATUS_LABEL, STAV_COLOR } from "../lib/geo";
+import { STATUS_LABEL, STAV_COLOR, formatPeriod } from "../lib/geo";
 
 type Props = {
   data: Dataset;
@@ -19,7 +19,8 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
   const [status, setStatus] = useState<"all" | Repair["status"]>("all");
   const [busQuery, setBusQuery] = useState("");
   const [place, setPlace] = useState("");
-  const clickLngLat = useMemo(() => ({ current: null as { lng: number; lat: number } | null }), []);
+  // Stav (ne ref), aby se tlačítko „Odeslat“ po kliknutí do mapy hned odemklo.
+  const [clickPoint, setClickPoint] = useState<{ lng: number; lat: number } | null>(null);
   const [reportName, setReportName] = useState("");
   const [reportNote, setReportNote] = useState("");
   const [reportObec, setReportObec] = useState("");
@@ -100,8 +101,9 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                           {r.title}
                         </span>
                         <span className="rank-meta">
-                          {STATUS_LABEL[r.status]} · {r.from} – {r.to}
+                          {STATUS_LABEL[r.status]} · {formatPeriod(r)}
                           {road ? ` · ${road.okres}` : ""}
+                          {r.simulated ? " · simulace" : ""}
                         </span>
                       </button>
                     </li>
@@ -145,7 +147,8 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                       {related.map((r) => (
                         <li key={r.id}>
                           <button onClick={() => setSelectedId(r.roadId)}>
-                            {STATUS_LABEL[r.status]} · {r.restriction} · {r.from}–{r.to}
+                            {STATUS_LABEL[r.status]} · {r.restriction} · {formatPeriod(r)}
+                            {r.simulated ? " · simulace" : ""}
                           </button>
                         </li>
                       ))}
@@ -165,7 +168,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
               className="plan-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                const pt = clickLngLat.current;
+                const pt = clickPoint;
                 if (!pt) return;
                 onReport({
                   id: `rep-${Date.now()}`,
@@ -177,6 +180,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                   y: pt.lat,
                 });
                 setReportNote("");
+                setClickPoint(null);
               }}
             >
               <p className="muted">Klikněte do mapy na výtluk nebo poškozený úsek, pak vyplňte hlášení.</p>
@@ -192,9 +196,15 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                 Popis
                 <textarea value={reportNote} onChange={(e) => setReportNote(e.target.value)} rows={3} required />
               </label>
-              <button className="btn primary" type="submit" disabled={!clickLngLat.current}>
-                {clickLngLat.current ? "Odeslat správě" : "Nejdřív klikněte do mapy"}
+              {clickPoint && (
+                <p className="hint">
+                  Místo: {clickPoint.lat.toFixed(5)}, {clickPoint.lng.toFixed(5)}
+                </p>
+              )}
+              <button className="btn primary" type="submit" disabled={!clickPoint}>
+                {clickPoint ? "Odeslat správě" : "Nejdřív klikněte do mapy"}
               </button>
+              <p className="muted">Demo: hlášení se ukládá jen v tomto prohlížeči.</p>
               <ul className="plain">
                 {reports.slice(0, 6).map((r) => (
                   <li key={r.id}>
@@ -213,7 +223,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
             selectedId={selectedId}
             onSelect={(id, lngLat) => {
               if (id != null) setSelectedId(id);
-              if (lngLat) clickLngLat.current = lngLat;
+              if (lngLat) setClickPoint(lngLat);
             }}
             theme="light"
             showCondition
@@ -238,6 +248,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
         <aside className="side right">
           {selected ? (
             <RoadPanel
+              key={selected.id}
               road={selected}
               weights={DEFAULT_WEIGHTS}
               connections={data.connections}

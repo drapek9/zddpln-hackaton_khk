@@ -203,8 +203,7 @@ async function main() {
   console.log("Stahuji datasety Data KHK…");
 
   const [
-    roadsRaw,
-    histRaw,
+    roadsAllRaw,
     repairsLineRaw,
     repairsPointRaw,
     winterRaw,
@@ -223,14 +222,11 @@ async function main() {
     threatenedRaw,
     railStopsRaw,
   ] = await Promise.all([
+    // Všechny roky měření (2018–2024). Každý úsek se měří v jiném roce,
+    // proto se níže bere poslední měření pro každý úsek, ne jen rok 2024.
     fetchAll(...LAYERS.roads, {
-      where: "rok='2024'",
       outFields: "OBJECTID,stav_sil,rok,ozn_sil,ozn_usek,ozn_sil_usek,ozn_trida,ozn_kat,delka,nazev_okresu,typ_povrchu",
       maxAllowableOffset: "0.0002",
-    }),
-    fetchAll(...LAYERS.roads, {
-      returnGeometry: "false",
-      outFields: "ozn_sil_usek,stav_sil,rok",
     }),
     fetchAll(...LAYERS.repairsLine, {
       returnGeometry: "false",
@@ -273,14 +269,34 @@ async function main() {
     fetchAll(...LAYERS.railStops, { outFields: "nazev,nazev_obce,x,y" }),
   ]);
 
-  const history = {};
-  for (const f of histRaw) {
+  // Historie stavu po úsecích. Úsek má v jednom roce víc částí s různým stavem,
+  // proto se za rok bere stav s největší délkou (dřív se hodnoty přepisovaly).
+  const lengthByYear = {};
+  const latestYear = {};
+  for (const f of roadsAllRaw) {
     const a = f.attributes;
     const key = a.ozn_sil_usek;
-    if (!key) continue;
-    if (!history[key]) history[key] = {};
-    history[key][String(a.rok)] = a.stav_sil;
+    const year = Number(a.rok);
+    if (!key || !year || !a.stav_sil) continue;
+    latestYear[key] = Math.max(latestYear[key] ?? 0, year);
+    const byYear = (lengthByYear[key] ??= {});
+    const byStav = (byYear[year] ??= {});
+    byStav[a.stav_sil] = (byStav[a.stav_sil] || 0) + (Number(a.delka) || 0);
   }
+  const history = {};
+  for (const [key, byYear] of Object.entries(lengthByYear)) {
+    history[key] = {};
+    for (const [year, byStav] of Object.entries(byYear)) {
+      history[key][year] = Object.entries(byStav).sort((x, y) => y[1] - x[1])[0][0];
+    }
+  }
+  const roadsRaw = roadsAllRaw.filter((f) => {
+    const a = f.attributes;
+    return a.ozn_sil_usek && Number(a.rok) === latestYear[a.ozn_sil_usek];
+  });
+  const measuredYears = Object.values(latestYear);
+  const yearFrom = Math.min(...measuredYears);
+  const yearTo = Math.max(...measuredYears);
 
   const lastRepair = {};
   for (const f of repairsLineRaw) {
@@ -302,7 +318,10 @@ async function main() {
   const threatened = {};
   for (const f of threatenedRaw) {
     const a = f.attributes;
-    if (a.nazev_obce) threatened[a.nazev_obce] = a.urov_ohr || "ohrožená oblast";
+    // Jen obce, které dataset skutečně označuje jako ohrožené (hsoo = "ano").
+    if (a.nazev_obce && String(a.hsoo).trim() === "ano") {
+      threatened[a.nazev_obce] = String(a.urov_ohr || "").trim() || "ohrožená oblast";
+    }
   }
 
   const pois = [];
@@ -376,6 +395,8 @@ async function main() {
       worse = order.indexOf(curr) > order.indexOf(prev);
     }
     const near = nearby(poiGrid, g, 450);
+    const obce = [...new Set(near.map((p) => p.obec).filter(Boolean))];
+    const hsoo = obce.filter((o) => threatened[o]);
     const counts = {};
     const samples = {};
     for (const p of near) {
@@ -404,10 +425,13 @@ async function main() {
       delka: a.delka,
       povrch: a.typ_povrchu,
       stav: a.stav_sil,
+      rok: Number(a.rok),
       hist,
       worse,
       lastRepair: lastRepair[a.ozn_sil_usek] || null,
       winter: winter[silKey] || null,
+      obce: obce.slice(0, 6),
+      hsoo,
       counts,
       samples,
       lines: uniqueLines.slice(0, 8),
@@ -445,21 +469,30 @@ async function main() {
     };
   }).filter((p) => p.x && p.y);
 
-  const rankedPreview = [...roads].sort((a, b) => score(b) - score(a));
+  // Jedna ukázková oprava na silnici, ať se v seznamu neopakuje stejná silnice.
+  const onePerRoad = (list) => {
+    const seen = new Set();
+    return list.filter((r) => (seen.has(r.sil) ? false : seen.add(r.sil)));
+  };
+  const rankedPreview = onePerRoad([...roads].sort((a, b) => score(b) - score(a)));
   const repairs = [];
-  const now = new Date("2026-10-13");
+  // Plánované a probíhající opravy v otevřených datech kraje nejsou.
+  // Tyto záznamy jsou SIMULACE pro ukázku a v aplikaci se tak i zobrazují.
+  const now = new Date();
+  const lastRepairYear = Math.max(0, ...Object.values(lastRepair));
   rankedPreview.slice(0, 6).forEach((r, i) => {
     repairs.push({
       id: `plan-${r.id}`,
       roadId: r.id,
       usek: r.usek,
       sil: r.sil,
-      title: `Oprava ${r.trida} ${formatSil(r.sil)}`,
+      title: `Oprava ${formatSil(r.sil)}`,
       status: "planned",
       from: iso(addDays(now, 20 + i * 14)),
       to: iso(addDays(now, 34 + i * 14)),
       restriction: i % 2 === 0 ? "úplná uzavírka" : "kyvadlový provoz",
-      note: "Návrh podle skóre priority ze stavu 2024.",
+      note: "Simulace: návrh podle skóre priority. Plánované opravy kraj jako otevřená data nezveřejňuje.",
+      simulated: true,
     });
   });
   rankedPreview.slice(6, 10).forEach((r, i) => {
@@ -468,15 +501,16 @@ async function main() {
       roadId: r.id,
       usek: r.usek,
       sil: r.sil,
-      title: `Probíhající oprava ${formatSil(r.sil)}`,
+      title: `Oprava ${formatSil(r.sil)}`,
       status: "active",
       from: iso(addDays(now, -10 + i)),
       to: iso(addDays(now, 12 + i * 3)),
       restriction: "částečné omezení",
-      note: "Práce probíhají v denních hodinách 7–17.",
+      note: "Simulace: ukázka probíhající opravy, ne skutečná stavba.",
+      simulated: true,
     });
   });
-  rankedPreview.filter((r) => r.lastRepair === 2024).slice(0, 8).forEach((r) => {
+  rankedPreview.filter((r) => r.lastRepair === lastRepairYear).slice(0, 8).forEach((r) => {
     repairs.push({
       id: `done-${r.id}`,
       roadId: r.id,
@@ -484,10 +518,11 @@ async function main() {
       sil: r.sil,
       title: `Dokončená oprava ${formatSil(r.sil)}`,
       status: "done",
-      from: "2024-05-01",
-      to: "2024-09-30",
+      from: `${lastRepairYear}-01-01`,
+      to: `${lastRepairYear}-12-31`,
       restriction: "bez omezení",
-      note: "Úsek evidovaný v opravách 2024.",
+      note: `Skutečná oprava z otevřených dat kraje (rok realizace ${lastRepairYear}, přesné datum v datech není).`,
+      simulated: false,
     });
   });
 
@@ -501,7 +536,8 @@ async function main() {
     hospitals: pois.filter((p) => p.kind === "hospital").length,
     lines: lines.length,
     connections: connections.length,
-    updated: "2024",
+    updated: `${yearFrom}–${yearTo}`,
+    useky: Object.keys(latestYear).length,
   };
   for (const r of roads) stats.byStav[r.stav] = (stats.byStav[r.stav] || 0) + 1;
 

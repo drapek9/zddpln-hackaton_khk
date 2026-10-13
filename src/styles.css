@@ -325,3 +325,32 @@ i.done { background: #34d399; }
   .landing-cards { grid-template-columns: 1fr; }
   .landing { padding: 24px; }
 }
+
+/* Označení ukázkových (simulovaných) oprav */
+.sim-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px dashed currentColor;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+button.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Stránka Zdroje dat */
+.sources { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; overflow-y: auto; }
+.sources h1 { margin: 0 0 12px; }
+.sources table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; }
+.sources th, .sources td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+.sources th { background: #f7f2ea; }

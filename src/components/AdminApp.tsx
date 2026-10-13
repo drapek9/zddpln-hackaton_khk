@@ -22,6 +22,7 @@ const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "rescue", label: "IZS" },
   { key: "transit", label: "Autobusy" },
   { key: "industry", label: "Průmysl" },
+  { key: "social", label: "Ohrožené oblasti" },
   { key: "age", label: "Stáří opravy" },
 ];
 
@@ -76,6 +77,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
           <b>{Math.round(kmBad / 1000)} km</b> havarijních
           <b>{repairs.filter((r) => r.status === "active").length}</b> probíhá
           <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
+          {repairs.some((r) => r.simulated) && <span className="sim-tag">plán a probíhající = simulace</span>}
         </div>
       </header>
       <div className="workspace">
@@ -167,6 +169,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
         <aside className="side right">
           {selected ? (
             <RoadPanel
+              key={selected.id}
               road={selected}
               weights={weights}
               connections={data.connections}

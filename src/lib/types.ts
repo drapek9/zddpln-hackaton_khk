@@ -21,10 +21,16 @@ export type Road = {
   delka: number;
   povrch: string;
   stav: string;
+  /** Rok posledního měření stavu úseku (2017–2024). */
+  rok: number;
   hist: Record<string, string>;
   worse: boolean;
   lastRepair: number | null;
   winter: string | null;
+  /** Obce v okolí úseku (podle bodů zájmu do 450 m). */
+  obce: string[];
+  /** Obce v okolí, které jsou hospodářsky a sociálně ohrožené. */
+  hsoo: string[];
   counts: Record<string, number>;
   samples: Record<string, RoadSample[]>;
   lines: RoadLine[];
@@ -81,6 +87,8 @@ export type Repair = {
   to: string;
   restriction: string;
   note: string;
+  /** true = ukázková oprava, která v otevřených datech kraje není. */
+  simulated?: boolean;
 };
 
 export type Report = {
@@ -102,6 +110,7 @@ export type Weights = {
   rescue: number;
   transit: number;
   industry: number;
+  social: number;
   age: number;
 };
 
@@ -109,6 +118,7 @@ export type Dataset = {
   roads: Road[];
   stats: {
     roads: number;
+    useky: number;
     km: number;
     byStav: Record<string, number>;
     pois: number;
@@ -146,5 +156,6 @@ export const DEFAULT_WEIGHTS: Weights = {
   rescue: 90,
   transit: 75,
   industry: 45,
+  social: 40,
   age: 50,
 };

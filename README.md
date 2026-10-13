@@ -17,8 +17,8 @@ Otevře se [http://localhost:5173](http://localhost:5173).
 - **Správa silnic** — žebříček priority, váhy, dopady uzavírky, návrh opravy a text oznámení.
 - **Veřejnost** — probíhající a plánované práce, „jede můj autobus?“, hlášení výtluku.
 
-Plánované opravy v datech kraje nejsou. Demo proto navrhne první úseky podle skóre; ve správě je lze změnit. Změny zůstanou v prohlížeči.
+Plánované opravy v datech kraje nejsou. Demo proto ukáže simulované plánované a probíhající opravy (v aplikaci označené „simulace“); ve správě je lze změnit. Změny zůstanou v prohlížeči.
 
 ## Zdroje
 
-Stav povrchu 2024, opravy od 2016, zimní údržba, autobusové linky a zastávky VDKHK, zaručené přípoje, školy, nemocnice, ZZS, HZS, policie, praktici, sociální služby, průmyslové zóny.
+Stav povrchu (poslední měření každého úseku, 2017–2024), opravy od 2016, zimní údržba, autobusové linky a zastávky VDKHK, zaručené přípoje, školy, nemocnice, ZZS, HZS, policie, praktici, sociální služby, průmyslové zóny, hospodářsky a sociálně ohrožené oblasti. Odkazy na všechny datové sady jsou v aplikaci na stránce „Zdroje dat“.

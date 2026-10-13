@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import Landing from "./components/Landing";
 import AdminApp from "./components/AdminApp";
 import PublicApp from "./components/PublicApp";
+import Sources from "./components/Sources";
 import { loadDataset } from "./lib/data";
 import { loadLocalRepairs, loadReports, saveRepairs, saveReports } from "./lib/store";
 import type { Dataset, Repair, Report } from "./lib/types";
 
 export default function App() {
-  const [mode, setMode] = useState<"home" | "admin" | "public">("home");
+  const [mode, setMode] = useState<"home" | "admin" | "public" | "sources">("home");
   const [data, setData] = useState<Dataset | null>(null);
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
@@ -41,6 +42,7 @@ export default function App() {
   }
 
   if (mode === "home") return <Landing onChoose={setMode} />;
+  if (mode === "sources") return <Sources stats={data.stats} onHome={() => setMode("home")} />;
   if (mode === "admin") {
     return (
       <AdminApp
