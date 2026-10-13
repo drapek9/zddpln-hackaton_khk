@@ -15,6 +15,8 @@ Podklady: [docs/ROZBOR.md](docs/ROZBOR.md) (pravidla, porota, minulí vítězov�
 4. Malé commity, hned `git push`. Konflikt v tomhle souboru vyřeš ručně, nic nemaž bez domluvy.
 5. Rozhodnutí přesuň z „Otevřených otázek“ do příslušné kapitoly a označ ✅.
 
+**Větve (od 13. 10.):** každý má svou větev z `main`: `tomas`, `simon`, `premek`, `matous`. Pracuj ve své (`git switch <jméno>`), hotové věci slučuj do `main` přes pull request. Před prací `git pull origin main` do své větve, ať máte stejný základ.
+
 ---
 
 ## 1. Pitch v jedné větě
@@ -52,7 +54,7 @@ React 19 + Vite + TypeScript + MapLibre, data z 18 vrstev Data KHK přes `npm ru
 
 | # | Problém | Proč vadí | Oprava |
 |---|---|---|---|
-| 1 | Silnice se stahují s `where: "rok='2024'"` (`scripts/fetch-data.mjs`, ř. ~227) | Zůstane 1 135 z 1 993 úseků, cca **54 % sítě**. Porotce z Data KHK si všimne děr v mapě. | Stáhnout všechny roky a pro každý `ozn_sil_usek` vzít poslední měření. |
+| 1 | Silnice se stahují s `where: "rok='2024'"` (`scripts/fetch-data.mjs`, ř. ~227) | Zůstane 1 135 z 1 993 úseků, cca **54 % sítě**. Porotce z Data KHK si všimne děr v mapě. | Stáhnout všechny roky a pro každý `ozn_sil_usek` vzít poslední měření. | ✅ opraveno 13. 10. (`c6de97f`)
 | 2 | Skript sám označí top úseky jako „Probíhající oprava“ / „plánováno“ s vymyšlenými daty | Porota zná realitu. Vymyšlená data vydávaná za skutečná = ztráta důvěry. | Jasně označit „simulace / návrh“. Skutečné jsou jen realizované opravy (`rok_real`). |
 | 3 | Oznámení tvrdí, že „IREDO, obce a IZS budou informováni automaticky“ | Neděláme to. | Přeformulovat na „návrh textu k odeslání“. |
 | 4 | `hist[rok]` se přepisuje po částech úseku | Příznak „zhoršení“ (`worse`) je nespolehlivý. | Agregovat stav úseku za rok (nejhorší nebo vážený délkou). |
