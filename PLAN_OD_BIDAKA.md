@@ -138,6 +138,7 @@ Pravidlo: **každý dataset buď mění skóre, nebo odpovídá na otázku obča
 | Sociální služby | ✅ | zranitelní lidé |
 | Průmyslové zóny | ✅ | nákladní doprava |
 | Hospodářsky a sociálně ohrožená území | stahuje se, nepoužívá | sociální dopad |
+| **Intenzita dopravy / sčítání vozidel** (ŘSD apod.) | ❌ není ve stažených datech | počty aut. V Data KHK ani ve v1 to nemáme. — Šimon, 13. 10. |
 | **Dopravní nehody** (Policie ČR / CDV, NKOD) | ❌ | bezpečnost: nehody na špatných úsecích. **Ověřit dostupnost a licenci.** |
 | **Záplavová území Q100** | ❌ | riziko a odolnost silnice. Ověřit na Data KHK. |
 | **Dojížďka do škol / za prací** (ČSÚ, NKOD) | ❌ | kolik lidí trasu reálně používá. Ověřit. |
@@ -188,6 +189,19 @@ Doplnění k části výše: **předběžné výsledky sčítání 2025 už ŘSD
 - CC BY‑SA: náš export s intenzitami musí mít taky CC BY‑SA a uvést ŘSD.
 - Nelze: živé čítače NDIC/JSDI (DATEX II, nutná registrace), Waze, Google, TomTom, mýtná data.
 - V aplikaci psát: intenzita = roční průměr ze sčítání, ne živý tok.
+
+### Co je ve stažených datech (Šimon, 13. 10.)
+
+**Auta v datech nejsou.** Ověřeno 13. 10. nad `public/data`: žádné sčítání dopravy, počty vozidel, intenzita provozu ani nehody. Slovo „doprava“ v aplikaci znamená veřejnou dopravu, ne auta. V pitchi neříkat, že priorita ví, kolik aut po silnici jezdí.
+
+Co ve stažených souborech skutečně je (`transit.json` + napojení na silnice):
+
+- **197** autobusových linek VDKHK (číslo, trasa, odkaz na jízdní řád), **4 538** zastávek IREDO, **3 515** zaručených přípojů.
+- Linka je navázaná na **1 842 z 1 993** úseků. Frekvence spojů v datech není; náhrada je počet linek, zastávek a přípojů na úseku.
+- Železnice jen jako blízké stanice (návaznost na vlak), ne jako provoz.
+- Jediný náznak aut: **třída silnice** (II. vs. III.) a **průmyslové zóny** v okolí. Ani jedno není počet aut.
+
+Nehody, sčítání dopravy a dojížďka autem zůstávají ve vlně 3, dokud je někdo neověří a nepřipojí. — Šimon, 13. 10.
 
 ---
 
@@ -278,6 +292,7 @@ Návrh rozdělení: **data + skóre**, **backend + API**, **frontend správa**, 
 2. **AI:** Azure OpenAI od Microsoftu (přístup dostane vedoucí týmu), nebo jiný poskytovatel?
 3. **Backend:** stihneme FastAPI + DB, nebo zůstat u frontendu a backend jen ukázat?
 4. **Dopravní nehody:** je otevřený dataset s polohou pro KHK? Kdo ověří?
+4a. **Auta a sčítání dopravy:** ve stažených datech nejsou (kap. 6). Je otevřený dataset s polohou pro KHK? Kdo ověří? — Šimon, 13. 10.
 5. **Název aplikace** (zatím „Cesty KHK“).
 6. **Licence:** MIT, nebo EUPL‑1.2?
 7. Kód se po soutěži odevzdává na `github.com/krhk`. Kdo to pohlídá?
@@ -287,6 +302,10 @@ Návrh rozdělení: **data + skóre**, **backend + API**, **frontend správa**, 
 ## 13. Sekce pro každého
 
 ### Doplňuje Šimon
+
+- 13. 10.: v datech je veřejná doprava (197 linek, 4 538 zastávek, 3 515 přípojů, linka na 1 842 z 1 993 úseků). Auta, intenzita provozu a nehody tam nejsou. Zapsáno v kap. 6 a v otázce 4a.
+- 13. 10.: Podívat se, jestli jde nějak zjistit provoz na těch silnicích, a případně zjistit nebo vymyslet, kudy by se to dalo objet.
+- 13. 10.: Jak to parametrizovat, aby se to filtrovalo líp, ale bylo to useful pro silniční správu.
 
 ### Doplňuje Tomáš (Bidák)
 - 13. 10.: rozbor pravidel a poroty v `docs/ROZBOR.md`, review nápadu v `docs/PLAN_SILNICE.md`, tento plán.
