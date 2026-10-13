@@ -18,7 +18,7 @@ from .schemas import DetourResult, LonLat, Pin, RankedRoad, RoadSummary, RouteRe
 class Engine:
     def __init__(self, dataset: Dataset):
         self.data = dataset
-        self.graph = RoadGraph.build(dataset.roads)
+        self.graph = RoadGraph.build(dataset.roads, dataset.osm_roads)
 
     @classmethod
     def load(cls, data_dir: Path | str | None = None) -> "Engine":

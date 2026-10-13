@@ -24,6 +24,8 @@ class Dataset:
     connections: list[dict[str, Any]]
     point_repairs: list[dict[str, Any]]
     repairs: list[dict[str, Any]]
+    osm_roads: list[dict[str, Any]]
+    """I. class roads and motorways from OSM (may be empty)."""
 
     def __post_init__(self) -> None:
         self.by_id: dict[int, dict[str, Any]] = {r["id"]: r for r in self.roads}
@@ -39,6 +41,8 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
     pois = _read(d / "pois.json")
     transit = _read(d / "transit.json")
     repairs = _read(d / "repairs.json")
+    osm_path = d / "osm_roads.json"
+    osm_roads = _read(osm_path)["roads"] if osm_path.exists() else []
     return Dataset(
         roads=roads["roads"],
         stats=roads["stats"],
@@ -50,6 +54,7 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
         connections=transit["connections"],
         point_repairs=transit.get("pointRepairs", []),
         repairs=repairs["repairs"],
+        osm_roads=osm_roads,
     )
 
 

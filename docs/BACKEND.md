@@ -58,7 +58,11 @@ Stav, který se mění (piny, uzavírky, hlasy, váhy admina), drží **Šimon v
 - v0 a jádro T1–T5 jsou hotové: `Engine`, skóre, žebříček, graf, objížďka, trasa.
 - Skóre se pro všech 4 726 kusů úseků shoduje s frontendem. Hlídá to test `tests/test_core.py`.
 - Graf: 4 373 uzlů, 80 komponent, sestavení 0,1 s, jedna objížďka ~8 ms.
-- **Objížďka se zatím najde jen u ~58 % úseků.** Bez silnic I. třídy se síť trhá. Proto je T12 (OSM) první další krok.
+- Bez silnic I. třídy se objížďka našla jen u ~58 % úseků.
+- **T12 hotovo:** silnice I. třídy a dálnice z OSM (`scripts/fetch_osm_roads.py`, ODbL). Objížďka se teď najde u **81,5 %** úseků (3 853 z 4 726).
+  - Medián je +8,6 km a +10 min. Zbytek jsou hlavně slepé úseky končící v obci.
+  - Graf má 11 842 uzlů. Největší souvislá část obsahuje 4 540 ze 4 726 úseků kraje (96 %). Zbylé části jsou jen silnice OSM mimo kraj.
+  - Napojení na sebe navazujících úseků: p95 36 m. Uzly OSM se spojují jen ve sdílených bodech, ne v toleranci 25 m.
 - `Engine` pracuje s kusy úseků (`road.id`), stejně jako frontend a opravy ve v1.
 
 ## 3. Co dělá Šimon (platforma)

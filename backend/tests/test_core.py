@@ -58,9 +58,11 @@ def test_votes_are_weak_and_capped(engine: Engine):
 def test_detour_found_and_avoids_closed_road(engine: Engine):
     results = [engine.detour(r["id"]) for r in engine.data.roads[:300]]
     found = [d for d in results if d.found]
-    assert len(found) > 100
+    # With OSM I. class roads most detours exist (~81 % on the full network).
+    assert len(found) / len(results) > 0.7
     for d in found:
         assert d.road_id not in d.via_road_ids
+        assert all(rid > 0 for rid in d.via_road_ids)
         assert d.detour_km and d.detour_km > 0
         assert len(d.geometry) >= 2
 
@@ -75,3 +77,14 @@ def test_route_and_closure(engine: Engine):
     blocked = engine.route(a, b, closed=[d.road_id])
     assert blocked.found and d.road_id not in blocked.road_ids
     assert blocked.minutes >= r.minutes
+
+
+def test_osm_roads_connect_the_network(engine: Engine):
+    assert engine.data.osm_roads, "public/data/osm_roads.json missing (scripts/fetch_osm_roads.py)"
+    import networkx as nx
+
+    g = engine.graph.graph
+    biggest = max(nx.connected_components(g), key=len)
+    khk_in_biggest = {d["road_id"] for _, _, d in g.subgraph(biggest).edges(data=True) if d["road_id"] > 0}
+    # Other components are OSM-only roads outside the kraj (e.g. Poland).
+    assert len(khk_in_biggest) / len(engine.data.roads) > 0.9

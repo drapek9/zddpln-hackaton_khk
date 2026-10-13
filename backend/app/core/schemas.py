@@ -91,6 +91,8 @@ class DetourResult(BaseModel):
     via_road_ids: list[int] = Field(default_factory=list)
     havarijni_km: float = 0
     """Detour length on havarijní / SUPERhavarijní roads."""
+    class1_km: float = 0
+    """Detour length on I. class roads and motorways (OSM)."""
     note: str = ""
 
 
@@ -99,7 +101,7 @@ class RouteResult(BaseModel):
     km: float | None = None
     minutes: float | None = None
     road_ids: list[int] = Field(default_factory=list)
-    """Road segments (úseky) the route uses. Used for notifications."""
+    """Kraj road segments (úseky) on the route, without OSM roads. Used for notifications."""
     geometry: list[LonLat] = Field(default_factory=list)
     snapped_from_m: float | None = None
     snapped_to_m: float | None = None

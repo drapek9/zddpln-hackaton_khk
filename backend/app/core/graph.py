@@ -6,9 +6,10 @@ Every edge remembers which road (úsek) it belongs to. A closure removes the
 edges of one úsek and runs Dijkstra between its ends.
 
 Honest limits:
-- Only roads in the Data KHK "Stav povrchu" layer are included. I. class
-  roads are added later from OSM (task T12). Until then some detours are not
-  found or are longer than in reality.
+- II. and III. class roads come from Data KHK ("Stav povrchu"). I. class
+  roads and motorways come from OSM (scripts/fetch_osm_roads.py) and get
+  negative ids. Local streets are missing, so some detours are longer than
+  in reality or are not found.
 - All traffic takes one fastest detour. In reality it splits.
 """
 
@@ -23,12 +24,14 @@ import networkx as nx
 from .schemas import DetourResult, LonLat, RouteResult
 
 SNAP_M = 25.0
+OSM_SNAP2 = 1.0  # 1 m squared
 LAT0 = 50.3  # middle of the Královéhradecký kraj
 KX = 111_320.0 * math.cos(math.radians(LAT0))
 KY = 110_540.0
 
 # Rough free-flow speeds (km/h) used only to compare detours.
 SPEED_KMH = {"2": 65.0, "3": 45.0}
+OSM_SPEED_KMH = {"motorway": 110.0, "trunk": 90.0, "primary": 75.0}
 DEFAULT_SPEED_KMH = 45.0
 BAD_STATES = {"havarijní", "SUPERhavarijní"}
 
@@ -66,8 +69,24 @@ class RoadGraph:
     # ---- building -------------------------------------------------------
 
     @classmethod
-    def build(cls, roads: Iterable[dict[str, Any]], snap_m: float = SNAP_M) -> "RoadGraph":
+    def build(
+        cls,
+        roads: Iterable[dict[str, Any]],
+        osm_roads: Iterable[dict[str, Any]] = (),
+        snap_m: float = SNAP_M,
+    ) -> "RoadGraph":
         roads = list(roads)
+        for i, osm in enumerate(osm_roads):
+            roads.append(
+                {
+                    "id": -(i + 1),
+                    "g": osm["g"],
+                    "trida": osm.get("highway", ""),
+                    "stav": "",
+                    "speed": OSM_SPEED_KMH.get(osm.get("highway", ""), 75.0),
+                    "ref": osm.get("ref", ""),
+                }
+            )
         vertices: list[_Vertex] = []
         road_vertices: dict[int, list[int]] = {}
         for road in roads:
@@ -108,13 +127,33 @@ class RoadGraph:
                             if other == end:
                                 continue
                             ox, oy = vertices[other].xy
-                            if (ox - ex) ** 2 + (oy - ey) ** 2 <= snap2:
+                            # OSM ways share exact coordinates at real junctions.
+                            # A wide snap between two OSM ways would chain along
+                            # the densified vertices and merge distant points.
+                            both_osm = vertices[other].road_id < 0 and vertices[end].road_id < 0
+                            limit = OSM_SNAP2 if both_osm else snap2
+                            if (ox - ex) ** 2 + (oy - ey) ** 2 <= limit:
                                 if vertices[other].road_id == vertices[end].road_id and other in (ids[0], ids[-1]):
                                     continue  # do not close a road on itself
                                 is_node.add(other)
                                 ra, rb = find(end), find(other)
                                 if ra != rb:
                                     parent[ra] = rb
+
+        # OSM junctions: ways crossing at a shared OSM node have identical
+        # coordinates, also when neither way ends there.
+        by_coord: dict[LonLat, list[int]] = {}
+        for i, v in enumerate(vertices):
+            if v.road_id < 0:
+                by_coord.setdefault(v.lonlat, []).append(i)
+        for group in by_coord.values():
+            if len({vertices[i].road_id for i in group}) < 2:
+                continue
+            for i in group:
+                is_node.add(i)
+                ra, rb = find(i), find(group[0])
+                if ra != rb:
+                    parent[ra] = rb
 
         node_of = {i: find(i) for i in is_node}
         graph = nx.MultiGraph()
@@ -125,7 +164,7 @@ class RoadGraph:
 
         for road_id, ids in road_vertices.items():
             road = road_by_id[road_id]
-            kmh = speed_for(road.get("trida", ""))
+            kmh = road.get("speed") or speed_for(road.get("trida", ""))
             road_state[road_id] = road.get("stav", "")
             start = ids[0]
             length = 0.0
@@ -179,7 +218,8 @@ class RoadGraph:
         closed_min = sum(
             d["minutes"] for _, _, d in self.graph.edges(data=True) if d["road_id"] == road_id
         )
-        via = _unique(e["road_id"] for e in edges)
+        via = _unique(e["road_id"] for e in edges if e["road_id"] > 0)
+        class1_km = sum(e["m"] for e in edges if e["road_id"] < 0) / 1000
         bad_km = sum(e["m"] for e in edges if self.road_state.get(e["road_id"]) in BAD_STATES) / 1000
         return DetourResult(
             road_id=road_id,
@@ -191,6 +231,7 @@ class RoadGraph:
             geometry=self._geometry(nodes, edges),
             via_road_ids=via,
             havarijni_km=round(bad_km, 2),
+            class1_km=round(class1_km, 2),
             note="Model posílá všechnu dopravu jednou nejrychlejší objížďkou. Ve skutečnosti se rozdělí.",
         )
 
@@ -214,7 +255,7 @@ class RoadGraph:
             found=True,
             km=round(sum(e["m"] for e in edges) / 1000, 2),
             minutes=round(sum(e["minutes"] for e in edges), 1),
-            road_ids=_unique(e["road_id"] for e in edges),
+            road_ids=_unique(e["road_id"] for e in edges if e["road_id"] > 0),
             geometry=self._geometry(nodes, edges),
             snapped_from_m=round(da),
             snapped_to_m=round(db),
