@@ -65,6 +65,7 @@ class RoadGraph:
     road_km: dict[int, float]
     road_state: dict[int, str]
     node_xy: dict[int, tuple[float, float]] = field(default_factory=dict)
+    road_minutes: dict[int, float] = field(default_factory=dict)
 
     # ---- building -------------------------------------------------------
 
@@ -189,7 +190,10 @@ class RoadGraph:
             road_km[road_id] = total / 1000
 
         node_xy = {n: vertices[n].xy for n in graph.nodes}
-        return cls(graph, vertices, node_of, road_ends, road_km, road_state, node_xy)
+        road_minutes: dict[int, float] = {}
+        for _, _, d in graph.edges(data=True):
+            road_minutes[d["road_id"]] = road_minutes.get(d["road_id"], 0.0) + d["minutes"]
+        return cls(graph, vertices, node_of, road_ends, road_km, road_state, node_xy, road_minutes)
 
     # ---- queries --------------------------------------------------------
 
@@ -203,7 +207,8 @@ class RoadGraph:
 
         view = nx.subgraph_view(self.graph, filter_edge=lambda a, b, k: self.graph[a][b][k]["road_id"] != road_id)
         try:
-            nodes = nx.dijkstra_path(view, start, end, weight=_min_weight("minutes"))
+            # Bidirectional search stops early when one end is a dead end.
+            _, nodes = nx.bidirectional_dijkstra(view, start, end, weight=_min_weight("minutes"))
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return DetourResult(
                 road_id=road_id,
@@ -215,9 +220,7 @@ class RoadGraph:
         edges = _pick_edges(view, nodes, "minutes")
         km = sum(e["m"] for e in edges) / 1000
         minutes = sum(e["minutes"] for e in edges)
-        closed_min = sum(
-            d["minutes"] for _, _, d in self.graph.edges(data=True) if d["road_id"] == road_id
-        )
+        closed_min = self.road_minutes.get(road_id, 0.0)
         via = _unique(e["road_id"] for e in edges if e["road_id"] > 0)
         class1_km = sum(e["m"] for e in edges if e["road_id"] < 0) / 1000
         bad_km = sum(e["m"] for e in edges if self.road_state.get(e["road_id"]) in BAD_STATES) / 1000
@@ -247,7 +250,7 @@ class RoadGraph:
                 self.graph, filter_edge=lambda x, y, k: self.graph[x][y][k]["road_id"] not in closed_set
             )
         try:
-            nodes = nx.dijkstra_path(view, a, b, weight=_min_weight("minutes"))
+            _, nodes = nx.bidirectional_dijkstra(view, a, b, weight=_min_weight("minutes"))
         except nx.NetworkXNoPath:
             return RouteResult(found=False, snapped_from_m=round(da), snapped_to_m=round(db), note="Trasa po silnicích kraje nenalezena.")
         edges = _pick_edges(view, nodes, "minutes")
