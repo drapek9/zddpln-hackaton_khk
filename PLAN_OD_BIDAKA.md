@@ -25,7 +25,7 @@ Podklady: [docs/ROZBOR.md](docs/ROZBOR.md) (pravidla, porota, minulí vítězov�
 
 Problém v číslech (ověřeno přímo z API Data KHK, poslední měření každého úseku):
 
-| | |
+| |
 |---|---|
 | Síť silnic II. a III. třídy v datasetu | 3 192 km (1 993 úseků) |
 | Havarijní + SUPERhavarijní | 1 375 km (43 %) |
@@ -54,13 +54,13 @@ React 19 + Vite + TypeScript + MapLibre, data z 18 vrstev Data KHK přes `npm ru
 
 | # | Problém | Proč vadí | Oprava |
 |---|---|---|---|
-| 1 | Silnice se stahují s `where: "rok='2024'"` (`scripts/fetch-data.mjs`, ř. ~227) | Zůstane 1 135 z 1 993 úseků, cca **54 % sítě**. Porotce z Data KHK si všimne děr v mapě. | Stáhnout všechny roky a pro každý `ozn_sil_usek` vzít poslední měření. | ✅ opraveno 13. 10. (`c6de97f`)
-| 2 | Skript sám označí top úseky jako „Probíhající oprava“ / „plánováno“ s vymyšlenými daty | Porota zná realitu. Vymyšlená data vydávaná za skutečná = ztráta důvěry. | Jasně označit „simulace / návrh“. Skutečné jsou jen realizované opravy (`rok_real`). |
-| 3 | Oznámení tvrdí, že „IREDO, obce a IZS budou informováni automaticky“ | Neděláme to. | Přeformulovat na „návrh textu k odeslání“. |
-| 4 | `hist[rok]` se přepisuje po částech úseku | Příznak „zhoršení“ (`worse`) je nespolehlivý. | Agregovat stav úseku za rok (nejhorší nebo vážený délkou). |
-| 5 | Natvrdo `2026` v `roadScore` | Drobnost. | `new Date().getFullYear()`. |
-| 6 | Vrstva HSOO (ohrožené oblasti) se stahuje, ale ve skóre není | Zbytečná data. | Přidat jako faktor „sociální dopad“, nebo vyhodit. |
-| 7 | Chybí stránka **Zdroje dat** s odkazy na datasety | **Povinné** podle pravidel (5.2 b, 7.3). | Stránka + odkaz v patičce. |
+| 1 | Silnice se stahují s `where: "rok='2024'"` (`scripts/fetch-data.mjs`, ř. ~227) | Zůstane 1 135 z 1 993 úseků, cca **54 % sítě**. Porotce z Data KHK si všimne děr v mapě. | Stáhnout všechny roky a pro každý `ozn_sil_usek` vzít poslední měření. ✅ opraveno (`c6de97f`) |
+| 2 | Skript sám označí top úseky jako „Probíhající oprava“ / „plánováno“ s vymyšlenými daty | Porota zná realitu. Vymyšlená data vydávaná za skutečná = ztráta důvěry. | Jasně označit „simulace / návrh“. Skutečné jsou jen realizované opravy (`rok_real`). ✅ opraveno (`c6de97f`) |
+| 3 | Oznámení tvrdí, že „IREDO, obce a IZS budou informováni automaticky“ | Neděláme to. | Přeformulovat na „návrh textu k odeslání“. ✅ opraveno (`c6de97f`) |
+| 4 | `hist[rok]` se přepisuje po částech úseku | Příznak „zhoršení“ (`worse`) je nespolehlivý. | Agregovat stav úseku za rok (nejhorší nebo vážený délkou). ✅ opraveno (`c6de97f`) |
+| 5 | Natvrdo `2026` v `roadScore` | Drobnost. | `new Date().getFullYear()`. ✅ opraveno (`c6de97f`) |
+| 6 | Vrstva HSOO (ohrožené oblasti) se stahuje, ale ve skóre není | Zbytečná data. | Přidat jako faktor „sociální dopad“, nebo vyhodit. ✅ opraveno (`c6de97f`) |
+| 7 | Chybí stránka **Zdroje dat** s odkazy na datasety | **Povinné** podle pravidel (5.2 b, 7.3). | Stránka + odkaz v patičce. ✅ opraveno (`c6de97f`) |
 | 8 | Chybí `LICENSE` | Pravidla 5.2 c chtějí volnou licenci. | Přidat MIT nebo EUPL‑1.2 (rozhodnout). |
 | 9 | Kód vzniká **před** soutěží ve veřejném repu s časovými razítky | Pravidla mluví o dílech „vzniklých při soutěži“. Riziko diskvalifikace nebo minimálně špatného dojmu. | **Rozhodnout v týmu** (kap. 12, otázka 1). |
 
