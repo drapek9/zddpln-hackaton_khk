@@ -1,6 +1,6 @@
 # Cesty KHK
 
-Aplikace nad otevřenými daty Královéhradeckého kraje: prioritizace oprav silnic II. a III. třídy podle stavu povrchu a okolí (školy, nemocnice, IZS, zastávky, linky IREDO) a veřejný přehled, co se opravuje.
+Webová aplikace nad otevřenými daty Královéhradeckého kraje: prioritizace oprav silnic II. a III. třídy podle stavu povrchu a okolí (školy, nemocnice, IZS, zastávky, linky IREDO) a veřejný přehled, co se opravuje.
 
 Data pocházejí z [datakhk.cz](https://www.datakhk.cz/search?collection=dataset).
 

@@ -7,6 +7,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 `PLAN_OD_BIDAKA.md` zůstává jako historie. **Platí tento soubor.**
 
+**Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
+
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
 
 Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
@@ -27,7 +29,7 @@ Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
 | Model vs úředník | Pořadí doporučí model a AI. **Volba úředníka má větší váhu** a zapisuje se (kdo, kdy, proč). |
 | Hlasování | **Slabý faktor ve skóre.** 1 hlas na občana a úsek. Váhu a strop nastavuje admin. |
 | Co vidí občan | Hotové opravy, **potvrzené** plánované opravy, uzavírky. Navíc hlášení a hlasování. |
-| Upozornění | **Push na mobil**, záložně e‑mail. **Jen když je to nutné:** nová uzavírka nebo oprava na trase domov ↔ práce/škola. |
+| Upozornění | **Web Push z prohlížeče** (i na mobilu), záložně e‑mail. **Jen když je to nutné:** nová uzavírka nebo oprava na trase domov ↔ práce/škola. |
 | Nová otevřená data | Úseky + sčítání ŘSD, skóre a třídy s popisem metody. Navíc anonymní hlášení a nehody na úsecích, pokud je ověříme. |
 | Licence | **EUPL‑1.2** |
 | Název | Zatím nerozhodnuto, pracovně „Cesty KHK“. |
@@ -72,15 +74,15 @@ Posuzujeme jako porota: veřejná správa, Data KHK, NKÚ, MF a FIM.
 |---|---|---|
 | 0:00–0:30 | **Příběh:** konkrétní obec. Uzavírka silnice III. třídy, autobus do školy jede jinudy, sanitka objíždí 9 km. Čísla: 1 375 km, ~90 km/rok, nejméně 15 let. | |
 | 0:30–2:00 | **Úředník:** scénář „letos 90 km“ dá seznam úseků. Pak AI zdůvodnění a připíchnutí priority s důvodem. Hlavní část: **zavřu úsek** a uvidím objížďku na mapě, +km/min, aut za den, školy, přípoje, IZS a návrh oznámení. | ★ 1 |
-| 2:00–3:15 | **Občan na mobilu:** přihlásím se a zadám dům a práci. Úředník potvrdí uzavírku a **na telefon přijde push**. Nahlásím výtluk a zahlasuji. | ★ 2 |
+| 2:00–3:15 | **Občan na webu v mobilu:** přihlásím se a zadám dům a práci. Úředník potvrdí uzavírku a **prohlížeč na telefonu ukáže upozornění (Web Push)**. Nahlásím výtluk a zahlasuji. | ★ 2 |
 | 3:15–4:15 | **Admin + data:** trvalé váhy (i z textu přes AI), audit změn. **Veřejné API a export** jako nová otevřená data pro Data KHK, stránka Zdroje dat. | ★ 3 |
 | 4:15–5:00 | Co bylo připravené a co vzniklo dnes. Rozvoj: skutečný plán investic kraje, nehody, nasazení. | |
 
-Demo běží podle scénáře se záložním videem. Porota může otevřít aplikaci přes QR kód (Matouš M2.5).
+Demo běží podle scénáře se záložním videem. Porota může otevřít web přes QR kód (Matouš M2.5).
 
 ---
 
-## 3. Uživatelé a co od aplikace chtějí
+## 3. Uživatelé a co od webové aplikace chtějí
 
 | Role | Přihlášení | Co může |
 |---|---|---|
@@ -110,7 +112,7 @@ Demo běží podle scénáře se záložním videem. Porota může otevřít apl
 | Registrace a přihlášení | E‑mail + heslo | ❌ | MVP (★2) |
 | Moje místa | Domov + práce nebo škola, kliknutím do mapy nebo hledáním adresy. Uloží se jen bod. | ❌ | MVP (★2) |
 | Moje trasa | Nejkratší trasa domov ↔ práce po grafu silnic: stav úseků, uzavírky a opravy na trase | ❌ | MVP (★2) |
-| Upozornění | Povolit push, záložní e‑mail, seznam upozornění v aplikaci. Pravidlo v kap. 6. | ❌ | MVP (★2) |
+| Upozornění | Povolit push, záložní e‑mail, seznam upozornění na webu. Pravidlo v kap. 6. | ❌ | MVP (★2) |
 | Hlášení závady | Bod na mapě, typ, popis, foto volitelně. AI navrhne typ a úsek. | ◐ (localStorage) | V2 |
 | Hlasování | „Opravte tohle“, 1 hlas na úsek | ❌ | V2 |
 
@@ -195,9 +197,9 @@ Snímek dat je v repu (`public/data/*.json`, ověřeno), demo tedy nezávisí na
 - **Push, jen když je to nutné:** úředník potvrdí uzavírku nebo opravu (stav Naplánováno či Probíhá) na úseku, který je na trase občana.
   - Max 1 upozornění na událost.
   - Žádné souhrny.
-  - Nepřečtená upozornění zůstanou v aplikaci.
-- Push: Web Push přes service worker, klíče VAPID jen v `.env`. Telefon potřebuje HTTPS, proto **tunel** (cloudflared nebo ngrok) na notebook s backendem.
-- E‑mail jako záloha: testovací SMTP (Mailpit) a náhled v aplikaci. Skutečné odeslání jen pokud bude čas.
+  - Nepřečtená upozornění zůstanou v seznamu na webu.
+- Push: Web Push přes service worker, klíče VAPID jen v `.env`. Prohlížeč na telefonu potřebuje HTTPS, proto **tunel** (cloudflared nebo ngrok) na notebook s backendem.
+- E‑mail jako záloha: testovací SMTP (Mailpit) a náhled na webu. Skutečné odeslání jen pokud bude čas.
 
 ### AI (pořadí podle potřeby)
 1. **Zdůvodnění Top N:** text z faktorů. Fallback je šablona.
@@ -245,7 +247,7 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 **MVP (musí jet v 16:00):**
 1. Backend s přihlášením a 4 rolemi, data z `public/data` načtená do SQLite.
 2. ★1 Simulátor uzavírky s objížďkou, auty za den a varováními. Potvrzení uzavírky.
-3. ★2 Občan: účet, domov a práce, moje trasa, push při potvrzené uzavírce na trase. E‑mail a seznam v aplikaci jako záloha.
+3. ★2 Občan: účet, domov a práce, moje trasa, push při potvrzené uzavírce na trase. E‑mail a seznam upozornění na webu jako záloha.
 4. ★3 Admin: uživatelé, trvalé váhy, audit, veřejné API a export s metadaty.
 5. Žebříček se 4 třídami, připíchnutí s důvodem, stavy práce.
 6. Stránka Zdroje dat (nové zdroje), `LICENSE`, štítky „demo data“ a „odhad“.
@@ -269,7 +271,7 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 2. Hlasování.
 3. Scénář s rozpočtem.
 4. AI váhy z textu (posuvníky zůstanou).
-5. Push nahradí seznam v aplikaci + náhled e‑mailu.
+5. Push nahradí seznam upozornění na webu + náhled e‑mailu.
 
 **Nikdy neškrtat:** ★1, Zdroje dat, `LICENSE`.
 

@@ -45,7 +45,7 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 | Riziko | Proč | Co udělat |
 |---|---|---|
 | Kód napsaný před soutěží | Commity z 13. 10. jsou ve veřejném repu. Milan Šulc (open source) se tam podívá. Pravidla mluví o díle „vytvořeném“ na soutěži. Písemná odpověď organizátorů nikde není. | **Dnes ráno se osobně zeptat T. Slezáka.** V pitchi otevřeně říct, co bylo připravené předem. |
-| Push na iPhonu | Funguje jen u PWA přidané na plochu (iOS 16.4+), navíc přes tunel a Wi‑Fi pořadatele. | Základ ★2 je seznam upozornění v aplikaci a náhled e‑mailu. Push jen jako bonus. **Ve 12:00:** když nejede na skutečném telefonu, škrtá se. |
+| Web Push na iPhonu | Safari ho povolí, jen když si uživatel web přidá na plochu (iOS 16.4+). Navíc jde přes tunel a Wi‑Fi pořadatele. | Základ ★2 je seznam upozornění na webu a náhled e‑mailu. Push jen jako bonus. **Ve 12:00:** když nejede na skutečném telefonu, škrtá se. |
 | Licence OSM | OSM (ODbL) chybí na stránce Zdroje dat (`src/lib/sources.ts`) i v mapě. Export z dat ŘSD musí mít CC BY‑SA. Uvádění zdrojů vyžaduje čl. 7.3. | Matouš: doplnit OSM, ŘSD a nové sady Data KHK do Zdrojů dat. |
 | Kopie RoadMapperu (2022) | Když demo začne mapou stavu a žebříčkem, vypadá jako RoadMapper. | Demo otevírá **uzavírka → objížďka → zasažení lidé**. |
 | Málo datových sad | Máme 18, KompaZ (2025) měl 62. | Přidat 4 sady z kap. 13 (T13). Je to levné a zvedne kritérium „otevřená data“. |
@@ -63,7 +63,7 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 
 ### Škrty hned (místo rozhodnutí ve 12:00)
 - **Registraci** nahradí seedované účty a přepínač role. Přihlášení zůstává.
-- **Push** je bonus. Základ ★2: seznam upozornění v aplikaci a náhled e‑mailu.
+- **Push** je bonus. Základ ★2: seznam upozornění na webu a náhled e‑mailu.
 - **Admin ★3** zúžit na export (CSV a GeoJSON s metadaty), dokumentaci API a Zdroje dat. Audit jen jako jednoduchý seznam.
 - **T6 port varování** nebrzdí frontend: `impactAlerts` už ve frontendu existuje, Matouš ho může volat přímo.
 
@@ -77,7 +77,7 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 
 ### Ve 12:00 (sync)
 - Jede ★1 end-to-end (výběr úseku → objížďka na mapě → +km, +min, studenti/auta, varování)? Pokud ne, **všichni na ★1**.
-- Push na skutečném telefonu ano/ne. Ne = škrt.
+- Web Push v prohlížeči na skutečném telefonu ano/ne. Ne = škrt.
 - Dál podle kap. 8 `PLAN_FINAL.md`.
 
 ### Pravidlo pro AI agenty

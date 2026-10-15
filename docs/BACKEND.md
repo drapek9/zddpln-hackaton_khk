@@ -136,7 +136,7 @@ Každý milník musí projít testy a jet na obou počítačích. Pak se merguje
 | **v0: Kostra** | Projekt `uv`, `Engine`, smlouva `schemas.py`, `/api/health`, Vite proxy | T1 | S1 | `uv run pytest` zelené na Macu i Windows, frontend dostane `/api/health` |
 | **v1: Data a skóre** | Skóre stejné jako frontend, žebříček, třídy | T2, T3 | S2, S4 | `GET /api/ranking` vrací stejné pořadí jako dnešní v1 |
 | **v2: Uzavírka a objížďka (★1)** | Graf, objížďka, dopady, potvrzení uzavírky | T4, T6, T12 | S5 | Pro 3 ukázkové uzavírky vznikne objížďka a varování |
-| **v3: Občan a upozornění (★2)** | Přihlášení, místa, trasa, push | T5, T8 | S3, S6, S7 | Potvrzená uzavírka na trase pošle push na telefon |
+| **v3: Občan a upozornění (★2)** | Přihlášení, místa, trasa, push | T5, T8 | S3, S6, S7 | Potvrzená uzavírka na trase pošle Web Push do prohlížeče v telefonu |
 | **v4: Admin a otevřená data (★3)** | Admin, audit, export, intenzita ŘSD | T7 | S8, S9 | Export obsahuje intenzitu a metadata, admin mění trvalé váhy |
 | **v5: Nadstavba (V2)** | AI, rozpočet, stabilita, hlášení, hlasy | T9, T10, T11 | S10, S11 | Podle času, škrty podle `PLAN_FINAL.md` kap. 8 |
 
