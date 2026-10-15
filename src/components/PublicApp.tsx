@@ -16,6 +16,7 @@ import { HIGHLIGHT_COLOR } from "./MapView";
 import type { Dataset, Repair, Report } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STATUS_LABEL, STAV_COLOR, formatPeriod } from "../lib/geo";
+import { roadFromUrl, setRoadInUrl } from "../lib/route";
 
 type Props = {
   data: Dataset;
@@ -29,7 +30,9 @@ type Props = {
 };
 
 export default function PublicApp({ data, repairs, reports, onReport, onHome, user, onLogin, onLogout }: Props) {
-  const [selectedId, setSelectedIdState] = useState<number | null>(null);
+  // Sdílený odkaz /?usek=123 otevře rovnou detail úseku (kap. 25.1).
+  const [selectedId, setSelectedIdState] = useState<number | null>(roadFromUrl);
+  useEffect(() => setRoadInUrl("public", selectedId), [selectedId]);
   const [sheet, setSheet] = useState<Sheet>("map");
   const panels = usePanelSizes();
   const setSelectedId = (id: number | null) => {
@@ -359,7 +362,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             )}
           </div>
           {selected && (
-            <DetailSheet id={selected.id} onClose={() => setSelectedId(null)}>
+            <DetailSheet id={selected.id} onClose={() => setSelectedId(null)} shareUrl={`${window.location.origin}/?usek=${selected.id}`}>
               <RoadPanel
                 key={selected.id}
                 road={selected}

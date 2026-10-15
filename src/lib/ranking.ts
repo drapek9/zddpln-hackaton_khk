@@ -88,7 +88,7 @@ export function localRanking(roads: Road[], weights: Weights, pins: Pin[]): Rank
 function weightsQuery(weights: Weights) {
   // Posílat vždy všechny váhy (D4), aby se nerozcházely s výchozími na backendu.
   return new URLSearchParams(
-    (Object.keys(weights) as (keyof Weights)[]).map((k) => [k, String(weights[k])]),
+    (Object.keys(weights) as (keyof Weights)[]).filter((k) => weights[k] != null).map((k) => [k, String(weights[k])]),
   ).toString();
 }
 

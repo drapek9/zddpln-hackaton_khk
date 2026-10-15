@@ -32,6 +32,9 @@ const WEIGHT_NAME: Record<keyof Weights, string> = {
   industry: "Průmysl",
   social: "Ohrožené oblasti",
   age: "Stáří opravy",
+  intensity: "Vozidla za den",
+  detour: "Délka objížďky",
+  students: "Studenti",
 };
 
 const fmtTime = (iso: string) =>

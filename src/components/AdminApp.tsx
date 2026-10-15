@@ -12,13 +12,16 @@ import DetailSheet from "./DetailSheet";
 import { adminApi } from "../lib/adminApi";
 import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
-import { DEFAULT_WEIGHTS } from "../lib/types";
-import { STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatSil, stavLabel } from "../lib/geo";
+import Dialog from "./Dialog";
+import { DEFAULT_WEIGHTS, WEIGHT_PRESETS } from "../lib/types";
+import { STATUS_LABEL, STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatPeriod, formatSil, stavLabel } from "../lib/geo";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
 import { DEMO_CLOSURES } from "../lib/closure";
 import { loadOfficePrefs, loadPins, loadRegionWeights, saveOfficePrefs, savePins, saveRegionWeights } from "../lib/store";
 import { toast } from "./Toaster";
+import { mainReason } from "../lib/priority";
 import { api, type Pin, type PriorityClass } from "../lib/api";
+import { roadFromUrl, setRoadInUrl } from "../lib/route";
 
 type Props = {
   data: Dataset;
@@ -44,7 +47,7 @@ const VIEWS: { key: View; label: string; adminOnly?: boolean; soon?: boolean }[]
 // Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
 const LIST_STEP = 15;
 
-const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
+const WEIGHT_LABELS: { key: keyof Weights; label: string; server?: boolean }[] = [
   { key: "stav", label: "Stav povrchu" },
   { key: "worse", label: "Zhoršování" },
   { key: "trida", label: "Třída silnice" },
@@ -55,6 +58,9 @@ const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "industry", label: "Průmysl" },
   { key: "social", label: "Ohrožené oblasti" },
   { key: "age", label: "Stáří opravy" },
+  { key: "intensity", label: "Vozidla za den", server: true },
+  { key: "detour", label: "Délka objížďky", server: true },
+  { key: "students", label: "Studenti", server: true },
 ];
 
 export default function AdminApp({ data, repairs, onRepairs, onHome, role, user, onRole, onLogout }: Props) {
@@ -77,6 +83,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [regionWeights, setRegionWeights] = useState<Weights>(() => loadRegionWeights(DEFAULT_WEIGHTS));
   const [weights, setWeights] = useState<Weights>(regionWeights);
   const [savedNote, setSavedNote] = useState(false);
+  const [weightMode, setWeightMode] = useState<"simple" | "detail">("simple");
+  const [preset, setPreset] = useState<string | null>(null);
 
   // Přihlášený admin: trvalé váhy ze serveru (GET /api/admin/weights).
   useEffect(() => {
@@ -98,7 +106,12 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     setRegionWeights(next);
     setWeights(next);
   };
-  const [selectedId, setSelectedIdState] = useState<number | null>(null);
+  // Úředník na /sprava: vybraný úsek je v adrese (/sprava/usek/123), odkaz jde poslat kolegovi a obnovení ho drží.
+  const urlRoads = !onRole && role === "official";
+  const [selectedId, setSelectedIdState] = useState<number | null>(() => (urlRoads ? roadFromUrl() : null));
+  useEffect(() => {
+    if (urlRoads) setRoadInUrl("sprava", selectedId);
+  }, [urlRoads, selectedId]);
   const [sheet, setSheet] = useState<Sheet>("map");
   const panels = usePanelSizes();
   const setSelectedId = (id: number | null) => {
@@ -110,6 +123,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [okres, setOkres] = useState(prefs.okres);
   const [stav, setStav] = useState(prefs.stav);
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"rank" | "score" | "length" | "stav">("rank");
+  const [onlyBad, setOnlyBad] = useState(false);
+  // Seznam uzavírek a oprav s filtrem termínu (kap. 25.2): ukáže ty, které do zvoleného období zasahují.
+  const [closFrom, setClosFrom] = useState("");
+  const [closTo, setClosTo] = useState("");
   const [showPois, setShowPois] = useState(prefs.showPois);
   // Uzavírky jsou na mapě jen po zaškrtnutí ve filtru, stejně jako u veřejnosti.
   const [layers, setLayers] = useState({ repairs: false, srti: false });
@@ -185,6 +203,59 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
 
   const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
+  const official = user?.role === "official" || user?.role === "admin";
+  // Uzavírka čekající na potvrzení a oznámení pro veřejnost po potvrzení (kap. 25.2).
+  const [ask, setAsk] = useState<{ repair: Repair; citizens: number | null } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [announce, setAnnounce] = useState<{ title: string; text: string; label: string } | null>(null);
+  const publish = (repair: Repair) =>
+    onRepairs([repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)]);
+  const confirmAsked = async () => {
+    if (!ask) return;
+    const { repair } = ask;
+    setConfirming(true);
+    publish(repair);
+    try {
+      const title = repair.title || `Uzavírka ${repair.sil}`;
+      const done = await api.confirmClosure({
+        road_id: repair.roadId,
+        title,
+        date_from: repair.from,
+        date_to: repair.to,
+        restriction: repair.restriction,
+        note: repair.note,
+        simulated: false,
+      });
+      toast(`Uzavírka potvrzena, upozorněno občanů: ${done.notified}`);
+      setAsk(null);
+      // Návrh oznámení pro web a sociální sítě. AI jen navrhuje, úředník text zkontroluje.
+      api
+        .aiAnnouncement(done.closure.id)
+        .then((res) => setAnnounce({ title, text: res.text, label: res.source === "ai" ? "návrh AI, zkontrolujte" : "šablona" }))
+        .catch(() => undefined);
+    } catch (e) {
+      toast("Uzavírku se nepodařilo potvrdit na serveru, je jen v tomto prohlížeči", "warn");
+      console.warn(e);
+      setAsk(null);
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  // „Co se pohnulo“ (kap. 25.2): top 20 při vahách kraje si pamatujeme a porovnáváme s top 20 po změně.
+  const [baseTop, setBaseTop] = useState<number[] | null>(null);
+  const top20 = useMemo(() => rows.slice(0, 20).map((r) => r.id), [rows]);
+  useEffect(() => {
+    if (!rankingLoading && !weightsChanged && top20.length) setBaseTop(top20);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [top20, rankingLoading]);
+  const moved = useMemo(() => {
+    if (!baseTop || rankingLoading) return null;
+    const before = new Set(baseTop);
+    const after = new Set(top20);
+    return { in: top20.filter((id) => !before.has(id)), out: baseTop.filter((id) => !after.has(id)) };
+  }, [baseTop, top20, rankingLoading]);
+
   const updatePin = async (roadId: number, pin: Pin | null) => {
     // 1. Optimistická lokální aktualizace
     const next = [...pins.filter((p) => p.road_id !== roadId), ...(pin ? [pin] : [])];
@@ -228,17 +299,23 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     return data.roads.filter((r) => {
       if (okres !== "vše" && r.okres !== okres) return false;
       if (stav !== "vše" && r.stav !== stav) return false;
+      if (onlyBad && r.stav !== "havarijní" && r.stav !== "SUPERhavarijní") return false;
       if (q && !`${r.sil} ${r.usek} ${r.okres}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [data.roads, okres, stav, query]);
+  }, [data.roads, okres, stav, query, onlyBad]);
 
   const ranked = useMemo(() => {
     const visible = new Set(filtered.map((r) => r.id));
-    return rows
+    const list = rows
       .filter((row) => visible.has(row.id) && (cls === "vše" || row.priority === cls))
       .map((row) => ({ r: roadsById.get(row.id)!, row }));
-  }, [rows, filtered, cls, roadsById]);
+    const stavIdx = (s: string) => STAV_ORDER.indexOf(s as (typeof STAV_ORDER)[number]);
+    if (sortBy === "score") list.sort((a, b) => b.row.score - a.row.score);
+    else if (sortBy === "length") list.sort((a, b) => b.r.delka - a.r.delka);
+    else if (sortBy === "stav") list.sort((a, b) => stavIdx(a.r.stav) - stavIdx(b.r.stav) || a.row.rank - b.row.rank);
+    return list;
+  }, [rows, filtered, cls, roadsById, sortBy]);
 
   // Vybraný úsek (i kliknutím v mapě) se v žebříčku posune do zorného pole.
   useEffect(() => {
@@ -285,6 +362,14 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     rows.forEach((row) => (out[row.priority] = (out[row.priority] || 0) + (roadsById.get(row.id)?.delka || 0)));
     return out;
   }, [rows, roadsById]);
+
+  const closureList = useMemo(
+    () =>
+      repairs
+        .filter((r) => (!closTo || r.from <= closTo) && (!closFrom || r.to >= closFrom))
+        .sort((a, b) => a.from.localeCompare(b.from)),
+    [repairs, closFrom, closTo],
+  );
 
   const selected = data.roads.find((r) => r.id === selectedId) || null;
   const existing = repairs.find((r) => r.roadId === selectedId);
@@ -413,6 +498,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               </button>
             ))}
           </div>
+          <div className="rank-tools">
+            <label className="check">
+              <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
+              Jen havarijní
+            </label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} aria-label="Řadit podle">
+              <option value="rank">Řadit: priorita</option>
+              <option value="score">Řadit: skóre</option>
+              <option value="stav">Řadit: nejhorší stav</option>
+              <option value="length">Řadit: délka</option>
+            </select>
+          </div>
           <Fold title="Žebříček priority" meta={`${ranked.length} úseků`} open>
             <p className="muted">
               {source === "api" ? (
@@ -451,11 +548,36 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     <span className="rank-meta">
                       #{row.rank} · {r.okres} · {formatKm(r.delka)}
                     </span>
+                    <span className="rank-why">{mainReason(r, weights)}</span>
                     <b>{row.score}</b>
                   </button>
                 </li>
               ))}
-              {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
+              {!rows.length &&
+                rankingLoading &&
+                Array.from({ length: 6 }, (_, i) => (
+                  <li key={`sk-${i}`} className="rank-skeleton" aria-hidden="true">
+                    <span />
+                    <span />
+                  </li>
+                ))}
+              {!ranked.length && !(rankingLoading && !rows.length) && (
+                <li className="rank-empty">
+                  <b>Filtrům neodpovídá žádný úsek.</b>
+                  <button
+                    className="link"
+                    onClick={() => {
+                      setQuery("");
+                      setOkres("vše");
+                      setStav("vše");
+                      setCls("vše");
+                      setOnlyBad(false);
+                    }}
+                  >
+                    Zrušit filtry
+                  </button>
+                </li>
+              )}
             </ul>
             <p className="kbd-hint">
               <kbd>↑</kbd> <kbd>↓</kbd> další úsek · <kbd>/</kbd> hledat · <kbd>Esc</kbd> zavřít
@@ -477,6 +599,45 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                   </button>
                 )}
               </div>
+            )}
+          </Fold>
+          <Fold title="Uzavírky a opravy" meta={closureList.length}>
+            <div className="form-grid">
+              <label>
+                Od
+                <input type="date" value={closFrom} onChange={(e) => setClosFrom(e.target.value)} />
+              </label>
+              <label>
+                Do
+                <input type="date" value={closTo} onChange={(e) => setClosTo(e.target.value)} />
+              </label>
+            </div>
+            <ul className="rank closure-list">
+              {closureList.slice(0, 40).map((rep) => (
+                <li key={rep.id}>
+                  <button className={rep.roadId === selectedId ? "active" : ""} onClick={() => setSelectedId(rep.roadId)}>
+                    <span className="rank-sil">
+                      {rep.title || rep.sil}
+                      {rep.simulated && <span className="sim-tag">simulace</span>}
+                    </span>
+                    <span className="rank-meta">
+                      {STATUS_LABEL[rep.status]} · {formatPeriod(rep)} · {rep.restriction}
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {!closureList.length && <li className="rank-empty">V tomto období není žádná uzavírka ani oprava.</li>}
+            </ul>
+            {(closFrom || closTo) && (
+              <button
+                className="link"
+                onClick={() => {
+                  setClosFrom("");
+                  setClosTo("");
+                }}
+              >
+                Zrušit filtr termínu
+              </button>
             )}
           </Fold>
           <Fold title="Ukázkové uzavírky" meta={demos.length}>
@@ -551,24 +712,92 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     </>
                   )}
                 </p>
-                {WEIGHT_LABELS.map((w) => (
-                  <label key={w.key} className="weight">
-                    <span>
-                      {w.label}
-                      <b>{weights[w.key]}</b>
-                    </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={weights[w.key]}
-                      onChange={(e) => setWeights({ ...weights, [w.key]: Number(e.target.value) })}
-                    />
-                  </label>
-                ))}
+                <div className="seg weight-mode" role="group" aria-label="Režim vah">
+                  <button className={weightMode === "simple" ? "on" : ""} onClick={() => setWeightMode("simple")}>
+                    Jednoduché
+                  </button>
+                  <button className={weightMode === "detail" ? "on" : ""} onClick={() => setWeightMode("detail")}>
+                    Podrobné
+                  </button>
+                </div>
+                {weightMode === "simple" ? (
+                  <div className="presets">
+                    {WEIGHT_PRESETS.map((p) => (
+                      <button
+                        key={p.key}
+                        className={preset === p.key ? "on" : ""}
+                        onClick={() => {
+                          setPreset(p.key);
+                          setWeights({ ...regionWeights, ...p.weights });
+                        }}
+                      >
+                        <strong>{p.label}</strong>
+                        <span>{p.hint}</span>
+                      </button>
+                    ))}
+                    <p className="fine">Předvolby jsou návrh aplikace, ne nastavení kraje. Přesné hodnoty jsou v režimu Podrobné.</p>
+                  </div>
+                ) : (
+                  WEIGHT_LABELS.map((w) => (
+                    <label key={w.key} className="weight">
+                      <span>
+                        {w.label}
+                        {w.server && source !== "api" && <small className="muted"> (jen se serverem)</small>}
+                        <b>{weights[w.key]}</b>
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={weights[w.key]}
+                        onChange={(e) => {
+                          setPreset(null);
+                          setWeights({ ...weights, [w.key]: Number(e.target.value) });
+                        }}
+                      />
+                    </label>
+                  ))
+                )}
+                {weightsChanged && moved && (
+                  <div className="moved">
+                    <b>Co se pohnulo v top 20</b>
+                    {moved.in.length || moved.out.length ? (
+                      <>
+                        <span>
+                          {moved.in.length} nových, {moved.out.length} vypadlo oproti vahám kraje
+                        </span>
+                        <ul>
+                          {moved.in.slice(0, 4).map((id) => (
+                            <li key={`in-${id}`} className="up">
+                              <button className="link" onClick={() => setSelectedId(id)}>
+                                ↑ {roadsById.get(id) ? formatSil(roadsById.get(id)!.sil, roadsById.get(id)!.trida) : id}
+                              </button>
+                            </li>
+                          ))}
+                          {moved.out.slice(0, 4).map((id) => (
+                            <li key={`out-${id}`} className="down">
+                              <button className="link" onClick={() => setSelectedId(id)}>
+                                ↓ {roadsById.get(id) ? formatSil(roadsById.get(id)!.sil, roadsById.get(id)!.trida) : id}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <span>Prvních 20 úseků zůstalo stejných.</span>
+                    )}
+                  </div>
+                )}
                 <div className="row-actions">
-                  <button className="btn" disabled={!weightsChanged} onClick={() => setWeights(regionWeights)}>
-                    Vrátit váhy kraje
+                  <button
+                    className="btn"
+                    disabled={!weightsChanged}
+                    onClick={() => {
+                      setPreset(null);
+                      setWeights(regionWeights);
+                    }}
+                  >
+                    Zpět na výchozí kraje
                   </button>
                   {role === "admin" && (
                     <button
@@ -609,8 +838,69 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               </span>
             )}
           </div>
+          {ask && (
+            <Dialog title="Potvrdit uzavírku?" onClose={() => !confirming && setAsk(null)}>
+              <p>
+                <b>{ask.repair.title || `Uzavírka ${ask.repair.sil}`}</b>
+                <br />
+                {ask.repair.restriction} · {ask.repair.from} až {ask.repair.to}
+              </p>
+              <p>
+                {ask.citizens == null
+                  ? "Počet občanů s trasou přes úsek se nepodařilo zjistit."
+                  : ask.citizens === 0
+                    ? "Nikdo z přihlášených občanů tudy podle uložené trasy nejezdí."
+                    : `Upozornění dostane ${ask.citizens.toLocaleString("cs-CZ")} ${ask.citizens === 1 ? "občan" : ask.citizens < 5 ? "občané" : "občanů"} s trasou přes tento úsek.`}
+              </p>
+              <div className="row-actions">
+                <button className="btn primary" disabled={confirming} onClick={confirmAsked}>
+                  {confirming
+                    ? "Potvrzuji…"
+                    : ask.citizens
+                      ? `Potvrdit a upozornit ${ask.citizens.toLocaleString("cs-CZ")}`
+                      : "Potvrdit uzavírku"}
+                </button>
+                <button className="btn" disabled={confirming} onClick={() => setAsk(null)}>
+                  Zpět
+                </button>
+              </div>
+            </Dialog>
+          )}
+          {announce && (
+            <Dialog title="Oznámení pro veřejnost" onClose={() => setAnnounce(null)}>
+              <p className="muted">
+                {announce.title} · <span className="sim-tag">{announce.label}</span>
+              </p>
+              <textarea
+                className="announce-text"
+                rows={8}
+                value={announce.text}
+                onChange={(e) => setAnnounce({ ...announce, text: e.target.value })}
+              />
+              <div className="row-actions">
+                <button
+                  className="btn primary"
+                  onClick={() =>
+                    navigator.clipboard?.writeText(announce.text).then(() => {
+                      toast("Oznámení zkopírováno");
+                      setAnnounce(null);
+                    })
+                  }
+                >
+                  Kopírovat a zavřít
+                </button>
+                <button className="btn" onClick={() => setAnnounce(null)}>
+                  Zavřít
+                </button>
+              </div>
+            </Dialog>
+          )}
           {selected ? (
-            <DetailSheet id={`${selected.id}-${demoId === selected.id}`} onClose={() => setSelectedId(null)}>
+            <DetailSheet
+              id={`${selected.id}-${demoId === selected.id}`}
+              onClose={() => setSelectedId(null)}
+              shareUrl={urlRoads ? `${window.location.origin}/sprava/usek/${selected.id}` : undefined}
+            >
               <RoadPanel
                 key={`${selected.id}-${demoId === selected.id}`}
                 simulate={demoId === selected.id}
@@ -626,30 +916,26 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 onDetour={setDetour}
                 aiEnabled={user?.role === "official" || user?.role === "admin"}
                 onPlan={async (repair) => {
-                  const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
-                  onRepairs(next);
-
-                  // Přihlášený úředník: uzavírku potvrdíme na serveru, ten upozorní občany na trase (F1).
+                  // Přihlášený úředník: před potvrzením řekneme, kolik občanů dostane upozornění (kap. 25.2).
                   const closing = repair.restriction.includes("uzavírka");
-                  if (closing && (user?.role === "official" || user?.role === "admin")) {
+                  if (closing && official) {
+                    let citizens: number | null = null;
                     try {
-                      const done = await api.confirmClosure({
+                      const preview = await api.closurePreview({
                         road_id: repair.roadId,
-                        title: repair.title || `Uzavírka ${repair.sil}`,
                         date_from: repair.from,
                         date_to: repair.to,
                         restriction: repair.restriction,
                         note: repair.note,
-                        simulated: false,
                       });
-                      toast(`Uzavírka potvrzena, upozorněno občanů: ${done.notified}`);
-                      return;
-                    } catch (e) {
-                      toast("Uzavírku se nepodařilo potvrdit na serveru, je jen v tomto prohlížeči", "warn");
-                      console.warn(e);
-                      return;
+                      citizens = preview.citizens_on_route;
+                    } catch {
+                      citizens = null;
                     }
+                    setAsk({ repair, citizens });
+                    return;
                   }
+                  publish(repair);
                   toast(closing ? "Uzavírka je v mapě jen v tomto prohlížeči (nepřihlášen)" : "Oprava zveřejněna v mapě");
                 }}
               />

@@ -168,3 +168,12 @@ Navazuje na kap. 21 v `PLAN_FINAL.md`. Priorita je veřejnost (rozhodnutí týmu
 - **Přihlášení:** tlačítka „Demo úředník“ a „Demo admin“ jsou **vždy** (rozhodnutí Matouše, mění F3). Ukázka bez účtu nic nezapisuje na server, zápisy jen do prohlížeče, v hlavičce štítek „demo“.
 - **F8:** rozpočet volá `GET /api/budget` (sekce „Výpočet serveru (jádro)“ se štítkem a objížďkou staveb), lokální náhled zůstává se svými filtry.
 - **F7:** komponenta `AiSuggest`, zatím v rozpočtu (`/ai/budget`) a v detailu silnice (`/ai/explain`). Vždy štítek „návrh AI“ nebo „šablona“, pořadí nemění. Zbývá oznámení uzavírky (`/ai/announcement` po potvrzení) a váhy z textu u admina.
+
+## Stav 15. 10. 15:55 (Matouš, větev matous): doplněno z PLAN_FINAL kap. 25
+- Sdílitelné odkazy na úsek: `/sprava/usek/:id` a `/?usek=id`, tlačítko „Kopírovat odkaz“ v detailu.
+- Patička: nenápadný odkaz „Pro úřad“ na /sprava.
+- Váhy: přepínač Jednoduché / Podrobné, 4 předvolby (návrh aplikace, ne kraje), posuvníky D6 (vozidla, objížďka, studenti; počítá jen server), „Co se pohnulo v top 20“, „Zpět na výchozí kraje“. Admin je může uložit trvale.
+- Žebříček: věta „proč“ (největší faktor), řazení, „Jen havarijní“, skeleton při načítání, prázdný stav se „Zrušit filtry“.
+- Uzavírky: dialog „Potvrdit a upozornit N občanů“ (z `/api/closures/preview`), po potvrzení návrh oznámení z `/api/ai/announcement`, seznam uzavírek a oprav s filtrem termínu.
+- Rozpočet: porovnání dvou částek, export CSV (v prohlížeči), tisk.
+- Nedodělané (po freeze): hledání obce přes `/api/obce`, manifest a robots, verze v patičce (health ji nevrací). Na backend čeká B‑1 až B‑4, B‑7, B‑10, B‑11 a žádosti o přístup (25.10). /admin má podle plánu být bez mapy; mini mapa v rohu zůstala na přání Matouše.

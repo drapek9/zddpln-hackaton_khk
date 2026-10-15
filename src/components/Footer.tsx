@@ -1,4 +1,5 @@
 import type { View } from "../App";
+import { navigate } from "../lib/route";
 
 type Props = {
   onNavigate: (view: View) => void;
@@ -16,6 +17,10 @@ export default function Footer({ onNavigate }: Props) {
         <button className="link" onClick={() => onNavigate("sources")}>
           Zdroje dat
         </button>
+        {/* Nenápadný vstup pro úředníky (kap. 25.1): veřejnost ho nepotřebuje, úřad ho najde. */}
+        <a href="/sprava" onClick={(e) => { e.preventDefault(); navigate("/sprava"); }}>
+          Pro úřad
+        </a>
         <a href="https://www.datakhk.cz" target="_blank" rel="noreferrer">
           datakhk.cz
         </a>

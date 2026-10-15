@@ -16,7 +16,8 @@ export type View = "home" | "login" | "public" | "office" | "sources" | "privacy
 type OfficeRole = "official" | "admin";
 
 export default function App() {
-  const [view, setView] = useState<View>("home");
+  // Sdílený odkaz na úsek (/?usek=123) jde rovnou do veřejné mapy.
+  const [view, setView] = useState<View>(() => (new URLSearchParams(window.location.search).has("usek") ? "public" : "home"));
   const [data, setData] = useState<Dataset | null>(null);
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [reports, setReports] = useState<Report[]>([]);

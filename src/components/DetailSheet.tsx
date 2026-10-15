@@ -1,15 +1,18 @@
+import { toast } from "./Toaster";
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent, type WheelEvent } from "react";
 
 type Props = {
   /** Mění se s vybraným úsekem: nový úsek začne v náhledu. */
   id: string | number;
   onClose: () => void;
+  /** Sdílitelný odkaz na úsek (kap. 25.1): tlačítko ho zkopíruje. */
+  shareUrl?: string;
   children: ReactNode;
 };
 
 // Detail jako v mapových aplikacích: dole nad mapou je pruh s náhledem,
 // posunem kolečka dolů (nebo klikem na úchyt) se vysune, posunem nahoru na začátku obsahu se zase stáhne.
-export default function DetailSheet({ id, onClose, children }: Props) {
+export default function DetailSheet({ id, onClose, shareUrl, children }: Props) {
   const [open, setOpen] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +59,20 @@ export default function DetailSheet({ id, onClose, children }: Props) {
           aria-label={open ? "Stáhnout detail" : "Vysunout detail"}
           title={open ? "Stáhnout (nebo kolečkem nahoru)" : "Vysunout (nebo kolečkem dolů)"}
         />
+        {shareUrl && (
+          <button
+            className="sheet-share"
+            title="Zkopírovat odkaz na tento úsek"
+            onClick={() =>
+              navigator.clipboard?.writeText(shareUrl).then(
+                () => toast("Odkaz na úsek zkopírován"),
+                () => toast(shareUrl),
+              ) ?? toast(shareUrl)
+            }
+          >
+            Kopírovat odkaz
+          </button>
+        )}
         <button className="sheet-close" onClick={onClose} aria-label="Zavřít detail" title="Zavřít">
           ×
         </button>
