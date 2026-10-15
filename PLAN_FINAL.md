@@ -11,6 +11,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
 
+> **15. 10., 10:20:** schválené nápady, které zatím nejsou úkoly (rozpočtový asistent se souvislými stavbami, dojezd ZZS a HZS, kolize uzavírek, export DCAT‑AP‑CZ, bezpečnost a GDPR, QR na web), jsou v [docs/NAPADY.md](docs/NAPADY.md). Do plánu se převedou až po MVP ★1.
+
 Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
 
 Čtení: kapitoly 1–3 říkají, co a proč stavíme. Kapitoly 4–9 popisují, jak to postavíme. Kapitoly 10–12 obsahují termíny a otevřené věci. Přehled funkcí a výhod pro uživatele (hotovo / jádro / plán) je v [docs/funkce.html](docs/funkce.html). Když se stav změní, uprav tu stránku a kapitoly 4 a 7.
