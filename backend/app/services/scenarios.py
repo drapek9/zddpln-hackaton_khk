@@ -1,16 +1,8 @@
-"""S12 flood scenario and S13 municipalities plus demo closures.
+"""Flood scenario, municipalities and the 2022 closure plans.
 
-The API calls Tomáš's Engine as soon as the method exists. Until then it
-returns only numbers it can stand behind. Missing pieces stay null.
-
-Waiting, and why this module does not invent them:
-- T13: snapshots obce.json, flood.json, students.json, planned2022.json.
-  Without them there is no population, no municipality center, no flood polygons
-  and no real 2022 closures.
-- T14: Engine.students_on(road_id). The agreed field DetourResult.students_per_day
-  is added to schemas.py only together with Tomáš.
-- T15: Engine.flood(level) and DetourResult.cut_off_obce, same schema rule.
-- T16: Engine.demo_closures() from the 2022 repair plans.
+The API calls Engine and returns that result. If a method is missing, the
+answer stays empty and says so. An empty list from here means "not computed",
+not "nothing is affected".
 """
 
 from __future__ import annotations
@@ -61,12 +53,16 @@ def municipalities(engine: Engine) -> dict[str, Any]:
     }
 
 
+PLAN_2022_LABEL = "skutečný plán 2022 (Data KHK)"
+
+
 def demo_closures(engine: Engine) -> dict[str, Any]:
     raw = _call(engine, "demo_closures")
-    if raw:
+    if raw is not None:
         return {
             "ready": True,
             "source": "plany-2022",
+            "label": PLAN_2022_LABEL,
             "items": [_demo_from_engine(item) for item in raw],
         }
     return {
@@ -125,7 +121,8 @@ def _obec(item: Any) -> dict[str, Any]:
 
 def _demo_from_engine(item: Any) -> dict[str, Any]:
     data = item.model_dump() if hasattr(item, "model_dump") else dict(item)
-    data.setdefault("label", "demo data")
+    # These rows are the kraj's 2022 plans, not a made-up demo.
+    data["label"] = PLAN_2022_LABEL
     data.setdefault("source", "plany-2022")
     return data
 

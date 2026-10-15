@@ -32,7 +32,11 @@ class Settings:
 
     @property
     def ai_configured(self) -> bool:
-        return self.ai_provider not in {"", "none"} and bool(self.ai_api_key) and bool(self.ai_endpoint)
+        if self.ai_provider in {"", "none"} or not self.ai_api_key:
+            return False
+        if self.ai_provider == "anthropic":
+            return True
+        return bool(self.ai_endpoint)
 
 
 def get_settings() -> Settings:

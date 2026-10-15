@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
-from app.ai.service import announcement_text, explain_road, propose_weights
+from app.ai.service import announcement_text, budget_explanation, explain_road, propose_weights
 from app.auth.deps import require_official
 from app.core.schemas import Weights
 from app.db.models import Closure, User
@@ -78,6 +78,26 @@ def weights_from_text(
         base, _source = resolve_weights(session, user)
     enabled = get_settings_row(session).ai_enabled
     return propose_weights(body.text, base, enabled)
+
+
+class BudgetBody(BaseModel):
+    amount: int = Field(ge=0)
+    amount2: int | None = Field(default=None, ge=0)
+
+
+@router.post("/budget")
+def budget_text(
+    body: BudgetBody,
+    request: Request,
+    user: User = Depends(require_official),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Text for a budget plan. It is not saved and it does not change the ranking."""
+    weights, source = resolve_weights(session, user)
+    enabled = get_settings_row(session).ai_enabled
+    result = budget_explanation(request.app.state.engine, body.amount, body.amount2, weights, enabled)
+    result["weights_source"] = source
+    return result
 
 
 @router.get("/weights/current")

@@ -10,6 +10,7 @@ from app.core.engine import Engine
 from app.db.models import Closure, User, utcnow
 from app.notify.service import citizens_on_road, notify_closure
 from app.services.access import closure_label, intensity_of, require_road
+from app.services.collisions import collision_alerts, rescue_for_closure
 from app.services.impacts import alerts_for_closure
 from app.services.scenarios import closure_pending_fields
 
@@ -41,6 +42,19 @@ def preview(session: Session, engine: Engine, row: Closure) -> dict:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Neznámý úsek.") from exc
     alerts = alerts_for_closure(engine, row.road_id, row.date_from, row.date_to, row.restriction, detour)
+    rescue, rescue_alerts = rescue_for_closure(engine, row.road_id)
+    alerts = [
+        *alerts,
+        *collision_alerts(
+            session,
+            engine,
+            via_road_ids=list(detour.via_road_ids),
+            date_from=row.date_from,
+            date_to=row.date_to,
+            ignore_id=row.id,
+        ),
+        *rescue_alerts,
+    ]
     road = engine.road(row.road_id) or {}
     vehicles, quality = intensity_of(road)
     text = announcement_text(engine, row, alerts, detour, enabled=False)
@@ -57,6 +71,8 @@ def preview(session: Session, engine: Engine, row: Closure) -> dict:
         # Kept beside detour until T14/T15 add them on DetourResult. Names are not renamed.
         "students_per_day": pending["students_per_day"],
         "cut_off_obce": pending["cut_off_obce"],
+        # None until Engine.rescue_impact (T18). See collisions.rescue_for_closure.
+        "rescue": rescue,
     }
 
 

@@ -7,16 +7,22 @@ the template answers and the app keeps working.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
 from typing import Any
 from urllib import error, request
 
+from sqlmodel import Session
+
 from app.config import Settings, get_settings
 from app.core.engine import Engine
 from app.core.schemas import Weights
+from app.db.models import AiCache
+from app.db.session import get_db_engine
 from app.services.announce import build_announcement
+from app.services.budget import budget_plans
 
 log = logging.getLogger(__name__)
 
@@ -139,10 +145,53 @@ def classify_report(description: str, lon: float, lat: float, engine: Engine, en
     }
 
 
+def budget_explanation(engine: Engine, amount: int, amount2: int | None, weights: Weights, enabled: bool) -> dict[str, Any]:
+    """3–5 sentences from the computed plan only. Nothing is saved."""
+    plan = budget_plans(engine, amount, amount2, weights)
+    if not plan["ready"]:
+        text = labelled(plan["note"], "sablona")
+        text["saved"] = False
+        text["ready"] = False
+        return text
+    template = _budget_template(plan)
+    if enabled:
+        written = complete(
+            "Jsi asistent kraje. Napiš česky 3 až 5 vět k rozpočtu. "
+            "Používej jen čísla z podkladu. Nic si nedomýšlej. "
+            "Na konci napiš, že jde o návrh a cenu musí potvrdit člověk.",
+            template,
+        )
+        if written:
+            text = labelled(written.strip(), "ai")
+            text["saved"] = False
+            text["ready"] = True
+            return text
+    text = labelled(template, "sablona")
+    text["saved"] = False
+    text["ready"] = True
+    return text
+
+
 def complete(system: str, user: str) -> str | None:
     settings = get_settings()
     if not settings.ai_configured:
         return None
+    cache_key = hashlib.sha256(
+        f"{settings.ai_provider}\n{settings.ai_model}\n{system}\n{user}".encode()
+    ).hexdigest()
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+    if settings.ai_provider == "anthropic":
+        text = _anthropic(settings, system, user)
+    else:
+        text = _chat_completions(settings, system, user)
+    if text:
+        _cache_put(cache_key, text)
+    return text
+
+
+def _chat_completions(settings: Settings, system: str, user: str) -> str | None:
     url = settings.ai_endpoint.rstrip("/")
     if not url.endswith("/chat/completions"):
         url = url + "/chat/completions"
@@ -167,6 +216,67 @@ def complete(system: str, user: str) -> str | None:
     except (error.URLError, TimeoutError, KeyError, IndexError, json.JSONDecodeError, TypeError, ValueError):
         log.info("AI provider failed; using the template")
         return None
+
+
+def _anthropic(settings: Settings, system: str, user: str) -> str | None:
+    payload = {
+        "model": settings.ai_model or "claude-haiku-5-5",
+        "max_tokens": 700,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    }
+    req = request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(payload).encode(),
+        headers={
+            "content-type": "application/json",
+            "x-api-key": settings.ai_api_key,
+            "anthropic-version": "2023-06-01",
+        },
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=8) as response:
+            body = json.loads(response.read().decode())
+        parts = [block.get("text", "") for block in body.get("content") or [] if isinstance(block, dict)]
+        text = "\n".join(part for part in parts if part).strip()
+        return text or None
+    except (error.URLError, TimeoutError, KeyError, json.JSONDecodeError, TypeError, ValueError):
+        log.info("Claude request failed; using the template")
+        return None
+
+
+def _cache_get(cache_key: str) -> str | None:
+    with Session(get_db_engine()) as session:
+        row = session.get(AiCache, cache_key)
+        return row.payload if row is not None else None
+
+
+def _cache_put(cache_key: str, payload: str) -> None:
+    with Session(get_db_engine()) as session:
+        session.merge(AiCache(cache_key=cache_key, payload=payload))
+        session.commit()
+
+
+def _budget_template(plan: dict[str, Any]) -> str:
+    """Sentences use only numbers the engine returned. Missing numbers are left out."""
+    lines = []
+    for item in plan.get("plans") or []:
+        bits = [f"Za strop {item.get('amount')} Kč"]
+        if item.get("repaired_km") is not None:
+            bits.append(f"se opraví {item['repaired_km']} km")
+        projects = item.get("projects") or []
+        if projects:
+            bits.append(f"v {len(projects)} stavbách")
+        if item.get("cost_kc") is not None:
+            bits.append(f"odhad ceny je {item['cost_kc']} Kč")
+        if item.get("remaining_emergency_km") is not None:
+            bits.append(f"zbývá {item['remaining_emergency_km']} havarijních km")
+        lines.append(", ".join(bits) + ".")
+    if plan.get("amount2") is not None and len(plan.get("plans") or []) >= 2:
+        lines.append("Jsou to dvě částky vedle sebe, aby šly porovnat.")
+    lines.append("Cena je předpoklad. Text je návrh, dokud ho člověk nepotvrdí.")
+    return " ".join(lines)
 
 
 def ai_status(settings: Settings, enabled: bool) -> dict[str, Any]:

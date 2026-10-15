@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
@@ -100,6 +100,43 @@ def get_places(user: User = Depends(require_user), session: Session = Depends(ge
     return {
         kind: {"lon": places[kind].lon, "lat": places[kind].lat} if kind in places else None
         for kind in ("home", "work")
+    }
+
+
+def _parse_point(value: str) -> tuple[float, float]:
+    parts = value.split(",")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Bod má tvar lon,lat.")
+    try:
+        lon = float(parts[0])
+        lat = float(parts[1])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Bod má tvar lon,lat.") from exc
+    if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+        raise HTTPException(status_code=400, detail="Souřadnice jsou mimo rozsah.")
+    return lon, lat
+
+
+@router.get("/route")
+def public_route(
+    request: Request,
+    home: str = Query(min_length=3, max_length=80),
+    work: str = Query(min_length=3, max_length=80),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Route between two points. Nothing is stored; this is the public map."""
+    home_point = _parse_point(home)
+    work_point = _parse_point(work)
+    engine = request.app.state.engine
+    baseline = engine.route(home_point, work_point)
+    closed = active_closed_ids(session)
+    alternate = engine.route(home_point, work_point, closed=closed)
+    return {
+        "home": {"lon": home_point[0], "lat": home_point[1]},
+        "work": {"lon": work_point[0], "lat": work_point[1]},
+        "route": baseline.model_dump(),
+        "with_closures": alternate.model_dump(),
+        "closures_on_route": [road_id for road_id in closed if road_id in baseline.road_ids],
     }
 
 

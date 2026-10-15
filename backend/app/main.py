@@ -28,6 +28,9 @@ from app.db.session import get_db_engine
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.engine = Engine.load()
+    # First use of people and the 2022 plans takes several seconds. Do it here.
+    app.state.engine.people
+    app.state.engine.demo_closures()
     SQLModel.metadata.create_all(get_db_engine())
     with Session(get_db_engine()) as session:
         seed_if_empty(session, app.state.engine)

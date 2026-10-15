@@ -69,18 +69,42 @@ def require_road(engine: Engine, road_id: int) -> dict:
     return road
 
 
-def intensity_of(road: dict) -> tuple[float | int | None, str]:
-    """Read intensity only if core already put it on the road record.
+def intensity_of(road: dict) -> tuple[int | float | None, str]:
+    """Vehicles per day and the source label already stored on the road.
 
-    Šimon does not estimate traffic. Missing data stays missing.
+    `road["intensity"]` is `{"sv": vehicles_per_day, "src": "csd2025" | "odhad", "usek": ...}`.
+    This function does not estimate traffic. A missing count stays missing.
     """
-    for key in ("intensity", "intenzita", "vehicles_per_day"):
-        value = road.get(key)
-        if value is None or value == "":
+    raw = road.get("intensity")
+    if isinstance(raw, dict):
+        count = _as_count(raw.get("sv"))
+        if count is None:
+            return None, "chybi"
+        return count, str(raw.get("src") or "odhad")
+    for key in ("intenzita", "vehicles_per_day"):
+        count = _as_count(road.get(key))
+        if count is None:
             continue
         quality = road.get("intensity_quality") or road.get("intenzita_kvalita") or "odhad"
-        return value, str(quality)
+        return count, str(quality)
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        return _as_count(raw), str(road.get("intensity_quality") or road.get("intenzita_kvalita") or "odhad")
     return None, "chybi"
+
+
+def _as_count(value: object) -> int | float | None:
+    if isinstance(value, bool) or isinstance(value, dict) or value is None or value == "":
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+    else:
+        try:
+            number = float(str(value))
+        except (TypeError, ValueError):
+            return None
+    if number.is_integer():
+        return int(number)
+    return number
 
 
 def closure_label(simulated: bool) -> str:

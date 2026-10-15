@@ -10,10 +10,11 @@ from sqlmodel import Session
 
 from app.auth.deps import optional_user, require_official
 from app.core.engine import Engine
-from app.core.schemas import PriorityClass
+from app.core.schemas import PriorityClass, Weights
 from app.db.models import RoadPin, User, utcnow
 from app.db.session import get_session
 from app.services.access import audit, intensity_of, load_pins, load_votes, require_road, resolve_weights
+from app.services.labels import stav_for_people
 
 router = APIRouter(tags=["Úseky"])
 
@@ -24,10 +25,28 @@ class PinBody(BaseModel):
     reason: str | None = Field(default=None, max_length=500)
 
 
-def _rows(engine: Engine, session: Session, user: User | None):
+def _rows(engine: Engine, session: Session, user: User | None, query_weights: Weights | None = None):
+    if query_weights is not None:
+        rows = engine.ranking(query_weights, load_pins(session), load_votes(session))
+        return rows, "query"
     weights, source = resolve_weights(session, user)
     rows = engine.ranking(weights, load_pins(session), load_votes(session))
     return rows, source
+
+
+def weights_from_query(request: Request) -> Weights | None:
+    """Slider values for this request only. Missing keys stay at the model defaults."""
+    raw: dict[str, float] = {}
+    for key in Weights.model_fields:
+        if key not in request.query_params:
+            continue
+        try:
+            raw[key] = float(request.query_params[key])
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"Váha {key} není číslo.") from exc
+    if not raw:
+        return None
+    return Weights.model_validate({**Weights().model_dump(), **raw})
 
 
 def _feature(row, road: dict) -> dict:
@@ -42,6 +61,7 @@ def _feature(row, road: dict) -> dict:
             "trida": row.road.trida,
             "okres": row.road.okres,
             "stav": row.road.stav,
+            "stav_nazev": stav_for_people(row.road.stav),
             "delka_m": row.road.delka_m,
             "score": row.score,
             "priority": row.priority,
@@ -64,7 +84,7 @@ def ranking(
     user: User | None = Depends(optional_user),
     session: Session = Depends(get_session),
 ) -> dict:
-    rows, source = _rows(request.app.state.engine, session, user)
+    rows, source = _rows(request.app.state.engine, session, user, weights_from_query(request))
     page = rows[offset : offset + limit if limit else None]
     return {
         "weights_source": source,
@@ -83,7 +103,7 @@ def useky(
     session: Session = Depends(get_session),
 ) -> dict:
     engine: Engine = request.app.state.engine
-    rows, source = _rows(engine, session, user)
+    rows, source = _rows(engine, session, user, weights_from_query(request))
     page = rows[offset : offset + limit if limit else None]
     features = []
     for row in page:
@@ -105,11 +125,12 @@ def usek_detail(
 ) -> dict:
     engine: Engine = request.app.state.engine
     road = require_road(engine, road_id)
-    rows, source = _rows(engine, session, user)
+    query_weights = weights_from_query(request)
+    rows, source = _rows(engine, session, user, query_weights)
     row = next((item for item in rows if item.road.id == road_id), None)
     if row is None:
         raise HTTPException(status_code=404, detail="Neznámý úsek.")
-    weights, _source = resolve_weights(session, user)
+    weights = query_weights if query_weights is not None else resolve_weights(session, user)[0]
     votes = load_votes(session).get(road_id, 0)
     vehicles, quality = intensity_of(road)
     return {
@@ -166,5 +187,5 @@ def _metadata(source: str) -> dict:
         "licence": "EUPL-1.2",
         "vypocteno": date.today().isoformat(),
         "weights_source": source,
-        "intenzita": "Pole intenzita je prázdné, dokud není napojené sčítání ŘSD 2025. Odvozenina z ŘSD pak má licenci CC BY-SA 4.0.",
+        "intenzita": "Počet aut za den je ze sčítání ŘSD 2025 (CC BY-SA 4.0), nebo štítek odhad. Když údaj chybí, kvalita je chybi.",
     }

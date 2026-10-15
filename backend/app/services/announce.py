@@ -50,7 +50,8 @@ def build_announcement(
     if vehicles is None:
         traffic = "Auta za den: údaj zatím není. Sčítání ŘSD ještě není napojené, proto tu číslo nevymýšlíme."
     else:
-        traffic = f"Auta za den: {vehicles} (štítek: {quality})."
+        quality_label = {"csd2025": "sčítání ŘSD 2025", "odhad": "odhad"}.get(quality, quality)
+        traffic = f"Auta za den: {vehicles} (štítek: {quality_label})."
 
     if detour is None:
         detour_text = "Objížďka se teprve počítá."

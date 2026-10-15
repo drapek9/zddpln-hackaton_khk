@@ -146,6 +146,14 @@ class Report(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class AiCache(SQLModel, table=True):
+    """One stored model answer, keyed by a hash of the prompt. Demo can replay it offline."""
+
+    cache_key: str = Field(primary_key=True)
+    payload: str
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class Vote(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True)

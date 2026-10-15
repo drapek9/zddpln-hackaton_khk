@@ -165,11 +165,11 @@ def test_closure_notifies_citizen_on_route(client: TestClient):
     assert isinstance(body["alerts"], list) and body["alerts"]
     assert body["announcement"]["label"] == "šablona"
     assert "NÁVRH OZNÁMENÍ" in body["announcement"]["text"]
-    assert body["vehicles_per_day"] is None
-    assert body["vehicles_quality"] == "chybi"
-    # T14 and T15 are not on Engine yet. None means not computed.
-    assert body["students_per_day"] is None
-    assert body["cut_off_obce"] is None
+    assert isinstance(body["vehicles_per_day"], int) and body["vehicles_per_day"] >= 0
+    assert body["vehicles_quality"] in {"csd2025", "odhad"}
+    assert isinstance(body["students_per_day"], int) and body["students_per_day"] >= 0
+    assert isinstance(body["cut_off_obce"], list)
+    assert body["rescue"] is None
     hidden = client.get("/api/uzavirky")
     assert all(item["id"] != body["closure"]["id"] for item in hidden.json()["items"])
     confirmed = client.post(f"/api/closures/{body['closure']['id']}/confirm", headers=official)
@@ -266,6 +266,7 @@ def test_export_and_czech_docs(client: TestClient):
     text = csv_response.text
     assert "EUPL-1.2" in text
     assert "intenzita" in text
+    assert "stav_nazev" in text
     assert "CC BY-SA" in text
     geo = client.get("/api/export.geojson")
     assert geo.status_code == 200
@@ -305,7 +306,7 @@ def test_admin_cannot_lock_own_account(client: TestClient):
     assert audit.json()["items"]
 
 
-def test_flood_waits_for_engine(client: TestClient):
+def test_flood_returns_engine_result(client: TestClient):
     citizen = login(client, "citizen")
     assert client.get("/api/flood", headers=citizen).status_code == 403
     official = login(client, "official")
@@ -313,32 +314,139 @@ def test_flood_waits_for_engine(client: TestClient):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["level"] == "q100"
-    assert body["ready"] is False
-    assert body["closed_road_ids"] == []
-    assert body["cut_off_obce"] is None
-    assert body["students_per_day"] is None
+    assert body["ready"] is True
+    assert isinstance(body["closed_road_ids"], list)
+    assert isinstance(body["cut_off_obce"], list)
+    assert isinstance(body["students_per_day"], int) and body["students_per_day"] >= 0
+    assert isinstance(body["flooded_km"], (int, float))
     assert client.get("/api/flood?level=q500", headers=official).status_code == 422
 
 
-def test_obce_are_names_until_dataset_arrives(client: TestClient):
+def test_obce_from_data_khk(client: TestClient):
     response = client.get("/api/obce")
     assert response.status_code == 200
     body = response.json()
-    assert body["ready"] is False
-    assert body["source"] == "nazvy-z-useku"
-    assert body["items"]
+    assert body["ready"] is True
+    assert body["source"] == "data-khk"
+    assert len(body["items"]) == 448
     assert body["items"][0]["nazev"]
-    assert body["items"][0]["obyvatel"] is None
-    assert body["items"][0]["lon"] is None
+    assert isinstance(body["items"][0]["obyvatel"], int)
+    assert isinstance(body["items"][0]["lon"], float)
 
 
-def test_demo_closures_from_current_network(client: TestClient):
+def test_preview_does_not_save_and_public_route(client: TestClient):
+    official = login(client, "official")
+    road_id = client.get("/api/ranking?limit=1").json()["items"][0]["road"]["id"]
+    before = client.get("/api/closures?include_drafts=true", headers=official).json()["items"]
+    preview = client.post(
+        "/api/closures/preview",
+        headers=official,
+        json={"road_id": road_id, "date_from": "2026-07-01", "date_to": "2026-07-20", "restriction": "úplná uzavírka"},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["saved"] is False
+    assert "detour" in preview.json() and isinstance(preview.json()["alerts"], list)
+    after = client.get("/api/closures?include_drafts=true", headers=official).json()["items"]
+    assert len(after) == len(before)
+    route = client.get("/api/route", params={"home": "15.83,50.21", "work": "16.0,50.35"})
+    assert route.status_code == 200, route.text
+    assert "road_ids" in route.json()["route"]
+    assert client.get("/api/route", params={"home": "nebod", "work": "16,50"}).status_code == 400
+
+
+def test_budget_and_rescue_follow_engine_when_it_answers():
+    from app.services.budget import normalize_plan
+    from app.services.collisions import rescue_for_closure
+
+    plan = normalize_plan(
+        {
+            "amount_kc": 100_000_000,
+            "repaired_km": 4.2,
+            "cost_kc": 96_000_000,
+            "remaining_emergency_km": 12,
+            "projects": [{"sil": "300", "okres": "Náchod", "km": 1.1, "cost_kc": 13_000_000, "score": 80}],
+        },
+        100_000_000,
+    )
+    assert plan is not None
+    assert plan["label"] == "estimate"
+    assert plan["projects"][0]["sil"] == "300"
+    assert plan["remaining_emergency_km"] == 12
+
+    class _Engine:
+        def rescue_impact(self, road_id: int) -> dict:
+            return {"obce": [{"nazev": "Malá Úpa", "extra_min": 14, "nad_20_min": True, "obyvatel": 120}]}
+
+    rescue, alerts = rescue_for_closure(_Engine(), 1)
+    assert rescue is not None and rescue["items"][0]["nazev"] == "Malá Úpa"
+    assert alerts[0].level == "critical"
+    assert "14" in alerts[0].title
+
+
+def test_budget_waits_for_engine_and_ai_text_is_not_saved(client: TestClient):
+    citizen = login(client, "citizen")
+    assert client.get("/api/budget?amount=1000000", headers=citizen).status_code == 403
+    official = login(client, "official")
+    plan = client.get("/api/budget?amount=100000000&amount2=50000000", headers=official)
+    assert plan.status_code == 200, plan.text
+    assert plan.json()["ready"] is False
+    assert plan.json()["plans"] == []
+    text = client.post("/api/ai/budget", headers=official, json={"amount": 100000000, "amount2": 50000000})
+    assert text.status_code == 200, text.text
+    assert text.json()["ready"] is False
+    assert text.json()["saved"] is False
+    assert text.json()["label"] == "šablona"
+    meta = client.get("/api/export/metadata.jsonld")
+    assert meta.status_code == 200
+    assert meta.json()["typ"] == "Datová sada"
+    assert "EUPL-1.2" in meta.json()["popis"]["cs"]
+
+
+def test_query_weights_do_not_replace_stored_ones(client: TestClient):
+    zero = "&".join(f"{key}=0" for key in ("stav", "worse", "trida", "schools", "hospitals", "rescue", "transit", "industry", "social", "age", "votes"))
+    queried = client.get(f"/api/ranking?limit=1&{zero}")
+    assert queried.status_code == 200, queried.text
+    assert queried.json()["weights_source"] == "query"
+    assert queried.json()["items"][0]["score"] == 0
+    stored = client.get("/api/ranking?limit=1")
+    assert stored.json()["weights_source"] != "query"
+    assert stored.json()["items"][0]["score"] > 0
+
+
+def test_ai_cache_roundtrip(client: TestClient):
+    from app.ai.service import _cache_get, _cache_put
+
+    _cache_put("test-budget-cache", "tři věty")
+    assert _cache_get("test-budget-cache") == "tři věty"
+
+
+def test_login_rate_limit(client: TestClient):
+    from app.api import auth as auth_api
+
+    auth_api._failures.clear()
+    try:
+        for _ in range(5):
+            response = client.post(
+                "/api/auth/login",
+                json={"email": "nikdo@cesty-khk.test", "password": "spatne-heslo-123"},
+            )
+            assert response.status_code == 401
+        blocked = client.post(
+            "/api/auth/login",
+            json={"email": "nikdo@cesty-khk.test", "password": "spatne-heslo-123"},
+        )
+        assert blocked.status_code == 429
+    finally:
+        auth_api._failures.clear()
+
+
+def test_demo_closures_are_2022_plans(client: TestClient):
     response = client.get("/api/demo-closures")
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["ready"] is False
-    assert body["label"] == "demo data"
-    assert 1 <= len(body["items"]) <= 3
-    assert body["items"][0]["detour_found"] is True
-    assert body["items"][0]["extra_km"] is not None
+    assert body["ready"] is True
+    assert body["label"] == "skutečný plán 2022 (Data KHK)"
+    assert len(body["items"]) == 20
+    assert body["items"][0]["label"] == body["label"]
+    assert sum(1 for item in body["items"] if item.get("recommended")) == 3
 

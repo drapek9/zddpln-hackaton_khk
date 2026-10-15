@@ -36,9 +36,43 @@ class StatusBody(BaseModel):
     status: str
 
 
+class PreviewBody(BaseModel):
+    road_id: int
+    date_from: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    date_to: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    restriction: str = Field(default="úplná uzavírka", max_length=200)
+    note: str | None = Field(default=None, max_length=2000)
+
+
 def _check_dates(body: ClosureBody) -> None:
     if body.date_from > body.date_to:
         raise HTTPException(status_code=400, detail="Datum konce je před začátkem.")
+
+
+@router.post("/closures/preview")
+def preview_closure(
+    body: PreviewBody,
+    request: Request,
+    user: User = Depends(require_official),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Detour and alerts for the form. Nothing is written."""
+    if body.date_from > body.date_to:
+        raise HTTPException(status_code=400, detail="Datum konce je před začátkem.")
+    require_road(request.app.state.engine, body.road_id)
+    row = Closure(
+        road_id=body.road_id,
+        title="Náhled",
+        date_from=body.date_from,
+        date_to=body.date_to,
+        restriction=body.restriction,
+        note=body.note,
+        simulated=True,
+        created_by=user.id,
+    )
+    result = preview(session, request.app.state.engine, row)
+    result["saved"] = False
+    return result
 
 
 @router.post("/closures", status_code=201)

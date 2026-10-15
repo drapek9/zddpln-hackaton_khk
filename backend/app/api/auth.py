@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
@@ -13,6 +15,21 @@ from app.db.models import User
 from app.db.session import get_session
 
 router = APIRouter(prefix="/auth", tags=["Přihlášení"])
+
+_WINDOW_S = 60.0
+_MAX_FAILURES = 5
+_failures: dict[str, list[float]] = {}
+
+
+def _client_ip(request: Request) -> str:
+    if request.client is None or not request.client.host:
+        return "unknown"
+    return request.client.host
+
+
+def _recent(ip: str) -> list[float]:
+    now = time.monotonic()
+    return [stamp for stamp in _failures.get(ip, []) if now - stamp < _WINDOW_S]
 
 
 class Credentials(BaseModel):
@@ -54,13 +71,26 @@ def register(body: Credentials, response: Response, session: Session = Depends(g
 
 
 @router.post("/login")
-def login(body: Credentials, response: Response, session: Session = Depends(get_session)) -> dict:
+def login(
+    body: Credentials,
+    response: Response,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> dict:
+    ip = _client_ip(request)
+    recent = _recent(ip)
+    _failures[ip] = recent
+    if len(recent) >= _MAX_FAILURES:
+        raise HTTPException(status_code=429, detail="Příliš mnoho pokusů. Zkuste to za minutu.")
     email = body.email.strip().lower()
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None or not verify_password(body.password, user.password_hash):
+        _failures[ip] = [*recent, time.monotonic()]
         raise HTTPException(status_code=401, detail="Špatný e-mail nebo heslo.")
     if user.blocked:
+        _failures[ip] = [*recent, time.monotonic()]
         raise HTTPException(status_code=403, detail="Účet je zablokovaný.")
+    _failures.pop(ip, None)
     return _issue(response, user)
 
 
