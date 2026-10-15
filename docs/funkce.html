@@ -188,7 +188,7 @@
             <h3>Tomáš · data a výpočet</h3>
             <p>T13 nové sady z Data KHK → T14 kolik středoškoláků jede přes úsek → T7 auta za den (ŘSD) → T16 tři ukázkové uzavírky 2022.</p>
             <p class="done">Hotovo, když objížďka vrací studenty a odříznuté obce a testy jsou zelené.</p>
-            <p><b>Stav 11:45:</b> T6, T13, T14, T15, T7 a T16 hotové na větvi <code>tomas</code>, 17 testů zelených. Metody pro Šimona v <a href="BACKEND.md">BACKEND.md</a>, kap. 7. Další: T8 SRTI, T11 oprava 450 m.</p>
+            <p><b>Stav 11:05:</b> T6, T7, T8, T11, T13, T14, T15 a T16 hotové na větvi <code>tomas</code>, 19 testů zelených. Metody pro Šimona v <a href="BACKEND.md">BACKEND.md</a>, kap. 7. Další: pomoc se sloučením do <code>main</code> (kap. 16 plánu).</p>
           </article>
           <article>
             <h3>Šimon · API a server</h3>
@@ -208,9 +208,10 @@
         </div>
           <li><b>10:48</b> Tomáš: v <code>PLAN_FINAL.md</code> nová kap. 15: landing (bez přihlášení / login), role ručně v DB, JWT v httpOnly cookie, kdo co dělá. Backend má Šimon hotový na větvi <code>simon</code>, chybí login ve frontendu (Matouš).</li>
         <ol class="log" reversed>
+          <li><b>11:05</b> Tomáš: T8 aktuální uzavírky z ŘSD SRTI (45 situací v kraji, 22 úplných uzavírek na silnicích kraje, <code>engine.srti_closures()</code>). T11: škola nebo nemocnice se počítá jen k nejbližším úsekům, ne ke všem do 450 m. Počty bodů u úseků klesly asi na polovinu, skóre a pořadí se tím změnily (web i backend stejně).</li>
           <li><b>11:04</b> Tomáš: rozbor 19 nápadů. Do plánu jde 13 (rozpočtový asistent s porovnáním, dojezd IZS, kolize, DCAT, bezpečnost, QR, povodeň, ověření modelu, Moje obec, ranní souhrn, trasa po silnicích). Nehody zamítnuty pro dnešek. Rozdělení T17–T19, S14–S20, F1–F7 v <code>PLAN_FINAL.md</code>, kap. 17. <code>PLAN_OD_BIDAKA.md</code> smazán.</li>
-          <li><b>11:15</b> Tomáš: zkušební sloučení <code>tomas</code> + <code>simon</code> + <code>matous</code> jde bez konfliktu, frontend se sestaví, API vrací skutečné uzavírky 2022 a obce. Před sloučením do <code>main</code> ve 12:00 musí Šimon opravit intenzitu a 4 testy. Úkoly pro všechny v <code>PLAN_FINAL.md</code>, kap. 16.</li>
-          <li><b>11:45</b> Tomáš: backend umí kolik středoškoláků jede přes úsek (22 382 denně, Data KHK), odříznuté obce, auta za den ze sčítání ŘSD 2025 a 20 skutečných úplných uzavírek 2022 s objížďkou a dopady. Tři doporučené pro demo: II/303 Velké Poříčí – Hronov, II/302 Broumov, III/28526 Jizbice – Náchod. Větev <code>tomas</code>, popis v <a href="BACKEND.md">BACKEND.md</a>, kap. 7.</li>
+          <li><b>10:55</b> Tomáš: zkušební sloučení <code>tomas</code> + <code>simon</code> + <code>matous</code> jde bez konfliktu, frontend se sestaví, API vrací skutečné uzavírky 2022 a obce. Před sloučením do <code>main</code> ve 12:00 musí Šimon opravit intenzitu a 4 testy. Úkoly pro všechny v <code>PLAN_FINAL.md</code>, kap. 16.</li>
+          <li><b>10:45</b> Tomáš: backend umí kolik středoškoláků jede přes úsek (22 382 denně, Data KHK), odříznuté obce, auta za den ze sčítání ŘSD 2025 a 20 skutečných úplných uzavírek 2022 s objížďkou a dopady. Tři doporučené pro demo: II/303 Velké Poříčí – Hronov, II/302 Broumov, III/28526 Jizbice – Náchod. Větev <code>tomas</code>, popis v <a href="BACKEND.md">BACKEND.md</a>, kap. 7.</li>
           <li><b>10:35</b> Tomáš: v <code>PLAN_FINAL.md</code> nová kap. 14. Přesné odkazy na sady (Data KHK itemId, ŘSD, SRTI, OSM) a hotový návrh AI pro Šimona: Claude Haiku přes jedno rozhraní v <code>backend/app/ai/</code>, šablona jako záloha, 4 endpointy, kdo co dělá a v jakém pořadí.</li>
           <li><b>10:35</b> Tomáš: <a href="../NAPADY.md">NAPADY.md</a> přesunuté do kořene repa. Z <code>PLAN_FINAL.md</code> do něj odešlo vše, co se dnes nedělá (V3, nehody, povodeň, Moje obec, widget, skutečný e‑mail, ověření modelu). <code>PLAN_FINAL.md</code> teď obsahuje jen dnešní práci.</li>
           <li><b>10:20</b> Tomáš: zásobník schválených nápadů na později v <a href="../NAPADY.md">NAPADY.md</a> (rozpočtový asistent se souvislými stavbami, dojezd ZZS a HZS, kolize uzavírek, export DCAT‑AP‑CZ, bezpečnost a GDPR, QR na web). Zatím to nejsou úkoly.</li>
@@ -420,7 +421,7 @@
         role: "urednik", status: "jadro", priority: "MVP",
         title: "Objížďka se spočítá",
         benefit: "U zavřeného úseku vznikne náhradní trasa, kilometry a minuty navíc. Úředník uvidí, o kolik se cesta prodlouží.",
-        note: "Objížďka se najde u 81,5 % úseků. Medián je +8,6 km a +10 minut, výpočet trvá asi 2 ms. Na mapě ji ještě není vidět. Auta za den v datech pořád nejsou. Doplněno 11:45: auta za den už v datech jsou (T7) a objížďka umí i uzavírku přes víc úseků najednou."
+        note: "Objížďka se najde u 81,5 % úseků. Medián je +8,6 km a +10 minut, výpočet trvá asi 2 ms. Na mapě ji ještě není vidět. Auta za den v datech pořád nejsou. Doplněno 10:45: auta za den už v datech jsou (T7) a objížďka umí i uzavírku přes víc úseků najednou."
       },
       {
         role: "urednik", status: "jadro", priority: "MVP",
