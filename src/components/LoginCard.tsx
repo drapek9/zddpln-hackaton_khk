@@ -46,12 +46,9 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
 
   return (
         <section className="auth-card view-enter">
-          <p className="eyebrow">{mode === "login" ? "Přihlášení" : "Nový účet občana"}</p>
-          <h1>{mode === "login" ? "Vítejte zpět" : "Registrace"}</h1>
+          <h1>{mode === "login" ? "Přihlášení" : "Registrace občana"}</h1>
           <p className="muted">
-            {mode === "login"
-              ? "Úředníci a admini dostanou přihlašovací údaje od kraje. Občané si účet založí sami."
-              : "Účet občana: uložená místa domov a práce a upozornění na uzavírky na vaší cestě."}
+            {mode === "login" ? "Účty pro úřad vydává kraj." : "Uložená místa a upozornění na uzavírky."}
           </p>
 
           {note && <p className="auth-note">{note}</p>}

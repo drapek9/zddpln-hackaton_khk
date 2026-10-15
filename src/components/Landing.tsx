@@ -32,27 +32,14 @@ export default function Landing({ user, offline, note, onUser, onDemo, onNavigat
           Cesty KHK
         </h1>
         <p className="landing3-lead reveal" style={{ animationDelay: "0.3s" }}>
-          Mapa krajských silnic: které opravit dřív, co uzavírka udělá s autobusy, školami a záchrankou, a co se
-          opravuje na vaší cestě.
+          Opravy a uzavírky silnic v kraji na jedné mapě.
         </p>
-        <ul className="landing3-points reveal" style={{ animationDelay: "0.45s" }}>
-          <li>
-            <b>Veřejnost</b> vidí opravy a uzavírky a zkontroluje si cestu do práce.
-          </li>
-          <li>
-            <b>Úředníci</b> plánují opravy podle priority a rozpočtu.
-          </li>
-          <li>
-            <b>Admin</b> spravuje váhy kraje a přístupy.
-          </li>
-        </ul>
       </section>
 
       <section className="landing3-auth">
         {user ? (
           <div className="auth-card view-enter">
-            <p className="eyebrow">Přihlášeno</p>
-            <h1>Vítejte</h1>
+            <h1>Přihlášeno</h1>
             <div className="user-menu">
               <span className="user-avatar" aria-hidden="true">
                 {user.email.slice(0, 1).toUpperCase()}
