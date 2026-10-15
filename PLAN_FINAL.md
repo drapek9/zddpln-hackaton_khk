@@ -9,6 +9,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
+> **PRIORITA TOP (15. 10.): další zkušební sloučení do `main` je v 15:00.** Potom každých 30 minut (15:30, 16:00, 16:30, …). Do každého termínu mít svou větev pushnutou, s procházejícími testy a sloučitelnou s `main`.
+>
 > **15. 10., 13:15: nejvyšší priorita je kap. 19** (propojit frontend s backendem, chyby D1–D10). Až potom rozšiřování.
 >
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
