@@ -110,7 +110,7 @@ def _alerts(rows: list[RescueObec]) -> list[Alert]:
         alerts.append(
             Alert(
                 level="critical",
-                title=f"Záchranka přes {LIMIT_MIN:.0f} min: {len(over)} obcí",
+                title=f"Záchranka přes {LIMIT_MIN:.0f} min: {_obce(len(over))}",
                 detail=f"Dojezd ZZS do obcí {names} překročí {LIMIT_MIN:.0f} min (odhad).",
             )
         )
@@ -128,3 +128,7 @@ def _alerts(rows: list[RescueObec]) -> list[Alert]:
         level = "warning" if worst.after_min is None or (worst.extra_min or 0) >= 5 else "info"
         alerts.append(Alert(level=level, title=f"Delší dojezd {NAMES[s]}", detail=detail))
     return alerts
+
+
+def _obce(n: int) -> str:
+    return f"{n} obec" if n == 1 else f"{n} obce" if 2 <= n <= 4 else f"{n} obcí"

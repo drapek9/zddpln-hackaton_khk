@@ -169,7 +169,8 @@ def test_closure_notifies_citizen_on_route(client: TestClient):
     assert body["vehicles_quality"] in {"csd2025", "odhad"}
     assert isinstance(body["students_per_day"], int) and body["students_per_day"] >= 0
     assert isinstance(body["cut_off_obce"], list)
-    assert body["rescue"] is None
+    # T18: Engine.rescue_impact answers, the payload is an estimate.
+    assert body["rescue"] is None or body["rescue"]["label"] == "estimate"
     hidden = client.get("/api/uzavirky")
     assert all(item["id"] != body["closure"]["id"] for item in hidden.json()["items"])
     confirmed = client.post(f"/api/closures/{body['closure']['id']}/confirm", headers=official)
