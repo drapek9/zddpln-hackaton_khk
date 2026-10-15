@@ -123,6 +123,16 @@
     article .note { margin-top: 8px; color: var(--muted); font-size: 13px; }
     .empty { display: none; padding: 12px 24px; color: var(--muted); }
     .empty.show { display: block; }
+    section.team { padding: 22px 24px 4px; }
+    section.team h2 { font-size: 22px; margin: 0 0 4px; }
+    .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+    .team-grid article { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+    .team-grid h3 { margin: 0 0 4px; font-size: 16px; }
+    .team-grid p { margin: 0; }
+    .team-grid .done { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    ol.log { margin: 12px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+    ol.log b { color: var(--ink); }
+    @media (max-width: 720px) { .team-grid { grid-template-columns: 1fr; } section.team { padding-left: 18px; padding-right: 18px; } }
     footer {
       padding: 8px 24px 40px;
       color: var(--muted);
@@ -146,7 +156,7 @@
         a jak se o tom lidé dozví. Tady je to rozdělené podle toho, kdo to použije
         a jestli to už jde otevřít.
       </p>
-      <p class="meta">Stav k ránu 15.&nbsp;10.&nbsp;2026. Ověřeno proti aplikaci v prohlížeči a proti výpočtu v Pythonu. Plán: <a href="../PLAN_FINAL.md">PLAN_FINAL.md</a>.</p>
+      <p class="meta">Stav k 15.&nbsp;10.&nbsp;2026, 10:00. Ověřeno proti aplikaci v prohlížeči a proti výpočtu v Pythonu. Plán: <a href="../PLAN_FINAL.md">PLAN_FINAL.md</a>.</p>
     </div>
   </header>
 
@@ -170,6 +180,37 @@
 
   <main>
     <div class="wrap">
+      <section class="team" id="tym">
+        <h2>Na čem se teď pracuje</h2>
+        <p class="role-lead">Stav k 15.&nbsp;10., 10:00. Hlavní cíl dopoledne: <b>★1 simulátor uzavírky</b> (vyberu úsek, zavřu ho a uvidím objížďku s dopady). Ve 12:00: když ★1 nejede celé, jdou na něj všichni. Podrobně: <a href="STAV_A_DOPORUCENI.md">STAV_A_DOPORUCENI.md</a>.</p>
+        <div class="team-grid">
+          <article>
+            <h3>Tomáš · data a výpočet</h3>
+            <p>T13 nové sady z Data KHK → T14 kolik středoškoláků jede přes úsek → T7 auta za den (ŘSD) → T16 tři ukázkové uzavírky 2022.</p>
+            <p class="done">Hotovo, když objížďka vrací studenty a odříznuté obce a testy jsou zelené.</p>
+          </article>
+          <article>
+            <h3>Šimon · API a server</h3>
+            <p>S4 <code>GET /api/ranking</code> + S5 uzavírka s objížďkou a varováními do ~10:30. Rozhodnout, na čím počítači poběží sdílený server. Pak seed účtů, push až nakonec.</p>
+            <p class="done">Hotovo, když Matouš dostane objížďku přes <code>/api</code>.</p>
+          </article>
+          <article>
+            <h3>Matouš · obrazovka ★1</h3>
+            <p>Simulátor uzavírky: objížďka na mapě, +km, +min, studenti nebo auta, varování, návrh oznámení a tlačítko „Potvrdit“. Zatím nad mockem ze <code>schemas.py</code>, pak přes API.</p>
+            <p class="done">Hotovo, když projdou tři ukázkové uzavírky.</p>
+          </article>
+          <article>
+            <h3>Přemek · pitch a odevzdání</h3>
+            <p>Scénář dema na 5 minut (začíná uzavírkou, ne mapou stavu), slajdy do PDF/PPTX k odevzdání v 17:00, záložní video. Design review jen u ★1.</p>
+            <p class="done">Hotovo, když pitch má zkoušku se stopkami.</p>
+          </article>
+        </div>
+        <ol class="log" reversed>
+          <li><b>10:00</b> Tomáš: na tuto stránku přibyl přehled, kdo na čem dělá, a průběžný záznam. Nové záznamy přidávat nahoru.</li>
+          <li><b>9:45</b> Tomáš: T6 hotové. Backend umí varování před uzavírkou (stejná jako ve webu) a nově i varování k objížďce. 10/10 testů.</li>
+          <li><b>9:30</b> Tomáš: audit stavu a doporučený postup v <a href="STAV_A_DOPORUCENI.md">STAV_A_DOPORUCENI.md</a>, návrh sdíleného serveru přes Tailscale (kap. 6).</li>
+        </ol>
+      </section>
       <div class="counts" id="counts"></div>
       <p class="empty" id="empty">Tomuto filtru nic neodpovídá.</p>
       <div id="roles"></div>
@@ -371,6 +412,12 @@
         title: "Objížďka se spočítá",
         benefit: "U zavřeného úseku vznikne náhradní trasa, kilometry a minuty navíc. Úředník uvidí, o kolik se cesta prodlouží.",
         note: "Objížďka se najde u 81,5 % úseků. Medián je +8,6 km a +10 minut, výpočet trvá asi 2 ms. Na mapě ji ještě není vidět. Auta za den v datech pořád nejsou."
+      },
+      {
+        role: "urednik", status: "jadro", priority: "MVP",
+        title: "Varování k objížďce",
+        benefit: "Uvidí, jestli objížďka vede po havarijních úsecích, po silnici I. třídy, kolem škol nebo jestli po ní pojedou autobusy. Když se objížďka nenajde, dozví se proč.",
+        note: "Hotovo 15. 10. v Pythonu (T6) spolu s varováními před uzavírkou, stejnými jako ve webu. Na obrazovce zatím není."
       },
       {
         role: "urednik", status: "plan", priority: "MVP",
