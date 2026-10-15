@@ -53,20 +53,17 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
 
           {note && <p className="auth-note">{note}</p>}
 
-          {offline && (
-            <div className="auth-offline">
-              <b>Server s přihlášením teď neběží.</b>
-              <span>Pro ukázku můžete vstoupit bez hesla:</span>
-              <div className="row-actions">
-                <button className="btn" onClick={() => onDemo("official")}>
-                  Jako úředník (demo)
-                </button>
-                <button className="btn" onClick={() => onDemo("admin")}>
-                  Jako admin (demo)
-                </button>
-              </div>
+          <div className="auth-offline" style={{ background: "var(--surface-sunken, rgba(0,0,0,0.03))", border: "1px dashed var(--border, #cbd5e1)", padding: "10px 14px", borderRadius: "8px", margin: "12px 0" }}>
+            <span style={{ fontSize: "12px", color: "var(--muted, #64748b)", display: "block", marginBottom: "6px" }}>Rychlý demo vstup bez hesla:</span>
+            <div className="row-actions" style={{ gap: "8px" }}>
+              <button type="button" className="btn" style={{ fontSize: "13px", padding: "6px 12px" }} onClick={() => onDemo("official")}>
+                Demo Úředník
+              </button>
+              <button type="button" className="btn" style={{ fontSize: "13px", padding: "6px 12px" }} onClick={() => onDemo("admin")}>
+                Demo Admin
+              </button>
             </div>
-          )}
+          </div>
 
           <form className="auth-form" onSubmit={submit} noValidate>
             <label>
