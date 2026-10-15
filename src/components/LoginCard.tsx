@@ -17,6 +17,7 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -73,14 +74,31 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
             </label>
             <label>
               Heslo
-              <input
-                type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
-                required
-              />
+              <span className="pw-field">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+                {/* Očičko: ukáže heslo, když si člověk není jistý, co napsal. */}
+                <button
+                  type="button"
+                  className="pw-eye"
+                  aria-label={showPassword ? "Skrýt heslo" : "Zobrazit heslo"}
+                  aria-pressed={showPassword}
+                  title={showPassword ? "Skrýt heslo" : "Zobrazit heslo"}
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                    {showPassword && <path d="M4 4l16 16" />}
+                  </svg>
+                </button>
+              </span>
             </label>
             {mode === "register" && (
               <label className="consent">

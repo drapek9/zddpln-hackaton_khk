@@ -776,7 +776,7 @@ body.is-resizing .workspace { transition: none; }
 .auth-card > .muted { margin: 0; }
 .auth-form { display: grid; gap: 12px; margin-top: 4px; }
 .auth-form label { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-2); }
-.auth-form input[type="email"], .auth-form input[type="password"] {
+.auth-form input[type="email"], .auth-form input[type="password"], .auth-form .pw-field input {
   width: 100%;
   border: 1px solid var(--line-strong);
   background: var(--surface-2);
@@ -785,6 +785,12 @@ body.is-resizing .workspace { transition: none; }
   font-size: 15px;
   outline: none;
 }
+/* Heslo s očičkem vpravo */
+.pw-field { position: relative; display: block; }
+.auth-form .pw-field input { padding-right: 44px; }
+.pw-eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; }
+.pw-eye:hover, .pw-eye[aria-pressed="true"] { color: var(--accent); }
+.pw-eye:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
 .auth-form .consent { grid-template-columns: auto 1fr; align-items: start; gap: 10px; font-weight: 400; font-size: 13px; line-height: 1.45; color: var(--text-2); }
 .auth-form .consent input { margin-top: 3px; accent-color: var(--accent); }
 .auth-submit { padding: 10px 14px; font-size: 15px; }
@@ -1035,7 +1041,8 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
   .landing3-foot .site-foot > span { display: none; }
   .landing3 .auth-offline { padding: 8px 10px; gap: 4px; }
   .landing3 .auth-form { gap: 8px; }
-  .landing3 .auth-form input[type="email"], .landing3 .auth-form input[type="password"] { padding: 8px 11px; }
+  .landing3 .auth-form input[type="email"], .landing3 .auth-form input[type="password"], .landing3 .auth-form .pw-field input { padding: 8px 11px; }
+  .landing3 .auth-form .pw-field input { padding-right: 44px; }
   .landing3 .auth-or { margin: 0; }
 }
 @media (max-width: 900px) {
