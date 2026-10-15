@@ -14,7 +14,7 @@ from . import demo, impact, scoring
 from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph
 from .people import People
-from .schemas import Alert, DemoClosure, DetourResult, FloodResult, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .schemas import Alert, DemoClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -100,6 +100,26 @@ class Engine:
         for rid in ids:
             self._require(rid)
         return self.people.impact(ids)
+
+    def obce(self) -> list[dict[str, Any]]:
+        """Obce of the kraj (Data KHK: Obce): kod, nazev, obyvatel, deti, senioru, lon, lat, bbox."""
+        return [
+            {
+                "kod": o["kod"],
+                "nazev": o["nazev"],
+                "obyvatel": o.get("obyvatel", 0),
+                "deti": o.get("deti", 0),
+                "senioru": o.get("senioru", 0),
+                "lon": o["c"][0],
+                "lat": o["c"][1],
+                "bbox": o["b"],
+            }
+            for o in self.data.extra.get("obce", [])
+        ]
+
+    def cut_off_obce(self, road_id: int) -> list[ObecImpact]:
+        """Obce that lose every road connection to a hospital when this road is closed (T15)."""
+        return self.people_impact([road_id]).cut_off_obce
 
     def intensity(self, road_id: int) -> dict[str, Any] | None:
         """{"sv": vehicles per day, "src": "csd2025" | "odhad", "usek": census section} or None (T7)."""

@@ -235,3 +235,12 @@ def test_demo_closures_2022(engine: Engine):
     # Returned copies: changing one does not change the cache.
     full[0].nazev = "x"
     assert engine.demo_closures()[0].nazev != "x"
+
+
+def test_obce_and_cut_off_for_api(engine: Engine):
+    if not engine.data.extra.get("obce"):
+        pytest.skip("khk_extra.json missing")
+    obce = engine.obce()
+    assert len(obce) == len(engine.data.extra["obce"]) and obce[0]["lon"] and obce[0]["kod"]
+    road = next(r["id"] for r in engine.data.roads if engine.detour(r["id"]).found)
+    assert engine.cut_off_obce(road) == []
