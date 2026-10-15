@@ -357,6 +357,37 @@ Shrnutí: frontend dnes běží skoro celý z lokálních JSON v `public/data` (
 
 ---
 
+## Část E: celkové hodnocení z pohledu poroty (15. 10. 13:00, Tomáš)
+
+Doplněk k části D. D je o tom, jak spolu mluví frontend a backend. E je o tom, **co porota v ukázce uvidí a co ne**. Stav `main` `7ea72fc`: backend 49/49 testů, `npm run build` projde.
+
+**Shrnutí:** jádro a API jsou hotové a silné. Porota ale uvidí hlavně frontend, a ten skoro všechno počítá lokálně. Na `main` je přihlášení, rozpočtový plánovač, Moje cesty, patička a nový design. Největší rizika jsou tři: **★2 nejde ukázat**, **pitch a PDF nemá nikdo** a **silná data z jádra nejsou na obrazovce**.
+
+### Důležité nedostatky
+**E1. ★2 Web Push ve frontendu chybí úplně.** Není service worker ani `PushManager`. V Moje cesty je jen zaškrtávátko „Poslat upozornění“. Backend (`notify/`, `/api/me/push-subscription`, VAPID) je hotový. Příběh „úředník potvrdí uzavírku → občanovi pípne telefon“ je druhý pilíř pitche. Bez něj ukázat aspoň seznam upozornění v aplikaci (`GET /api/me/notifications`). (Matouš, Šimon.)
+
+**E2. Pitch, PDF/PPTX a záložní video nemá nikdo.** Odevzdání 17:15, freeze 16:00. Pitch je 5 minut a rozhoduje víc než kterákoli funkce. (Tým, hned.)
+
+**E3. Rozpočet na obrazovce je lokální odhad, ne T17.** `src/lib/budget.ts` sám píše, že čeká na API. Souvislé stavby, porovnání dvou částek a AI text jsou v backendu (`/api/budget`), na obrazovce ne. Porota z ekonomické gesce uvidí slabší verzi. (Matouš.)
+
+**E4. Skutečná data kraje nejsou vidět.** Ukázkové uzavírky v simulátoru jsou 3 naše úseky, ne 20 skutečných plánů kraje 2022 (`/api/demo-closures`). Aktuální uzavírky ŘSD (SRTI) nejsou na mapě. Studenti, odříznuté obce a dojezd IZS jsou jen v náhledu z API, který frontend nevolá (D2). Tohle je přitom naše hlavní odlišení od RoadMapperu. (Matouš, navazuje na D2.)
+
+**E5. AI není nikde vidět.** Backend má zdůvodnění, oznámení a váhy z textu, frontend nevolá nic z `/api/ai/*`. Oznámení o uzavírce je pořád šablona z `src/lib/announce.ts`. Nevíme, jestli máme platný klíč. (Šimon ověří klíč, Matouš jedno tlačítko „Zdůvodnit“ v detailu.)
+
+**E6. Nové faktory T20 mají váhu 0.** Intenzita, objížďka a studenti jsou ve skóre, ale nic nemění. Rozhodnout výchozí váhy (návrh 40 / 30 / 30) a ukázat je v rozpadu. (Tomáš rozhodne, po D1 a D6.)
+
+**E7. Povodeň nemá obrazovku.** Jádro i API jsou hotové. Silné pro porotu z krizového řízení, ale až po E1–E5. (Matouš, jen když zbude čas.)
+
+**E8. Ukázka stojí na jednom Macu a tunelu.** Záložní statický web (GitHub Pages) ani video zatím nejsou. Mobil na 375 px nikdo neověřil. (Přemek.)
+
+### Co je dobře (říct v pitchi)
+- Deterministické skóre se 4 třídami, připnutí s důvodem, audit.
+- Objížďka po grafu pro 81,5 % úseků, auta za den ze sčítání ŘSD 2025 (měřeno 1 343 km, zbytek označený „odhad“).
+- Z dat kraje: středoškoláci na úseku, odříznuté obce, dojezd záchranky a hasičů, povodeň Q5/Q20/Q100, skutečné plány 2022.
+- Přihlášení se 3 rolemi, otevřené API, export CSV/GeoJSON s metadaty DCAT‑AP‑CZ.
+
+---
+
 ## Zamítnuto
 
 - Nehody Policie ČR (č. 10) pro dnešek, 15. 10. Po hackathonu znovu.
