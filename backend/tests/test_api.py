@@ -387,15 +387,23 @@ def test_budget_waits_for_engine_and_ai_text_is_not_saved(client: TestClient):
     citizen = login(client, "citizen")
     assert client.get("/api/budget?amount=1000000", headers=citizen).status_code == 403
     official = login(client, "official")
-    plan = client.get("/api/budget?amount=100000000&amount2=50000000", headers=official)
+    plan = client.get("/api/budget?amount=5000000&amount2=12000000", headers=official)
     assert plan.status_code == 200, plan.text
-    assert plan.json()["ready"] is False
-    assert plan.json()["plans"] == []
-    text = client.post("/api/ai/budget", headers=official, json={"amount": 100000000, "amount2": 50000000})
+    body = plan.json()
+    assert body["ready"] is True
+    assert body["label"] == "estimate"
+    assert len(body["plans"]) == 2
+    first = body["plans"][0]
+    assert isinstance(first["repaired_km"], (int, float)) and first["repaired_km"] > 0
+    assert isinstance(first["cost_kc"], int) and first["cost_kc"] > 0
+    assert isinstance(first["remaining_emergency_km"], (int, float))
+    assert first["projects"]
+    text = client.post("/api/ai/budget", headers=official, json={"amount": 5000000})
     assert text.status_code == 200, text.text
-    assert text.json()["ready"] is False
+    assert text.json()["ready"] is True
     assert text.json()["saved"] is False
     assert text.json()["label"] == "šablona"
+    assert "předpoklad" in text.json()["text"]
     meta = client.get("/api/export/metadata.jsonld")
     assert meta.status_code == 200
     assert meta.json()["typ"] == "Datová sada"
