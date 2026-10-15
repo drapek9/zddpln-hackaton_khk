@@ -1,4 +1,5 @@
 import type { Repair, Report } from "./types";
+import type { Pin } from "./api";
 
 // v2: starší uložené opravy neměly příznak simulace.
 const REPAIR_KEY = "cesty-khk-repairs-v2";
@@ -30,4 +31,24 @@ export function loadReports(): Report[] {
 
 export function saveReports(reports: Report[]) {
   localStorage.setItem(REPORT_KEY, JSON.stringify(reports));
+}
+
+// Připíchnuté priority úředníka. Jen v prohlížeči, dokud nepojede backend (S2, S4).
+const PIN_KEY = "cesty-khk-pins-v1";
+
+export function loadPins(): Pin[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PIN_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function savePins(pins: Pin[]) {
+  try {
+    localStorage.setItem(PIN_KEY, JSON.stringify(pins));
+  } catch {
+    /* plné nebo zakázané úložiště: piny vydrží jen do obnovení stránky */
+  }
 }

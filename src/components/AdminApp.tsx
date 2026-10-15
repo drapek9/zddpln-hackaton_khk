@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STAV_COLOR, STAV_ORDER, formatKm, formatSil } from "../lib/geo";
-import { roadScore } from "../lib/priority";
+import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
+import { DEMO_CLOSURES } from "../lib/closure";
+import { loadPins, savePins } from "../lib/store";
+import type { Pin, PriorityClass } from "../lib/api";
 
 type Props = {
   data: Dataset;
@@ -34,6 +37,35 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
   const [query, setQuery] = useState("");
   const [showPois, setShowPois] = useState(true);
   const [showCondition, setShowCondition] = useState(true);
+  const [cls, setCls] = useState<PriorityClass | "vše">("vše");
+  const [pins, setPins] = useState<Pin[]>(loadPins);
+  const [rows, setRows] = useState<RankRow[]>([]);
+  const [source, setSource] = useState<RankingSource>("local");
+  const [detour, setDetour] = useState<[number, number][] | null>(null);
+  // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
+  const [demoId, setDemoId] = useState<number | null>(null);
+
+  const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
+
+  // Žebříček se počítá nad celou sítí (třídy jsou podíly sítě), filtry jen zužují výpis.
+  useEffect(() => {
+    let alive = true;
+    fetchRanking(data.roads, weights, pins).then((res) => {
+      if (!alive) return;
+      setRows(res.rows);
+      setSource(res.source);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [data.roads, weights, pins]);
+
+  const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+
+  const updatePins = (next: Pin[]) => {
+    setPins(next);
+    savePins(next);
+  };
 
   const okresy = useMemo(
     () => ["vše", ...Array.from(new Set(data.roads.map((r) => r.okres))).sort()],
@@ -50,13 +82,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
     });
   }, [data.roads, okres, stav, query]);
 
-  const ranked = useMemo(
-    () =>
-      [...filtered]
-        .map((r) => ({ r, score: roadScore(r, weights) }))
-        .sort((a, b) => b.score - a.score),
-    [filtered, weights],
-  );
+  const ranked = useMemo(() => {
+    const visible = new Set(filtered.map((r) => r.id));
+    return rows
+      .filter((row) => visible.has(row.id) && (cls === "vše" || row.priority === cls))
+      .map((row) => ({ r: roadsById.get(row.id)!, row }));
+  }, [rows, filtered, cls, roadsById]);
+
+  const classKm = useMemo(() => {
+    const out: Record<string, number> = {};
+    rows.forEach((row) => (out[row.priority] = (out[row.priority] || 0) + (roadsById.get(row.id)?.delka || 0)));
+    return out;
+  }, [rows, roadsById]);
 
   const selected = data.roads.find((r) => r.id === selectedId) || null;
   const existing = repairs.find((r) => r.roadId === selectedId);
@@ -110,6 +147,23 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
             Školy, IZS, nemocnice
           </label>
+          <h3>Simulátor uzavírky</h3>
+          <p className="muted">Vyberte úsek v mapě nebo ukázku. Vpravo uvidíte objížďku a dopady.</p>
+          <div className="demo-closures">
+            {DEMO_CLOSURES.map((d) => (
+              <button
+                key={d.roadId}
+                className={d.roadId === selectedId ? "active" : ""}
+                onClick={() => {
+                  setDemoId(d.roadId);
+                  setSelectedId(d.roadId);
+                }}
+              >
+                <strong>{d.label}</strong>
+                <span>{d.story}</span>
+              </button>
+            ))}
+          </div>
           <h3>Váhy priority</h3>
           <p className="muted">Posuvníky mění pořadí úseků. Nic se neukládá do dat kraje.</p>
           {WEIGHT_LABELS.map((w) => (
@@ -127,22 +181,50 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
               />
             </label>
           ))}
-          <h3>Nejvyšší priorita</h3>
+          <h3>Žebříček priority</h3>
+          <p className="muted">
+            {source === "api" ? (
+              <span className="src-tag">z API</span>
+            ) : (
+              <span className="src-tag" title="GET /api/ranking zatím neběží, stejný algoritmus jako backend">
+                lokální výpočet
+              </span>
+            )}{" "}
+            Třída podle pořadí v síti: horních 10 % kritická, 20 % vysoká, 30 % střední, zbytek nízká.
+          </p>
+          <div className="class-filter">
+            {(["vše", ...CLASS_ORDER] as const).map((c) => (
+              <button key={c} className={cls === c ? "on" : ""} onClick={() => setCls(c)}>
+                {c !== "vše" && <i style={{ background: CLASS_COLOR[c] }} />}
+                {c === "vše" ? "vše" : CLASS_LABEL[c]}
+                {c !== "vše" && <small>{Math.round((classKm[c] || 0) / 1000)} km</small>}
+              </button>
+            ))}
+          </div>
           <ul className="rank">
-            {ranked.slice(0, 18).map(({ r, score }) => (
+            {ranked.slice(0, 18).map(({ r, row }) => (
               <li key={r.id}>
                 <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
                   <span className="rank-sil">
                     <i style={{ background: STAV_COLOR[r.stav] }} />
                     {formatSil(r.sil, r.trida)}
+                    <span className="class-tag" style={{ background: CLASS_COLOR[row.priority] }}>
+                      {CLASS_LABEL[row.priority]}
+                    </span>
+                    {row.pinned && (
+                      <span className="pin-tag" title={row.pinReason || "připíchnuto úředníkem"}>
+                        📌
+                      </span>
+                    )}
                   </span>
                   <span className="rank-meta">
-                    {r.okres} · {formatKm(r.delka)}
+                    #{row.rank} · {r.okres} · {formatKm(r.delka)}
                   </span>
-                  <b>{score}</b>
+                  <b>{row.score}</b>
                 </button>
               </li>
             ))}
+            {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
           </ul>
         </aside>
         <div className="map-wrap">
@@ -156,6 +238,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             pois={data.pois}
             stops={data.stops}
             showPois={showPois}
+            detour={detour}
           />
           <div className="legend">
             {STAV_ORDER.map((s) => (
@@ -169,12 +252,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
         <aside className="side right">
           {selected ? (
             <RoadPanel
-              key={selected.id}
+              key={`${selected.id}-${demoId === selected.id}`}
+              simulate={demoId === selected.id}
               road={selected}
               weights={weights}
               connections={data.connections}
               existing={existing}
               mode="admin"
+              rank={rowById.get(selected.id)}
+              pin={pins.find((p) => p.road_id === selected.id)}
+              onPin={(pin) => updatePins([...pins.filter((p) => p.road_id !== selected.id), ...(pin ? [pin] : [])])}
+              roadsById={roadsById}
+              onDetour={setDetour}
               onPlan={(repair) => {
                 const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
                 onRepairs(next);

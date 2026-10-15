@@ -1,4 +1,4 @@
-import { SOURCES, sourceUrl } from "../lib/sources";
+import { EXTERNAL_SOURCES, PLANNED_KHK_SOURCES, SOURCES, searchUrl, sourceUrl } from "../lib/sources";
 import type { Dataset } from "../lib/types";
 
 type Props = {
@@ -53,6 +53,60 @@ export default function Sources({ stats, onHome }: Props) {
             ))}
           </tbody>
         </table>
+
+        <h2>Další sady Data KHK (připravujeme)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Datová sada</th>
+              <th>K čemu ji použijeme</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PLANNED_KHK_SOURCES.map((s) => (
+              <tr key={s.name}>
+                <td>
+                  <a href={searchUrl(s.query)} target="_blank" rel="noreferrer">
+                    {s.name}
+                  </a>
+                </td>
+                <td>{s.use}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h2>Externí data a licence</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Licence</th>
+              <th>K čemu</th>
+              <th>Stav</th>
+            </tr>
+          </thead>
+          <tbody>
+            {EXTERNAL_SOURCES.map((s) => (
+              <tr key={s.name}>
+                <td>
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    {s.name}
+                  </a>
+                  <br />
+                  <small>{s.publisher}</small>
+                </td>
+                <td>{s.license}</td>
+                <td>{s.use}</td>
+                <td>{s.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="hint">
+          Objížďky počítá jádro aplikace nad grafem silnic kraje a silnic I. třídy z OpenStreetMap. Délky a časy
+          objížďky jsou <b>odhad</b>, počet aut za den doplníme ze sčítání ŘSD.
+        </p>
       </main>
     </div>
   );

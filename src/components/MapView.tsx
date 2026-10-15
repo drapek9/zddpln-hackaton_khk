@@ -13,6 +13,8 @@ type Props = {
   pois?: Poi[];
   stops?: Stop[];
   showPois?: boolean;
+  /** Objížďka uzavřeného úseku ([lon, lat]), simulátor uzavírky. */
+  detour?: [number, number][] | null;
 };
 
 const STYLES = {
@@ -38,6 +40,15 @@ function roadsToGeo(roads: Road[], repairs: Repair[]) {
   };
 }
 
+function detourToGeo(detour: [number, number][] | null | undefined) {
+  return {
+    type: "FeatureCollection" as const,
+    features: detour?.length
+      ? [{ type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: detour } }]
+      : [],
+  };
+}
+
 function pointsToGeo(points: { id: string; x: number; y: number; name: string; kind?: string }[]) {
   return {
     type: "FeatureCollection" as const,
@@ -59,9 +70,15 @@ export default function MapView({
   pois = [],
   stops = [],
   showPois = false,
+  detour = null,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const prevSelectedRef = useRef<number | null>(null);
+  const selectedRef = useRef(selectedId);
+  selectedRef.current = selectedId;
+  const detourRef = useRef(detour);
+  detourRef.current = detour;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -76,7 +93,10 @@ export default function MapView({
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
+      new maplibregl.AttributionControl({
+        compact: true,
+        customAttribution: "Silnice I. třídy pro objížďky © přispěvatelé OpenStreetMap (ODbL)",
+      }),
       "bottom-left",
     );
     mapRef.current = map;
@@ -140,6 +160,21 @@ export default function MapView({
           "line-opacity": 0.95,
         },
       });
+      map.addSource("detour", { type: "geojson", data: detourToGeo(detourRef.current) });
+      map.addLayer({
+        id: "detour-casing",
+        type: "line",
+        source: "detour",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#0b1220", "line-width": 8, "line-opacity": 0.6 },
+      });
+      map.addLayer({
+        id: "detour-line",
+        type: "line",
+        source: "detour",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#a78bfa", "line-width": 4, "line-dasharray": [1.5, 1] },
+      });
       map.addLayer({
         id: "poi-circles",
         type: "circle",
@@ -185,6 +220,11 @@ export default function MapView({
         },
       });
 
+      if (selectedRef.current != null) {
+        map.setFeatureState({ source: "roads", id: selectedRef.current }, { selected: true });
+        prevSelectedRef.current = selectedRef.current;
+      }
+
       map.on("click", "roads-line", (e) => {
         const id = e.features?.[0]?.properties?.id;
         if (id != null) onSelectRef.current(Number(id));
@@ -226,6 +266,20 @@ export default function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      (map.getSource("detour") as GeoJSONSource | undefined)?.setData(detourToGeo(detour));
+      if (!detour?.length) return;
+      const bounds = new maplibregl.LngLatBounds(detour[0], detour[0]);
+      detour.forEach((p) => bounds.extend(p));
+      map.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 700 });
+    };
+    if (map.getSource("detour")) apply();
+    else map.once("load", apply);
+  }, [detour]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map?.getLayer("roads-line")) return;
     map.setPaintProperty("roads-line", "line-opacity", showCondition ? 0.95 : 0.18);
     if (map.getLayer("poi-circles")) {
@@ -236,13 +290,13 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    roads.forEach((r) => {
-      try {
-        map.setFeatureState({ source: "roads", id: r.id }, { selected: r.id === selectedId });
-      } catch {
-        /* source may not be ready */
-      }
-    });
+    // Přepnout jen předchozí a nový výběr (dřív se procházelo všech ~4 700 úseků).
+    if (map.getSource("roads")) {
+      const prev = prevSelectedRef.current;
+      if (prev != null && prev !== selectedId) map.setFeatureState({ source: "roads", id: prev }, { selected: false });
+      if (selectedId != null) map.setFeatureState({ source: "roads", id: selectedId }, { selected: true });
+      prevSelectedRef.current = selectedId;
+    }
     if (selectedId) {
       const road = roads.find((r) => r.id === selectedId);
       if (road) {

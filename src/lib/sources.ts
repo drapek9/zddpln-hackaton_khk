@@ -32,3 +32,60 @@ export const SOURCES: Source[] = [
 export function sourceUrl(s: Source) {
   return `https://www.datakhk.cz/datasets/${s.itemId}_${s.layer}`;
 }
+
+// Externí data mimo Data KHK (licence uvádíme podle čl. 7.3 pravidel).
+export type ExternalSource = {
+  name: string;
+  publisher: string;
+  url: string;
+  license: string;
+  use: string;
+  status: "používáme" | "připravujeme";
+};
+
+export const EXTERNAL_SOURCES: ExternalSource[] = [
+  {
+    name: "Silnice I. třídy a dálnice",
+    publisher: "© přispěvatelé OpenStreetMap",
+    url: "https://www.openstreetmap.org/copyright",
+    license: "ODbL 1.0",
+    use: "Doplnění grafu silnic pro výpočet objížďek a tras",
+    status: "používáme",
+  },
+  {
+    name: "Podkladová mapa",
+    publisher: "CARTO, data © přispěvatelé OpenStreetMap",
+    url: "https://carto.com/attributions",
+    license: "ODbL 1.0 (data), CARTO (styl)",
+    use: "Mapový podklad",
+    status: "používáme",
+  },
+  {
+    name: "Celostátní sčítání dopravy 2025",
+    publisher: "Ředitelství silnic a dálnic ČR",
+    url: "https://www.rsd.cz/silnice-a-dalnice/scitani-dopravy",
+    license: "CC BY-SA 4.0",
+    use: "Aut za den na úseku a na objížďce (zbytek sítě odhad)",
+    status: "připravujeme",
+  },
+  {
+    name: "Silniční a dálniční informace (SRTI)",
+    publisher: "Ředitelství silnic a dálnic ČR",
+    url: "https://data.gov.cz/datová-sada?iri=https://data.gov.cz/zdroj/datové-sady/65993390/1087749998",
+    license: "CC BY 4.0",
+    use: "Skutečné uzavírky a stavby na mapě",
+    status: "připravujeme",
+  },
+];
+
+// Další sady Data KHK z plánu (PLAN_FINAL.md, kap. 13). Odkaz vede na vyhledávání v katalogu.
+export const PLANNED_KHK_SOURCES: { name: string; query: string; use: string }[] = [
+  { name: "Dojížďka do středních škol", query: "Dojížďka do středních škol", use: "Počet středoškoláků denně na úseku a na uzavírce" },
+  { name: "Obce", query: "Obce", use: "Odříznuté obce a počet obyvatel při uzavírce" },
+  { name: "Záplavová území Q5, Q20, Q100", query: "Záplavové území", use: "Povodňový scénář: zatopené silnice a odříznuté obce" },
+  { name: "Plánované opravy silniční infrastruktury 2022 – liniové", query: "Plánované opravy silniční infrastruktury", use: "Skutečné uzavírky jako ukázky a ověření modelu" },
+];
+
+export function searchUrl(query: string) {
+  return `https://www.datakhk.cz/search?q=${encodeURIComponent(query)}`;
+}
