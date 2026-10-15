@@ -1,13 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import Fold from "./Fold";
+import { ThemeToggle, useTheme } from "../lib/theme";
+import BudgetPlanner from "./BudgetPlanner";
+import AdminSystem from "./AdminSystem";
+import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import Resizer, { usePanelSizes } from "./Resizer";
+import UserMenu from "./UserMenu";
+import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
-import { STAV_COLOR, STAV_ORDER, formatKm, formatSil } from "../lib/geo";
+import { STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatSil, stavLabel } from "../lib/geo";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
 import { DEMO_CLOSURES } from "../lib/closure";
-import { loadPins, savePins } from "../lib/store";
+import { loadPins, loadRegionWeights, savePins, saveRegionWeights } from "../lib/store";
 import type { Pin, PriorityClass } from "../lib/api";
 
 type Props = {
@@ -15,7 +22,20 @@ type Props = {
   repairs: Repair[];
   onRepairs: (next: Repair[]) => void;
   onHome: () => void;
+  role: "official" | "admin";
+  /** Přihlášený uživatel (kap. 15). Bez něj jde o demo bez serveru. */
+  user: User | null;
+  /** Demo bez serveru: přepnutí mezi úředníkem a adminem. S přihlášením roli dává účet. */
+  onRole?: (role: "official" | "admin") => void;
+  onLogout: () => void;
 };
+
+type View = "map" | "budget" | "system";
+const VIEWS: { key: View; label: string; adminOnly?: boolean; soon?: boolean }[] = [
+  { key: "map", label: "Priority a uzavírky" },
+  { key: "budget", label: "Plán podle rozpočtu" },
+  { key: "system", label: "Správa systému", adminOnly: true, soon: true },
+];
 
 // Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
 const LIST_STEP = 15;
@@ -33,9 +53,24 @@ const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "age", label: "Stáří opravy" },
 ];
 
-export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
-  const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+export default function AdminApp({ data, repairs, onRepairs, onHome, role, user, onRole, onLogout }: Props) {
+  const [view, setView] = useState<View>("map");
+  useEffect(() => {
+    if (role !== "admin" && view === "system") setView("map");
+  }, [role, view]);
+  const { theme } = useTheme();
+  const mapTheme = theme === "dark" ? "dark" : "office";
+  // Výchozí jsou trvalé váhy kraje od admina. Úředník je mění jen pro sebe, admin je může uložit trvale.
+  const [regionWeights, setRegionWeights] = useState<Weights>(() => loadRegionWeights(DEFAULT_WEIGHTS));
+  const [weights, setWeights] = useState<Weights>(regionWeights);
+  const [savedNote, setSavedNote] = useState(false);
+  const [selectedId, setSelectedIdState] = useState<number | null>(null);
+  const [sheet, setSheet] = useState<Sheet>("map");
+  const panels = usePanelSizes();
+  const setSelectedId = (id: number | null) => {
+    setSelectedIdState(id);
+    if (id != null && isNarrow()) setSheet("right");
+  };
   const [okres, setOkres] = useState("vše");
   const [stav, setStav] = useState("vše");
   const [query, setQuery] = useState("");
@@ -50,7 +85,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
   const [demoId, setDemoId] = useState<number | null>(null);
   const [paramsOpen, setParamsOpen] = useState(false);
   const [listLimit, setListLimit] = useState(LIST_STEP);
-  const weightsChanged = WEIGHT_LABELS.some((w) => weights[w.key] !== DEFAULT_WEIGHTS[w.key]);
+  const weightsChanged = WEIGHT_LABELS.some((w) => weights[w.key] !== regionWeights[w.key]);
 
   const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
 
@@ -110,21 +145,57 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
     .reduce((s, r) => s + r.delka, 0);
 
   return (
-    <div className="app-shell admin-theme">
+    <div className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={onHome}>
-          Cesty KHK
-        </button>
-        <span className="mode-tag">Správa silnic</span>
-        <div className="top-stats">
-          <b>{data.stats.km} km</b> sítě
-          <b>{Math.round(kmBad / 1000)} km</b> havarijních
-          <b>{repairs.filter((r) => r.status === "active").length}</b> probíhá
-          <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
-          {repairs.some((r) => r.simulated) && <span className="sim-tag">plán a probíhající = simulace</span>}
+        <div className="tb-left">
+          <button className="brand" onClick={onHome}>
+            Cesty KHK
+          </button>
+          {onRole ? (
+            <div className="role-switch" role="group" aria-label="Pohled (demo bez serveru)" title="Demo bez serveru: přepnutí role">
+              <button className={role === "official" ? "on" : ""} onClick={() => onRole("official")}>
+                Úředník
+              </button>
+              <button className={role === "admin" ? "on" : ""} onClick={() => onRole("admin")}>
+                Admin
+              </button>
+            </div>
+          ) : (
+            <span className="mode-tag">{role === "admin" ? "Admin" : "Úředník"}</span>
+          )}
+        </div>
+        <div className="tb-center">
+          <nav className="top-nav">
+            {VIEWS.filter((v) => !v.adminOnly || role === "admin").map((v) => (
+              <button key={v.key} className={view === v.key ? "active" : ""} onClick={() => setView(v.key)}>
+                {v.label}
+                {v.soon && <small>návrh</small>}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="tb-right">
+          <div className="top-stats" title={repairs.some((r) => r.simulated) ? "Plánované a probíhající opravy jsou simulace" : undefined}>
+            <span>
+              <b>{Math.round(kmBad / 1000)} km</b> havarijních
+            </span>
+            <span>
+              <b>{repairs.filter((r) => r.status === "active").length}</b> probíhá
+            </span>
+            <span>
+              <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
+            </span>
+          </div>
+          <ThemeToggle />
+          {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Server s přihlášením neběží">demo</span>}
         </div>
       </header>
-      <div className="workspace">
+      {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
+      {view === "system" && <AdminSystem key="system" weights={regionWeights} pins={pins} />}
+      {view === "map" && (
+      <div className={`workspace view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
+        <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
+        <Resizer side="right" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
           <label className="search">
             <input
@@ -142,7 +213,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             <select value={stav} onChange={(e) => setStav(e.target.value)}>
               <option value="vše">všechny stavy</option>
               {STAV_ORDER.map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>
+                  {stavLabel(s)}
+                </option>
               ))}
             </select>
           </div>
@@ -173,7 +246,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
                     <span className="rank-sil">
                       <i style={{ background: STAV_COLOR[r.stav] }} />
                       {formatSil(r.sil, r.trida)}
-                      <span className="class-tag" style={{ background: CLASS_COLOR[row.priority] }}>
+                      <span className="class-tag" style={{ "--cls": CLASS_COLOR[row.priority] } as CSSProperties}>
                         {CLASS_LABEL[row.priority]}
                       </span>
                       {row.pinned && (
@@ -245,7 +318,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             repairs={repairs}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            theme="dark"
+            theme={mapTheme}
             showCondition={showCondition}
             pois={data.pois}
             stops={data.stops}
@@ -254,11 +327,23 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
           />
           <div className={`params ${paramsOpen ? "open" : ""}`}>
             <button className="params-toggle" onClick={() => setParamsOpen(!paramsOpen)} aria-expanded={paramsOpen}>
-              ⚙ Parametry priority{weightsChanged ? " · upraveno" : ""} {paramsOpen ? "▴" : "▾"}
+              <span>Parametry priority</span>
+              {weightsChanged && <span className="chip">upraveno</span>}
+              <span className="muted" style={{ marginLeft: "auto" }}>{paramsOpen ? "▴" : "▾"}</span>
             </button>
             {paramsOpen && (
               <div className="params-body">
-                <p className="muted">Váhy mění pořadí úseků jen pro vás. Do dat kraje se nic neukládá.</p>
+                <p className="params-scope">
+                  {role === "admin" ? (
+                    <>
+                      Admin: můžete uložit <b>trvale pro celý kraj</b>.
+                    </>
+                  ) : (
+                    <>
+                      Změny platí <b>jen pro vás</b>. Trvalé váhy kraje mění admin.
+                    </>
+                  )}
+                </p>
                 {WEIGHT_LABELS.map((w) => (
                   <label key={w.key} className="weight">
                     <span>
@@ -274,17 +359,35 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
                     />
                   </label>
                 ))}
-                <button className="btn" disabled={!weightsChanged} onClick={() => setWeights(DEFAULT_WEIGHTS)}>
-                  Vrátit výchozí váhy
-                </button>
+                <div className="row-actions">
+                  <button className="btn" disabled={!weightsChanged} onClick={() => setWeights(regionWeights)}>
+                    Vrátit váhy kraje
+                  </button>
+                  {role === "admin" && (
+                    <button
+                      className="btn primary"
+                      disabled={!weightsChanged}
+                      onClick={() => {
+                        setRegionWeights(weights);
+                        saveRegionWeights(weights);
+                        setSavedNote(true);
+                        setTimeout(() => setSavedNote(false), 2000);
+                      }}
+                    >
+                      {savedNote ? "Uloženo" : "Uložit pro celý kraj"}
+                    </button>
+                  )}
+                </div>
+                {role === "admin" && <p className="fine">Demo: ukládá se v tomto prohlížeči, pro všechny až s backendem (v4).</p>}
               </div>
             )}
           </div>
+          <SheetBar value={sheet} onChange={setSheet} left="Žebříček" right="Detail" />
           <div className="legend">
             {STAV_ORDER.map((s) => (
               <span key={s}>
                 <i style={{ background: STAV_COLOR[s] }} />
-                {s}
+                <span title={STAV_HINT[s]}>{stavLabel(s)}</span>
               </span>
             ))}
           </div>
@@ -331,6 +434,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
           )}
         </aside>
       </div>
+      )}
     </div>
   );
 }

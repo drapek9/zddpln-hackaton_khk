@@ -1,5 +1,6 @@
 // Klient pro backend (FastAPI za Vite proxy /api). Typy zrcadlí backend/app/core/schemas.py.
 // Když endpoint ještě neexistuje (404) nebo backend neběží, volající použije lokální výpočet.
+import { notifyUnauthorized } from "./auth";
 
 export type PriorityClass = "kriticka" | "vysoka" | "stredni" | "nizka";
 export type AlertLevel = "critical" | "warning" | "info";
@@ -54,11 +55,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`/api${path}`, {
       ...init,
+      // Přihlášení je v httpOnly cookie (kap. 15), posílá se jen na stejný původ.
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     });
   } catch {
     throw new ApiUnavailable("Backend neběží.");
   }
+  if (res.status === 401) notifyUnauthorized();
   // Vite bez backendu vrací 404/502/504, chybějící endpoint 404/405.
   if ([404, 405, 501, 502, 503, 504].includes(res.status)) {
     throw new ApiUnavailable(`Endpoint ${path} zatím není (${res.status}).`);

@@ -1,19 +1,29 @@
 import { EXTERNAL_SOURCES, PLANNED_KHK_SOURCES, SOURCES, searchUrl, sourceUrl } from "../lib/sources";
 import type { Dataset } from "../lib/types";
+import { ThemeToggle } from "../lib/theme";
+import Footer from "./Footer";
+import type { View } from "../App";
 
 type Props = {
   stats: Dataset["stats"];
   onHome: () => void;
+  onNavigate: (view: View) => void;
 };
 
-export default function Sources({ stats, onHome }: Props) {
+export default function Sources({ stats, onHome, onNavigate }: Props) {
   return (
-    <div className="app-shell public-theme">
+    <div className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={onHome}>
-          Cesty KHK
-        </button>
-        <span className="mode-tag light">Zdroje dat</span>
+        <div className="tb-left">
+          <button className="brand" onClick={onHome}>
+            Cesty KHK
+          </button>
+          <span className="mode-tag light">Zdroje dat</span>
+        </div>
+        <div className="tb-center" />
+        <div className="tb-right">
+          <ThemeToggle />
+        </div>
       </header>
       <main className="sources">
         <h1>Zdroje dat</h1>
@@ -108,6 +118,7 @@ export default function Sources({ stats, onHome }: Props) {
           objížďky jsou <b>odhad</b>, počet aut za den doplníme ze sčítání ŘSD.
         </p>
       </main>
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 }

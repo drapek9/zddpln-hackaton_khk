@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
+import MyTrip from "./MyTrip";
+import { loadPlaces, savePlaces, tripImpact, type Place } from "../lib/commute";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import Fold from "./Fold";
+import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import Resizer, { usePanelSizes } from "./Resizer";
+import UserMenu from "./UserMenu";
+import type { User } from "../lib/auth";
+import { ThemeToggle, useTheme } from "../lib/theme";
+import { HIGHLIGHT_COLOR } from "./MapView";
 import type { Dataset, Repair, Report } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STATUS_LABEL, STAV_COLOR, formatPeriod } from "../lib/geo";
@@ -12,11 +20,30 @@ type Props = {
   reports: Report[];
   onReport: (report: Report) => void;
   onHome: () => void;
+  user: User | null;
+  onLogin: () => void;
+  onLogout: () => void;
 };
 
-export default function PublicApp({ data, repairs, reports, onReport, onHome }: Props) {
-  const [selectedId, setSelectedId] = useState<number | null>(repairs[0]?.roadId ?? null);
-  const [tab, setTab] = useState<"repairs" | "bus" | "report">("repairs");
+export default function PublicApp({ data, repairs, reports, onReport, onHome, user, onLogin, onLogout }: Props) {
+  const [selectedId, setSelectedIdState] = useState<number | null>(repairs[0]?.roadId ?? null);
+  const [sheet, setSheet] = useState<Sheet>("map");
+  const panels = usePanelSizes();
+  const setSelectedId = (id: number | null) => {
+    setSelectedIdState(id);
+    if (id != null && isNarrow()) setSheet("right");
+  };
+  const [tab, setTab] = useState<"trip" | "repairs" | "bus" | "report">("trip");
+  const { theme } = useTheme();
+  const mapTheme = theme === "dark" ? "dark" : "light";
+  const [places, setPlacesState] = useState<Place[]>(loadPlaces);
+  const [picking, setPicking] = useState<Place["kind"] | null>(null);
+  const setPlaces = (next: Place[]) => {
+    setPlacesState(next);
+    savePlaces(next);
+  };
+  const impact = useMemo(() => tripImpact(places, data.roads, repairs), [places, data.roads, repairs]);
+  const highlight = useMemo(() => (impact ? impact.repairs.map((r) => r.road.id) : []), [impact]);
   const [status, setStatus] = useState<"all" | Repair["status"]>("all");
   const [busQuery, setBusQuery] = useState("");
   const [place, setPlace] = useState("");
@@ -54,23 +81,36 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
   }, [place, repairs, data.roads]);
 
   return (
-    <div className="app-shell public-theme">
+    <div className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={onHome}>
-          Cesty KHK
-        </button>
-        <span className="mode-tag light">Veřejnost</span>
-        <label className="search top-search">
-          <input
-            placeholder="Hledat okres, silnici nebo opravu"
-            value={place}
-            onChange={(e) => setPlace(e.target.value)}
-          />
-        </label>
+        <div className="tb-left">
+          <button className="brand" onClick={onHome}>
+            Cesty KHK
+          </button>
+          <span className={`mode-tag ${user?.role === "citizen" ? "" : "light"}`}>{user?.role === "citizen" ? "Občan" : "Veřejnost"}</span>
+        </div>
+        <div className="tb-center">
+          <label className="search top-search">
+            <input
+              placeholder="Hledat okres, silnici nebo opravu"
+              value={place}
+              onChange={(e) => setPlace(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="tb-right">
+          <ThemeToggle />
+          <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
+        </div>
       </header>
-      <div className="workspace">
+      <div className={`workspace ${panels.className}`} data-sheet={sheet} style={panels.style}>
+        <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
+        <Resizer side="right" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
-          <div className="tabs">
+          <div className="tabs four">
+            <button className={tab === "trip" ? "active" : ""} onClick={() => setTab("trip")}>
+              Moje cesty
+            </button>
             <button className={tab === "repairs" ? "active" : ""} onClick={() => setTab("repairs")}>
               Opravy
             </button>
@@ -81,6 +121,19 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
               Nahlásit
             </button>
           </div>
+          {tab === "trip" && (
+            <MyTrip
+              places={places}
+              onPlaces={setPlaces}
+              picking={picking}
+              onPicking={(k) => {
+                setPicking(k);
+                if (k && isNarrow()) setSheet("map");
+              }}
+              impact={impact}
+              onSelectRoad={setSelectedId}
+            />
+          )}
           {tab === "repairs" && (
             <>
               <div className="filters">
@@ -231,14 +284,23 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
             repairs={repairs}
             selectedId={selectedId}
             onSelect={(id, lngLat) => {
+              if (picking && lngLat) {
+                setPlaces([...places.filter((p) => p.kind !== picking), { kind: picking, x: Math.round(lngLat.lng * 1000) / 1000, y: Math.round(lngLat.lat * 1000) / 1000 }]);
+                setPicking(null);
+                return;
+              }
               if (id != null) setSelectedId(id);
               if (lngLat) setClickPoint(lngLat);
             }}
-            theme="light"
+            theme={mapTheme}
             showCondition
             pois={data.pois}
             showPois={false}
+            places={places}
+            highlight={highlight}
           />
+          {picking && <div className="pick-banner">Klikněte do mapy: {picking === "home" ? "kde bydlíte" : "kam jezdíte"}</div>}
+          <SheetBar value={sheet} onChange={setSheet} left="Přehled" right="Detail" />
           <div className="legend">
             <span>
               <i className="active" /> probíhá
@@ -252,6 +314,11 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
             <span>
               <i style={{ background: STAV_COLOR.havarijní }} /> havarijní stav
             </span>
+            {highlight.length > 0 && (
+              <span>
+                <i style={{ background: HIGHLIGHT_COLOR[mapTheme] }} /> na mé cestě
+              </span>
+            )}
           </div>
         </div>
         <aside className="side right">

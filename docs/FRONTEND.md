@@ -77,3 +77,18 @@ Podle připomínek Matouše k designu. Přemek, prosím, projdi (review designu)
 | Všude | Bez viditelných posuvníků v bočních panelech (scrollovat jde dál), větší písmo (základ 16 px). |
 
 Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i veřejnost, čára objížďky se na mapě vykreslí. Neověřeno: mobilní šířka 375 px.
+
+## Stav 15. 10. po poledni (Matouš, větev `matous`): design a přihlášení
+
+**Design (podle zadání Přemka):** jeden design systém pro veřejnost i úřad, jedna akcentová barva (petrolejová), světlý a tmavý režim (tokeny v `src/styles.css`, volba v prohlížeči, jinak `prefers-color-scheme`), kompaktní hlavička, roztahovací a sbalitelné boční panely, na mobilu mapa a vysouvací panely zdola. Srozumitelné názvy stavů (`STAV_LABEL` v `src/lib/geo.ts`), data kraje beze změny.
+
+**F1 Login (kap. 15) ✅ ve frontendu, ověřeno proti backendu z větve `simon`:**
+- `src/lib/auth.ts`: `me`, `login`, `register`, `logout`, vše s `credentials: "same-origin"`. Token se neukládá, jen e-mail a role.
+- Úvod: „Pokračovat bez přihlášení“ (veřejnost) a „Přihlásit se do správy“. Vpravo nahoře „Přihlásit se“.
+- Po přihlášení podle role: `citizen` → veřejná mapa se štítkem Občan, `official` → správa, `admin` → správa + Správa systému. V hlavičce e-mail, role a „Odhlásit“.
+- Přihlášení přežije obnovení stránky (`GET /api/auth/me`). Při 401 z API zpět na přihlášení.
+- Když backend neběží, přihlášení nabídne „Jako úředník / admin (demo)“ a v aplikaci je přepínač rolí se štítkem „demo“.
+
+**F7 Patička ✅:** zásady ochrany údajů (nová stránka), souhlas při registraci občana (bez něj účet nevznikne), odkaz na Zdroje dat.
+
+**Další (kap. 17.4):** F2 simulátor přes API a uzavírky 2022, F4 povodeň, F5 rozpočet přes `/api/budget`, F6 Moje obec, F3 trasa po silnicích. Rozpočet a Moje cesty mají ve frontendu náhled, který se přepne na API.

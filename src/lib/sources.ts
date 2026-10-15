@@ -76,6 +76,22 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
     use: "Skutečné uzavírky a stavby na mapě",
     status: "připravujeme",
   },
+  {
+    name: "Faktory ovlivňující náklady na údržbu a opravy silnic nižších tříd",
+    publisher: "Centrum dopravního výzkumu (CDV)",
+    url: "https://www.cdv.cz/file/vav-faktory-ovlivnujici-naklady-na-udrzbu-a-opravy/",
+    license: "citace (výzkumná zpráva)",
+    use: "Předpoklad ceny opravy za km v plánu podle rozpočtu",
+    status: "používáme",
+  },
+  {
+    name: "Zakázka III/28711 (1,1 km za 12,5 mil. Kč)",
+    publisher: "Liberecký kraj (zpráva Liberecká Drbna)",
+    url: "https://liberecka.drbna.cz/zpravy/doprava/42668-kraj-opravi-tri-silnice-za-88-milionu-docka-se-bily-kostel-i-rychnov.html",
+    license: "citace",
+    use: "Kontrola ceny havarijní opravy za km",
+    status: "používáme",
+  },
 ];
 
 // Další sady Data KHK z plánu (PLAN_FINAL.md, kap. 13). Odkaz vede na vyhledávání v katalogu.

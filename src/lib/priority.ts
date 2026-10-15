@@ -1,5 +1,5 @@
 import type { Connection, Repair, Road, Weights } from "./types";
-import { inSchoolYear, inWinter } from "./geo";
+import { inSchoolYear, inWinter, stavLabel } from "./geo";
 
 const STAV_SCORE: Record<string, number> = {
   SUPERhavarijní: 100,
@@ -159,7 +159,7 @@ function sameNorm(na: string, nb: string) {
 export function scoreBreakdown(road: Road, weights: Weights) {
   const total = roadScore(road, weights);
   return [
-    { key: "Stav povrchu", value: `${road.stav}`, share: weights.stav },
+    { key: "Stav povrchu", value: stavLabel(road.stav), share: weights.stav },
     { key: "Zhoršování", value: road.worse ? "ano" : "ne", share: weights.worse },
     { key: "Třída silnice", value: road.trida, share: weights.trida },
     { key: "Školy", value: String(road.counts.school || 0), share: weights.schools },

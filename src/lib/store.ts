@@ -1,4 +1,4 @@
-import type { Repair, Report } from "./types";
+import type { Repair, Report, Weights } from "./types";
 import type { Pin } from "./api";
 
 // v2: starší uložené opravy neměly příznak simulace.
@@ -50,5 +50,25 @@ export function savePins(pins: Pin[]) {
     localStorage.setItem(PIN_KEY, JSON.stringify(pins));
   } catch {
     /* plné nebo zakázané úložiště: piny vydrží jen do obnovení stránky */
+  }
+}
+
+// Trvalé váhy kraje (admin). Demo: zatím jen v tomto prohlížeči, backend v4 je uloží pro všechny.
+const REGION_WEIGHTS_KEY = "cesty-khk-region-weights";
+
+export function loadRegionWeights(fallback: Weights): Weights {
+  try {
+    const raw = localStorage.getItem(REGION_WEIGHTS_KEY);
+    return raw ? { ...fallback, ...(JSON.parse(raw) as Partial<Weights>) } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveRegionWeights(weights: Weights) {
+  try {
+    localStorage.setItem(REGION_WEIGHTS_KEY, JSON.stringify(weights));
+  } catch {
+    // úložiště není dostupné
   }
 }

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import type { Connection, Repair, Road, Weights } from "../lib/types";
-import { KIND_LABEL, STAV_COLOR, STATUS_LABEL, formatKm, formatPeriod, formatSil, inSchoolYear, isoInDays } from "../lib/geo";
+import { KIND_LABEL, STAV_COLOR, STAV_HINT, STATUS_LABEL, stavLabel, formatKm, formatPeriod, formatSil, inSchoolYear, isoInDays } from "../lib/geo";
 import { impactAlerts, roadScore, scoreBreakdown } from "../lib/priority";
 import { buildAnnouncement } from "../lib/announce";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, type RankRow } from "../lib/ranking";
@@ -99,7 +99,7 @@ export default function RoadPanel({
       </h2>
       <div className="stav-row">
         <span className="dot" style={{ background: STAV_COLOR[road.stav] }} />
-        <strong>{road.stav}</strong>
+        <strong title={STAV_HINT[road.stav]}>{stavLabel(road.stav)}</strong>
         <span>{formatKm(road.delka)}</span>
         <span>{road.trida}</span>
         <span>měřeno {road.rok}</span>
@@ -117,7 +117,7 @@ export default function RoadPanel({
         </div>
         {rank && (
           <div className="class-row">
-            <span className="class-tag" style={{ background: CLASS_COLOR[rank.priority] }}>
+            <span className="class-tag" style={{ "--cls": CLASS_COLOR[rank.priority] } as CSSProperties}>
               {CLASS_LABEL[rank.priority]}
             </span>
             <span>#{rank.rank} v kraji</span>
