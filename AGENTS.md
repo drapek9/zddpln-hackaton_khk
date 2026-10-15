@@ -12,7 +12,7 @@ Read these documents first:
 - `PLAN_FINAL.md`: product plan, in Czech.
 - `docs/BACKEND.md`: backend split, API contract and milestones, in Czech.
 - `docs/FRONTEND.md`: frontend plan; it also lists the questions an agent must ask Matouš first.
-- `NAPADY.md`: backlog of approved ideas that are **not tasks yet**, in Czech. Do not implement anything from it unless it was moved into `PLAN_FINAL.md`.
+- `NAPADY.md`: ideas that **do not exist yet** and still need to be discussed, in Czech. They are not tasks. Do not implement anything from it unless it was moved into `PLAN_FINAL.md`.
 - `docs/STAV_A_DOPORUCENI.md`: project status on 15 Oct, risks and the recommended order of work for the hackathon day, in Czech. It changes priorities, not ownership.
 
 Before each block of work, run `git fetch` and read new changes to these plans on `origin/main`. Only add to the plans; mark outdated parts **NEAKTIVNÍ** instead of deleting them.
@@ -54,5 +54,5 @@ npm run dev
 - **No AI co-author trailers.** Do not add `Co-Authored-By: Claude`, Cursor or Copilot lines, and do not add "Generated with …" to PRs.
 - **Label data honestly.** Mark simulated data `simulated` and estimates `estimate`. Every external dataset goes on the "Zdroje dat" page.
 - **Deterministic score.** The score is always deterministic. AI only explains and proposes, and a human confirms.
-- **Branches.** Work on your own branch (`tomas`, `simon`, `matous`, `premek`) and merge into `main` via PR or fast-forward. Never force-push `main`.
+- **Branches.** Work on your own branch (`tomas`, `simon`, `matous`, `premek`). The only direct push to `main` is a correction of `NAPADY.md`. Every other change goes to your own branch and reaches `main` only via PR or fast-forward. Never force-push `main`. In this Cursor workspace the own branch is `simon`.
 - **Tests.** Run `uv run pytest` before every push that touches `backend/`.
