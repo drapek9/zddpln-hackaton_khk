@@ -132,6 +132,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
               }}
               impact={impact}
               onSelectRoad={setSelectedId}
+              user={user}
             />
           )}
           {tab === "repairs" && (

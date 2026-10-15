@@ -13,3 +13,6 @@ backend/cesty.db
 backend/data/cache/
 .server-logs/
 .env.tmp
+
+# Odevzdací balík (generuje scripts/package_submission.sh)
+odevzdani/

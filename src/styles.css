@@ -1044,3 +1044,7 @@ kbd { font-family: var(--font); font-size: 11px; font-weight: 600; padding: 1px 
   html, body { overflow: hidden; }
   .landing3, .sources, .system { overscroll-behavior: contain; }
 }
+
+/* Upozornění občana (MyTrip). Nepřečtené tučně. */
+.notice { padding: 6px 0; border-bottom: 1px solid var(--line, #ddd); cursor: pointer; }
+.notice.unread { font-weight: 600; }

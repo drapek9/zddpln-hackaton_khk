@@ -1,34 +1,78 @@
 # Cesty KHK
 
-Webová aplikace nad otevřenými daty Královéhradeckého kraje: prioritizace oprav silnic II. a III. třídy podle stavu povrchu a okolí (školy, nemocnice, IZS, zastávky, linky IREDO) a veřejný přehled, co se opravuje.
+Webová aplikace nad otevřenými daty Královéhradeckého kraje. Kraj opravuje zhruba 90 km silnic ročně, havarijních je 1 375 km. Cesty KHK ukazují, co opravit dřív, jak uzavřít silnici s nejmenší škodou a jak se o tom dozvědí lidé.
 
-Data pocházejí z [datakhk.cz](https://www.datakhk.cz/search?collection=dataset).
+Hackathon KHK 2026.
+
+## Co aplikace umí
+
+- **Úředník:** žebříček úseků II. a III. třídy podle priority, váhy skóre, připíchnutí s důvodem, simulace uzavírky (objížďka, auta za den, studenti, odříznuté obce, dojezd ZZS a HZS), návrh oznámení a rozpočtový scénář.
+- **Občan:** moje trasa domov–práce/škola, upozornění na uzavírku na trase, hlášení výtluků, hlasování o úseku.
+- **Admin:** trvalé váhy skóre, uživatelé a role, audit změn, export.
+- **Veřejnost:** mapa oprav a uzavírek, Zdroje dat, otevřené API a export CSV, GeoJSON a metadata DCAT‑AP‑CZ.
+
+Skóre je deterministické. AI jen vysvětluje a navrhuje, rozhoduje člověk. Odhady jsou v aplikaci označené štítkem `estimate` a simulace štítkem „simulace“.
 
 ## Spuštění
 
-```bash
-npm install
-npm run fetch-data
-npm run dev
-```
+Potřebujete Node.js a [uv](https://docs.astral.sh/uv/).
 
-Otevře se [http://localhost:5173](http://localhost:5173).
-
-Backend (FastAPI, Python přes [uv](https://docs.astral.sh/uv/)) v druhém terminálu:
+Backend (FastAPI, SQLite):
 
 ```bash
+cp .env.example .env
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-Vite přesměruje `/api` na backend. Rozdělení práce, smlouva API a milníky jsou v [docs/BACKEND.md](docs/BACKEND.md). Licence: [EUPL-1.2](LICENSE).
+Frontend (v druhém terminálu, Vite přesměruje `/api` na backend):
 
-- **Správa silnic** — žebříček priority, váhy, dopady uzavírky, návrh opravy a text oznámení.
-- **Veřejnost** — probíhající a plánované práce, „jede můj autobus?“, hlášení výtluku.
+```bash
+npm install
+npm run dev
+```
 
-Plánované opravy v datech kraje nejsou. Demo proto ukáže simulované plánované a probíhající opravy (v aplikaci označené „simulace“); ve správě je lze změnit. Změny zůstanou v prohlížeči.
+Otevřete [http://localhost:5173](http://localhost:5173). API dokumentace běží na `http://localhost:8000/docs`.
 
-## Zdroje
+Testy a build:
 
-Stav povrchu (poslední měření každého úseku, 2017–2024), opravy od 2016, zimní údržba, autobusové linky a zastávky VDKHK, zaručené přípoje, školy, nemocnice, ZZS, HZS, policie, praktici, sociální služby, průmyslové zóny, hospodářsky a sociálně ohrožené oblasti. Odkazy na všechny datové sady jsou v aplikaci na stránce „Zdroje dat“.
+```bash
+cd backend
+uv run pytest
+cd ..
+npm run build
+```
+
+Při prvním startu backend založí demo účty (úředník, admin, dva občané). Jejich hesla nejsou v tomto README. Pro demo je najdete v `backend/app/db/seed.py`, pro reálné nasazení je před spuštěním změňte.
+
+## Konfigurace
+
+Všechna tajemství patří jen do `.env`, ten je v `.gitignore`. Šablona `.env.example` obsahuje jen prázdné nebo zástupné hodnoty. Klíče pro AI a Web Push (VAPID) jsou volitelné; bez nich aplikace běží, jen bez těchto funkcí.
+
+## Zdroje dat
+
+| Zdroj | Licence | Použití |
+|---|---|---|
+| Data KHK (datakhk.cz): stav povrchu, opravy 2016+, plán oprav 2022, zastávky, linky, nemocnice, školy, IZS, záplavy, obce, hranice kraje | dle datové sady na Data KHK | stav a priorita úseků, dopady, dojezd, povodně |
+| Sčítání dopravy ŘSD 2025 | CC BY‑SA | počet vozidel na úseku (měřeno jen na části sítě, zbytek `odhad`) |
+| SRTI, ŘSD / NDIC | CC BY 4.0 | aktuální uzavírky v kraji |
+| OpenStreetMap | ODbL | silniční graf pro objížďky |
+
+Úplný seznam s odkazy na datové sady je v aplikaci na stránce **Zdroje dat**, zdroj kódu: [src/lib/sources.ts](src/lib/sources.ts).
+
+## Struktura
+
+- `src/` — frontend (React, Vite, MapLibre).
+- `backend/app/core/` — doménová logika: načítání dat, skóre, třídy, graf silnic, objížďka, dopady, rozpočet.
+- `backend/app/api/`, `db/`, `auth/`, `notify/`, `ai/` — FastAPI, SQLite, role, audit, upozornění, AI.
+- `scripts/` — datová pipeline, která připraví snímek v `public/data/`.
+- `docs/` — plány a rozdělení práce (česky).
+
+## Poctivost
+
+- Objížďka se počítá jednou nejrychlejší trasou po silnicích I. třídy, dálnicích a silnicích II. a III. třídy z grafu. Model neumí místní ulice a ukazuje jen jednu variantu.
+- Dojezd ZZS a HZS je odhad z vzdálenosti, ne z reálného provozu.
+- Plán oprav 2022 je skutečný plán kraje; aktuální stav oprav v datech kraje není.
+
+Licence kódu: [EUPL‑1.2](LICENSE).
