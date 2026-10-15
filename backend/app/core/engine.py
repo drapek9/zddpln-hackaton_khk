@@ -10,6 +10,7 @@ import heapq
 import math
 import random
 import threading
+import time
 from datetime import date
 from pathlib import Path
 from typing import Any, Iterable
@@ -88,18 +89,46 @@ class Engine:
         First call ~10 s (all detours and student flows), then cached.
         """
         w = weights or Weights()
-        if (w.detour or w.students) and not self._factors_ready:
-            people = self.people
-            with self._factors_lock:
-                if not self._factors_ready:
-                    for road in self.data.roads:
-                        d = self.graph.detour(road["id"]) if road["id"] in self.graph.road_ends else None
-                        road["factors"] = {
-                            "detour_min": d.extra_min if d is not None and d.found else None,
-                            "students": people.students_on(road["id"]),
-                        }
-                    self._factors_ready = True
+        if w.detour or w.students:
+            self._build_factors()
         return w
+
+    def _build_factors(self) -> None:
+        if self._factors_ready:
+            return
+        people = self.people
+        with self._factors_lock:
+            if not self._factors_ready:
+                for road in self.data.roads:
+                    d = self.graph.detour(road["id"]) if road["id"] in self.graph.road_ends else None
+                    road["factors"] = {
+                        "detour_min": d.extra_min if d is not None and d.found else None,
+                        "students": people.students_on(road["id"]),
+                    }
+                self._factors_ready = True
+
+    def warmup(self) -> dict[str, float]:
+        """Build every lazy cache now (T21). Call once at startup, in the FastAPI lifespan.
+
+        Without it the first request that needs one of them waits: student flows
+        and obce (~3 s), rescue bases, the 2022 plans (~5 s), T20 factors (~5 s),
+        stavby for the budget, the road grid for SRTI. Safe to call again; returns
+        seconds per step for the startup log.
+        """
+        steps = (
+            ("people", lambda: self.people),
+            ("rescue", lambda: self.rescue),
+            ("demo_closures", self.demo_closures),
+            ("factors", self._build_factors),
+            ("stavby", self.stavby),
+            ("road_grid", self._grid),
+        )
+        times: dict[str, float] = {}
+        for name, step in steps:
+            start = time.perf_counter()
+            step()
+            times[name] = round(time.perf_counter() - start, 2)
+        return times
 
     def stability(
         self, weights: Weights | None = None, top_n: int = 100, samples: int = 50, spread: float = 0.5, seed: int = 0
@@ -425,6 +454,20 @@ class Engine:
 
     def _nearest_road(self, p: LonLat, max_m: float) -> int | None:
         """Nearest kraj road (id > 0) by vertex distance, within max_m metres."""
+        grid = self._grid()
+        x, y = to_xy(p)
+        cx, cy = int(x // 200), int(y // 200)
+        best, best_d = None, max_m
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for vx, vy, rid in grid.get((cx + dx, cy + dy), ()):
+                    d = math.hypot(vx - x, vy - y)
+                    if d <= best_d:
+                        best, best_d = rid, d
+        return best
+
+    def _grid(self) -> dict[tuple[int, int], list[tuple[float, float, int]]]:
+        """Road vertices in 200 m cells (for SRTI snapping). Built once."""
         if self._road_grid is None:
             grid: dict[tuple[int, int], list[tuple[float, float, int]]] = {}
             for r in self.data.roads:
@@ -432,16 +475,7 @@ class Engine:
                     x, y = to_xy((lon, lat))
                     grid.setdefault((int(x // 200), int(y // 200)), []).append((x, y, r["id"]))
             self._road_grid = grid
-        x, y = to_xy(p)
-        cx, cy = int(x // 200), int(y // 200)
-        best, best_d = None, max_m
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for vx, vy, rid in self._road_grid.get((cx + dx, cy + dy), ()):
-                    d = math.hypot(vx - x, vy - y)
-                    if d <= best_d:
-                        best, best_d = rid, d
-        return best
+        return self._road_grid
 
     def route(self, home: LonLat, work: LonLat, closed: Iterable[int] = ()) -> RouteResult:
         """Fastest route between two points. `closed` = road ids to avoid."""

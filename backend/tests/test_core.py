@@ -338,3 +338,18 @@ def test_t20_factors_off_by_default_and_on_when_weighted(engine: Engine) -> None
     top = engine.ranking(w)
     assert top[0].score >= top[-1].score
     assert engine.score(2773, w) >= engine.score(2773)
+
+
+def test_warmup_builds_every_cache(engine: Engine) -> None:
+    times = engine.warmup()
+    assert set(times) == {"people", "rescue", "demo_closures", "factors", "stavby", "road_grid"}
+    assert engine._factors_ready and engine._road_grid is not None
+    assert all("factors" in r for r in engine.data.roads)
+    again = engine.warmup()
+    assert sum(again.values()) < 1  # everything cached
+
+
+def test_road_obce_are_unique_ignoring_case(engine: Engine) -> None:
+    """T22: the layers spell some obce in two ways ("Hradec králové")."""
+    dupes = [r["id"] for r in engine.data.roads if len({o.lower() for o in r["obce"]}) < len(r["obce"])]
+    assert dupes == []
