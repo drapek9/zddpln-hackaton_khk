@@ -390,6 +390,12 @@ Doplněk k části D. D je o tom, jak spolu mluví frontend a backend. E je o to
 
 ---
 
+## AI jako faktor pořadí pro město (15. 10., Šimon)
+
+Popis, odkazy na Groq a pravidla posunu jsou v [PLAN_FINAL.md](PLAN_FINAL.md), kapitola 22. Tady jen odkaz, ať se nápad neztratil mezi nápady, které se ještě nemají stavět. Na API už to je: `GET /api/ranking` a `?ai=0`. Obrazovku s filtrem dělá Matouš.
+
+---
+
 ## Část F: co chybí ve frontendu k prvnímu místu (15. 10. 14:30, Matouš)
 
 Rozbor stavu `matous` (`ec81fc4` + rozpracované změny v `MyTrip`, `MapView`, `PublicApp`, `commute.ts`) proti `main` (`f4c30f0`) a kap. 21. Kód se tím nemění. Do freeze 16:00 zbývá asi 90 minut a frontend dělá hlavně Matouš (Přemek má pitch). Proto je tu pořadí podle toho, **co porota uvidí za minutu práce**, ne podle toho, co je technicky hezké. Co se začne dělat, přesune se do `PLAN_FINAL.md`.

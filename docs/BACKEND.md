@@ -312,7 +312,7 @@ Ctrl+C ukončí vše. Logy jsou v `.server-logs/` (v `.gitignore`). Volby: `NO_P
 - Adresa `trycloudflare.com` se mění při každém spuštění. Kdo ji potřebuje, vezme ji z výpisu.
 - macOS se při prvním spuštění zeptá, jestli Node smí přijímat spojení ze sítě: Povolit.
 - Na hackathonové Wi‑Fi bývají zařízení od sebe izolovaná. Pak funguje jen HTTPS adresa z tunelu.
-- Tunel je veřejný: admin a úředník jen po přihlášení. Demo účty jsou v `backend/app/db/seed.py`; před porotou zvážit změnu hesel.
+- Tunel je veřejný: admin a úředník jen po přihlášení. Hesla demo účtů jsou v `.env` (`CESTY_SEED_*`), ne v gitu. Když chybí, vypíšou se jen při prvním založení databáze do konzole serveru.
 - `vite.config.ts`: přidané `allowedHosts` (`.trycloudflare.com`, `.ts.net`, `.local`) a `changeOrigin` u proxy. Bez toho Vite 7 adresu z tunelu odmítne (403).
 - Ověřeno na Windows (Git Bash): start, `/api` přes Vite, přihlášení a rozpočet přes druhý Vite (režim „kolega“), cizí `Host` dostane 403. Na Macu zatím nespuštěno.
 

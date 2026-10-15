@@ -103,6 +103,10 @@ set +a
 # The relative DB path from .env.example depends on the working directory.
 # Without it the backend uses its default: backend/cesty.db (absolute, see app/config.py).
 if [ "${CESTY_DB_URL:-}" = "sqlite:///./backend/cesty.db" ]; then unset CESTY_DB_URL; fi
+# The tunnel starts after the API, so the cookie flag has to be set before uvicorn.
+if [ "${NO_TUNNEL:-0}" != "1" ]; then
+  export CESTY_COOKIE_SECURE=1
+fi
 
 # ---- 3. dependencies -------------------------------------------------------
 say "Instaluji závislosti (poprvé to chvíli trvá)"

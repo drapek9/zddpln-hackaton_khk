@@ -24,6 +24,8 @@ uv run uvicorn app.main:app --reload --port 8000
 
 Vite přesměruje `/api` na backend. Rozdělení práce, smlouva API a milníky jsou v [docs/BACKEND.md](docs/BACKEND.md). Licence: [EUPL-1.2](LICENSE).
 
+Před prvním startem vyplň v `.env` v kořeni repa hesla `CESTY_SEED_ADMIN_PASSWORD`, `CESTY_SEED_OFFICIAL_PASSWORD` a `CESTY_SEED_CITIZEN_PASSWORD`. Když chybí, server je vypíše jen při založení prázdné databáze.
+
 - **Správa silnic** — žebříček priority, váhy, dopady uzavírky, návrh opravy a text oznámení.
 - **Veřejnost** — probíhající a plánované práce, „jede můj autobus?“, hlášení výtluku.
 

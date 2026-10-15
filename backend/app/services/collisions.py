@@ -1,10 +1,9 @@
 """Warn when a detour runs through another closure in the same dates.
 
-Ambulance and fire travel time is T18. The contract in PLAN_FINAL chapter 17
-is `Engine.rescue_impact(road_id)`, or the same facts on `PeopleImpact`:
-which obec, how many extra minutes, whether ZZS exceeds 20 minutes, ZZS and HZS
-separately. Engine has neither yet. `PeopleImpact` only has students and
-cut-off obce. `rescue` stays None until that arrives. Minutes are not invented.
+Ambulance and fire travel time comes from Engine.rescue_impact, which returns
+RescueImpact (English fields: obce, before_min, after_min). The public API
+contract is RescueCard: items with sluzba, pred_min, po_min and nad_20_min.
+This module maps one shape to the other. Minutes stay an estimate.
 """
 
 from __future__ import annotations
@@ -52,9 +51,9 @@ def collision_alerts(
 
 
 def rescue_for_closure(engine: Engine, road_id: int) -> tuple[dict[str, Any] | None, list[Alert]]:
-    """T18 facts plus alerts for the closure card.
+    """Map Engine.rescue_impact (RescueImpact) to the public RescueCard.
 
-    Returns `(None, [])` while Engine has no rescue travel time.
+    Returns `(None, [])` when the engine has no travel time for this road.
     """
     raw = _rescue_raw(engine, road_id)
     if raw is None:

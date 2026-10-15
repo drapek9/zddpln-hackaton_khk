@@ -1017,3 +1017,30 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
   .landing3 .auth-or { display: none; }
   .landing3-top { top: 10px; }
 }
+
+/* Potvrzení akcí */
+.toaster { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; display: grid; gap: 8px; justify-items: center; pointer-events: none; }
+.toast {
+  background: var(--text);
+  color: var(--bg);
+  padding: 9px 16px 9px 32px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  position: relative;
+  animation: toastIn 0.25s var(--ease) both;
+}
+.toast::before { content: ""; position: absolute; left: 14px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #22c55e; }
+.toast.warn::before { background: #f59e0b; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 900px) { .toaster { bottom: 76px; } }
+.kbd-hint { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+kbd { font-family: var(--font); font-size: 11px; font-weight: 600; padding: 1px 5px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--text-2); }
+@media (max-width: 900px) { .kbd-hint { display: none; } }
+/* Mobil: schovaný vysouvací panel nesmí natahovat stránku (jinak jde celá posunout) */
+@media (max-width: 900px) {
+  .workspace { overflow: hidden; }
+  html, body { overflow: hidden; }
+  .landing3, .sources, .system { overscroll-behavior: contain; }
+}

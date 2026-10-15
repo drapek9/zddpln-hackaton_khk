@@ -32,11 +32,14 @@ export const adminApi = {
   updateUser: (id: number, patch: { role?: Role; blocked?: boolean }) =>
     call<AdminUser>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   weights: () => call<{ weights: Weights & { votes?: number }; vote_cap: number }>("/weights"),
-  saveWeights: (weights: Weights, voteCap = 10) =>
-    call<{ weights: Weights; vote_cap: number }>("/weights", {
+  // Strop hlasů posílat ten načtený, jinak by se přepsal na výchozí (NAPADY D5).
+  saveWeights: async (weights: Weights, voteCap?: number) => {
+    const cap = voteCap ?? (await call<{ vote_cap: number }>("/weights")).vote_cap;
+    return call<{ weights: Weights; vote_cap: number }>("/weights", {
       method: "PUT",
-      body: JSON.stringify({ weights, vote_cap: voteCap }),
-    }),
+      body: JSON.stringify({ weights, vote_cap: cap }),
+    });
+  },
   audit: (limit = 30) => call<{ items: AuditItem[] }>(`/audit?limit=${limit}`).then((r) => r.items),
 };
 
