@@ -752,3 +752,23 @@ Tomáš rozhodl o všech nápadech, které ještě byly otevřené ([NAPADY.md](
 | **Přemek** | Pitch, PDF/PPTX, záložní video, GitHub Pages, test mobilu 375 px (kap. 20.1). Na průchod ukázkou v 15:30 počítat se stavem z `main`. | kap. 20.1, [docs/PITCH.md](docs/PITCH.md) |
 
 **Riziko:** Matouš má nejvíc práce. Když do 15:30 nebude hotové D1 + D2 + karta uzavírky, škrtá se odspodu (F‑d, F‑c, D6) a ★2 se ukáže jen jako seznam upozornění.
+
+**Stav 14:45 (Tomáš):** body Tomáše z kap. 21.3 jsou hotové na větvi `tomas`. `start-server.command` sám zajistí `CESTY_SECRET_KEY` s 64 znaky (F11), náhodná hesla demo účtů `CESTY_SEED_*_PASSWORD` (pro S21) a VAPID klíče pro push (F12). Vše jde jen do `.env` a nic se nevypisuje. Když `backend/cesty.db` vznikla se starými veřejnými hesly, skript varuje a `RESET_DB=1 ./start-server.command` ji zazálohuje a založí znovu. `scripts/smoke_api.sh` bere heslo úředníka z `.env` (účet `urednik@cesty-khk.test`).
+
+## 23. Provoz: server pro tým teď, hosting a doména po hackathonu (15. 10., ~14:45, Tomáš)
+
+### 23.1 Dnes: Šimonův Mac jako server (platí hned)
+- **Šimon spustí `./start-server.command` hned po sloučení S21 do `main`.** Bez S21 by v databázi byla veřejná hesla ze `seed.py`. Pokud už `backend/cesty.db` existuje, spustí to jednou s `RESET_DB=1`.
+- Skript vypíše adresu `https://….trycloudflare.com`. Šimon ji pošle do týmového chatu. Platí pro všechny: telefony, porotu, push (potřebuje HTTPS).
+- Matouš a Přemek vyvíjí proti němu: `CESTY_API_TARGET=https://….trycloudflare.com npm run dev`. Tomáš po každém sloučení: `scripts/smoke_api.sh https://….trycloudflare.com`.
+- **Pozor:** adresa quick tunelu se mění při každém restartu skriptu. Mac nesmí usnout (napájení, `caffeinate -dims` v druhém terminálu). Záloha pro porotu: odkaz na GitHub Pages s offline štítkem (Přemek) a záložní video.
+
+### 23.2 Po hackathonu: stálá adresa a hosting (nápad do budoucna, dnes se nedělá)
+| Varianta | Cena | Co dá | Na co pozor |
+|---|---|---|---|
+| **A. Cloudflare named tunnel + vlastní doména** (doporučeno jako první krok) | tunel zdarma, doména asi 10 USD za rok (např. `cesty-khk.cz` nebo `.eu`) | stálá HTTPS adresa, žádná změna kódu, běží dál na jednom počítači | počítač musí běžet pořád; `cloudflared tunnel create cesty-khk` + DNS záznam v Cloudflare |
+| **B. Backend na free hostingu** (Render, Fly.io, Railway, Oracle Cloud Free VM) | zdarma až levně | běží bez našeho počítače | SQLite potřebuje trvalý disk (Fly volume, Oracle VM); Render free usíná a disk nemá. Start jádra trvá asi 10 s (warmup). |
+| **C. Frontend zvlášť** (Cloudflare Pages nebo GitHub Pages) | zdarma | rychlý statický web, CDN | `/api` musí jít na backend z B nebo A (CORS `CESTY_CORS_ORIGINS`, cookie `SameSite`). |
+| **D. Kraj** (server nebo cloud KHK) | podle kraje | skutečný provoz pro úředníky | jednání s krajem, správa uživatelů a GDPR (místa občanů). |
+
+Doporučené pořadí po hackathonu: A hned (stálý odkaz pro porotu a partnery), pak B + C, když má aplikace běžet bez našeho počítače. Tajné hodnoty (`.env`) zůstávají na serveru, nikdy v gitu.

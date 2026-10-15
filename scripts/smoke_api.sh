@@ -6,8 +6,8 @@
 #   scripts/smoke_api.sh https://xyz.trycloudflare.com
 #
 # Official endpoints need a login. The password is never in this file:
-#   SMOKE_EMAIL / SMOKE_PASSWORD, otherwise CESTY_SEED_OFFICIAL_EMAIL /
-#   CESTY_SEED_OFFICIAL_PASSWORD from .env. Without them only public endpoints run.
+#   SMOKE_EMAIL / SMOKE_PASSWORD, otherwise CESTY_SEED_OFFICIAL_PASSWORD from .env
+#   (seed account urednik@cesty-khk.test). Without a password only public endpoints run.
 #
 # Prints status, time and size of every call. Exit code 1 when any call fails.
 
@@ -30,7 +30,7 @@ if [ -f "$ROOT/.env" ]; then
   . "$ROOT/.env"
   set +a
 fi
-EMAIL="${SMOKE_EMAIL:-${CESTY_SEED_OFFICIAL_EMAIL:-}}"
+EMAIL="${SMOKE_EMAIL:-${CESTY_SEED_OFFICIAL_EMAIL:-urednik@cesty-khk.test}}"
 PASSWORD="${SMOKE_PASSWORD:-${CESTY_SEED_OFFICIAL_PASSWORD:-}}"
 
 FAILED=0
@@ -92,7 +92,7 @@ check "preview without login" 401 '"detail"' -X POST -H "Content-Type: applicati
 
 echo
 if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
-  echo "Úředník: přeskočeno (nastav SMOKE_EMAIL a SMOKE_PASSWORD, nebo CESTY_SEED_OFFICIAL_* v .env)"
+  echo "Úředník: přeskočeno (nastav SMOKE_EMAIL a SMOKE_PASSWORD, nebo CESTY_SEED_OFFICIAL_PASSWORD v .env)"
 else
   echo "Úředník ($EMAIL)"
   printf '{"email":"%s","password":"%s"}' "$EMAIL" "$PASSWORD" >"$TMP/login.json"
