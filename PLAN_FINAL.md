@@ -687,3 +687,28 @@ Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, 
 ### 20.1 Pitch: vlastník Přemek (15. 10., ~13:30)
 - **Rozhodnuto:** pitch, PDF/PPTX a záložní video dělá **Přemek** (řádek 1 tabulky výše je vyřešený). Společně ho doladíme kolem 15:00.
 - Do té doby se pitch jen rozepisuje v [docs/PITCH.md](docs/PITCH.md): osnova 5 min, demo klik po kliku, čísla se zdroji, věty pro porotu, odpovědi na výtky, slajdy, záloha a kontrola v 16:00. Kdo něco rozhodne, připíše to tam.
+
+## 21. Rozhodnutí o nápadech a kdo co dělá do freeze (15. 10., ~14:20, Tomáš)
+
+Tomáš rozhodl o všech nápadech, které ještě byly otevřené ([NAPADY.md](NAPADY.md)). Kap. 19 a 20 platí dál. Tahle kapitola k nim přidává dvě nové věci do plánu a jednu tabulku: kdo co dělá a v jakém pořadí. Pořadí v každém řádku = priorita, škrtá se odspodu (kap. 20, „Škrty“).
+
+### 21.1 Rozhodnutí
+| Nápad | Rozhodnutí | Proč |
+|---|---|---|
+| **F‑c** Rozpad skóre z API (`/api/useky/{id}`, pole `breakdown`) | **do plánu**, Matouš | Detail ukáže stejná čísla jako žebříček a export, včetně nových faktorů T20. |
+| **F‑d** Aktuální uzavírky ŘSD na mapě (`/api/closures`, pole `srti`) | **do plánu**, Matouš | Živá data na mapě (E4). Backend je hotový. |
+| F‑f Hlasování a hlášení občana | v nápadech | Do 16:00 mají přednost ★1 a ★2. |
+| F‑g Odznak stability pořadí | v nápadech | V pitchi stačí věta. **S25 se proto nedělá.** |
+| č. 16 PDF pro zastupitelstvo, č. 14 časová osa | v nápadech | Až po rozpočtu z API. Do freeze to nestihneme. |
+| č. 9 A vs B, č. 12 widget, č. 13 e‑maily | v nápadech | V pitchi jako rozvoj po hackathonu. |
+| E1–E8 | uzavřeno v nápadech | Vlastníci a pořadí jsou v kap. 20. |
+
+### 21.2 Kdo co dělá (do zkušebních sloučení 15:00, 15:30, 16:00)
+| Kdo | Pořadí úkolů | Kde je zadání |
+|---|---|---|
+| **Matouš** | 1. D1 + D3 + D4 → 2. D2 + karta uzavírky (F‑b) a 3 doporučené uzavírky 2022 (E4) → 3. D7 → 4. ★2 seznam upozornění (E1) → 5. rozpočet z API (E3) a tlačítko „Zdůvodnit“ (E5) → 6. D5, D8, štítek „živá data“ (F‑a), chyby (F‑e) → 7. **F‑c** → 8. **F‑d** → 9. D6 posuvníky nových vah | [docs/FRONTEND.md](docs/FRONTEND.md), „NEJVYŠŠÍ PRIORITA“, kap. 20 |
+| **Šimon** | 1. S21 hesla demo účtů z `.env` → 2. S22 gzip → 3. S24 `engine.warmup()` v lifespanu (T21 je na větvi `tomas`, na `main` přijde v 15:00) → 4. ověřit AI klíč (E5) → 5. ★2 upozornění s Matoušem (E1) → 6. S23 malý žebříček → 7. S14, S15, S18 (kap. 17.3). S25 se nedělá, S26 jen když zbude čas. | kap. 19.3, 20 |
+| **Tomáš** | 1. sloučit `tomas` do `main` v 15:00 (T21–T23 a opravy z review) → 2. `scripts/smoke_api.sh` na Šimonově Macu přes tunel po každém sloučení → 3. T24 výchozí váhy T20 na 50, až Matouš udělá D1 a D6 → 4. pitch: čísla (sekce 4 ověřená), sekce 9 za jádro a data, snímek karty II/303 pro slajd 4 | kap. 19.4, [docs/PITCH.md](docs/PITCH.md) |
+| **Přemek** | Pitch, PDF/PPTX, záložní video, GitHub Pages, test mobilu 375 px (kap. 20.1). Na průchod ukázkou v 15:30 počítat se stavem z `main`. | kap. 20.1, [docs/PITCH.md](docs/PITCH.md) |
+
+**Riziko:** Matouš má nejvíc práce. Když do 15:30 nebude hotové D1 + D2 + karta uzavírky, škrtá se odspodu (F‑d, F‑c, D6) a ★2 se ukáže jen jako seznam upozornění.

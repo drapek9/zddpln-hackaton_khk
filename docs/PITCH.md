@@ -32,6 +32,8 @@ Termíny: feature freeze **16:00**, odevzdání **17:00–17:15** (kód + `.pptx
 **TODO Přemek + Matouš:** projít scénář nanečisto v 15:30 a zapsat sem, co skutečně kliká (D1–D10, E1–E8).
 
 ## 4. Klíčová čísla (všechna ověřitelná)
+**Ověřeno 14:20 (Tomáš) přímo z jádra nad snímkem `public/data`:** všech 9 řádků sedí (4 726 úseků, 3 192 km, 1 375,6 km havarijních = 43 %, objížďka 81,5 %, ŘSD 1 343 km, 22 382 studentů v 5 011 tocích, 448 obcí, 20 úplných uzavírek 2022). Pro slajd 4: II/303 Velké Poříčí – Hronov = 589 středoškoláků denně, 8 246 vozidel (sčítání ŘSD 2025), objížďka +0,8 km / +2 min, ZZS přes 20 min v 1 obci (Machov).
+
 | Číslo | Zdroj |
 |---|---|
 | 1 375 km havarijních a superhavarijních silnic (43 % sítě) | Data KHK, `docs/PLAN_SILNICE.md` |
