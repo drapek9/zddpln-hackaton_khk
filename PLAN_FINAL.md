@@ -729,7 +729,6 @@ Ověřeno v prohlížeči (backend :8010, frontend :5180, dočasná DB): přihl�
 - **NEAKTIVNÍ část S21 (15. 10., Šimon):** S21 je na větvi `simon` hotové, hesla jsou z `.env`. Zbývá sjednotit tvar `rescue` (F13).
 - Tomáš: `SECRET_KEY`, VAPID, smoke po sloučení.
 
-
 ## 22. AI v produkci: Groq a pořadí pro město (15. 10., Šimon)
 
 Poskytovatel na hackathon jsou dva modely Groq na jednom klíči. Claude z kap. 14.2 zůstává neaktivní alternativa.
@@ -747,3 +746,31 @@ Veřejný žebříček města (trvalé váhy, ne soukromý pohled úředníka a 
 - U posunu je `ai_label` „návrh AI“, věta v `ai_reason` a původní pořadí v `formula_rank`. Skóre vzorce zůstává v `score`.
 - Vzorec v `backend/app/core/` se nemění (Tomáš). Směs a záložní model jsou v `backend/app/ai/` a na `GET /api/ranking` (Šimon). Filtr na obrazovce je Matouš, `src/` se kvůli tomu needituje.
 - Pitch: „AI je označený faktor se stropem a jde ho vypnout. Vzorec zůstává.“
+
+## 23. Server a backend: díry před hostingem a první ostrý test (15. 10., ~15:00, Tomáš)
+
+Na `main` to byla kapitola 22. Po sloučení je 23, protože 22 už popisuje AI v produkci.
+
+Zkušební sloučení `main` + `tomas` + `simon` (kontrola z 15:00): kód se sloučí čistě, 61 testů projde, `scripts/smoke_api.sh` 0 chyb. Backend pokrývá celé MVP (★1, ★2, ★3). Zbývají **provozní díry** níže. Vlastník: **Šimon** (`backend/app/config.py`, `main.py`, `db/`, `start-server.command`, `.env.example`). Tomáš jen u S31.
+
+### 23.1 Úkoly pro Šimona (v tomto pořadí)
+| # | Díra | Proč vadí | Oprava | Hotovo, když |
+|---|---|---|---|---|
+| S27 | `.env` se v backendu nenačítá (`config.py` čte jen proměnné prostředí). Funguje jen přes `start-server.command`. | `uv run uvicorn …` z README a AGENTS tiše ignoruje klíč, hesla, AI i VAPID. Na hostingu se spustí bez klíčů a nikdo to nepozná. | Přidat `python-dotenv` a v `get_settings()` načíst `.env` z kořene repa (neprepisovat už nastavené proměnné). | Smazané proměnné v shellu, `uv run uvicorn` přesto vidí hodnoty z `.env` (zkouška: `AI_PROVIDER`). |
+| S28 | Hesla demo účtů se bez `.env` generují při **každém startu** (`demo_users()` běží při importu), ale účty se zakládají jen do prázdné DB. | Po restartu vypsaná hesla nefungují, nikdo se nepřihlásí. | Generovat a vypsat hesla **jen když se opravdu zakládají účty** (uvnitř `seed_if_empty`). Do `.env.example` a README napsat: před prvním startem vyplň `CESTY_SEED_*_PASSWORD`. | Restart serveru s existující DB nevypíše žádná hesla a přihlášení z prvního startu dál platí. |
+| S29 | Slabý klíč k tokenům: výchozí `dev-only-change-me`, délka se nehlídá. `start-server.command` ho vygeneruje jen při přesném starém zástupném textu. | Přes veřejný tunel jde padělat přihlášení (role admin). | Při startu: když klíč chybí, je kratší než 32 znaků nebo je výchozí, **server nenastartuje** (srozumitelná chyba). Výjimka jen s `CESTY_ALLOW_DEV_KEY=1` pro testy (pytest ho nastaví). Skript generování klíče rozšířit i na prázdnou hodnotu a na `dev-only-change-me`. | Start bez klíče skončí chybou, testy dál prochází. |
+| S30 | Zastaralé texty: banner v `start-server.command`, README a `docs/DEMO.md` na `produkce` píšou „hesla v `seed.py`“. | Matouš a Přemek hledají hesla tam, kde nejsou. | Banner: „hesla jsou v `.env` (`CESTY_SEED_*`) nebo v `.server-logs/api.log` při prvním startu“. Opravit i README, `docs/DEMO.md`. | `grep -rn "seed.py" README.md docs start-server.command` nevrátí zavádějící větu. |
+| S31 | Web Push: bez VAPID klíčů `push/vapid-public-key` vrací `configured: false`, nikdy neproklikáno. | Upozornění na telefonu (★2) nepůjde. | **Tomáš** vygeneruje klíče (`cd backend && uv run python -m app.notify.vapid`), vloží do `.env` na Macu. Šimon doplní do `start-server.command` kontrolu a varování „Push vypnut: chybí VAPID“. | Při startu je v logu řádek, jestli push je zapnutý. |
+| S32 | `CESTY_COOKIE_SECURE` je vypnuté a `CESTY_CORS_ORIGINS` jen `localhost:5173`. | Přes HTTPS tunel má být cookie `Secure`. CORS neřeší nic (stejný původ přes Vite), ale musí být zdokumentováno. | Do `.env.example` dopsat `CESTY_COOKIE_SECURE=1` pro tunel a vysvětlit CORS. Do `start-server.command` nastavit `CESTY_COOKIE_SECURE=1`, když běží tunel. | Přihlášení přes `https://…trycloudflare.com` nastaví cookie `Secure; HttpOnly`. |
+
+### 23.2 První ostrý test na Šimonově počítači (po sloučení S27–S32)
+Cíl: **jedna databáze, jedno místo**, Tomáš se přihlásí z telefonu nebo svého počítače a účet i přihlášení se uloží.
+1. Šimon sloučí `main` do `simon` (konflikty jen v `PLAN_FINAL.md` a `docs/funkce.html`, vzít obě strany), pak `tomas` a `matous`. `cd backend && uv run pytest` a `scripts/smoke_api.sh` musí dát 0 chyb.
+2. Šimon do `.env` vyplní `CESTY_SECRET_KEY` (≥ 32 znaků), `CESTY_SEED_*_PASSWORD`, VAPID klíče (od Tomáše). Hesla pošle Tomášovi mimo git (ne do chatu s veřejným logem, ne do repa).
+3. `./start-server.command`, předá Tomášovi veřejnou HTTPS adresu.
+4. Tomáš: otevře adresu, **zaregistruje nový účet** (`/api/auth/register`), přihlásí se, odhlásí, přihlásí se znovu a obnoví stránku (přihlášení musí přežít). Pak úředník potvrdí uzavírku a Tomáš vidí upozornění.
+5. Šimon ověří, že účet je v `backend/cesty.db` (`SELECT email, role FROM user;`) a že restart serveru účet nesmaže.
+6. Zápis výsledku do `docs/funkce.html` (log). Nic z hesel ani klíčů do repa.
+
+### 23.3 Co zůstává mimo tento test
+Matouš: AI tlačítka a rozpočet z API (kap. 21, F7, F8). Hledání adresy (místa se zadávají kliknutím do mapy). Sloučení všech větví do `main` ve 15:00 a pak po 30 minutách (kap. 16).
