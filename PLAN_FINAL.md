@@ -9,6 +9,12 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
+## NEJVYŠŠÍ PRIORITA OD 16:15: plány pro backend a frontend
+
+Po testu na veřejné adrese (login už funguje) platí dva samostatné seznamy. **Mají přednost před tabulkou níže.**
+- **Frontend (Matouš):** [docs/TODO_FRONTEND.md](docs/TODO_FRONTEND.md): „Úředník“ → „Správce“, přepínač „Jen parametry / Parametry + AI“ se štítkem „návrh AI“, všech 14 vah a ruční zadání čísla, vše rozklikávací, oddělené barvy stavu a oprav, scroll a širší panel, nic se nepřekrývá. Ověřit přes **Playwright**.
+- **Backend (Šimon, Tomáš):** [docs/TODO_BACKEND.md](docs/TODO_BACKEND.md): `GET /api/ranking?mode=ai` (funkce `reorder_window` existuje, endpoint chybí), `GET /api/weights/schema`, pokrytí ostatních silnic kromě soukromých.
+
 ## TODO TEĎ: priorita před vším ostatním (15. 10., 15:00, Tomáš)
 
 Platí od 15:00 do odevzdání. Co tu není, má nižší prioritu. Podrobnosti jsou v kap. 22 a 25.

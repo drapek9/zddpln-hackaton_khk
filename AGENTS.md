@@ -59,6 +59,11 @@ npm run dev
 - **Branches.** Work on your own branch (`tomas`, `simon`, `matous`, `premek`). The only direct push to `main` is a correction of `NAPADY.md`. Every other change goes to your own branch and reaches `main` only via PR or fast-forward. Never force-push `main`. In this Cursor workspace the own branch is `simon`.
 - **Tests.** Run `uv run pytest` before every push that touches `backend/`.
 
+## TOP PRIORITY (15 Oct, from 16:15): two task lists, read first
+These override the list below. Each item has a "done when" check.
+- **Frontend (Matouš):** `docs/TODO_FRONTEND.md`. Rename "Úředník" to "Správce" in the UI; ranking toggle "Jen parametry / Parametry + AI" with an "návrh AI" label; all 14 weights with numeric input; everything on the map clickable; separate colour channels for road condition and repairs; sidebar scroll and width; no overlapping panels. **Verify every item with Playwright** (desktop and mobile, light and dark, no console errors).
+- **Backend (Šimon, Tomáš):** `docs/TODO_BACKEND.md`. `GET /api/ranking?mode=ai` (`app/ai/ranking.py` `reorder_window` exists but no endpoint calls it), `GET /api/weights/schema`, coverage of other roads except private ones.
+
 ## PRIORITY TODO (15 Oct, from 15:00): read this before any work
 The same list in Czech is at the top of `PLAN_FINAL.md` ("TODO TEĎ") and in chapter 25. Anything not listed here has lower priority.
 
