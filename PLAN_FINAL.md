@@ -9,15 +9,25 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
-> **PRIORITA TOP (15. 10.): další zkušební sloučení do `main` je v 15:00.** Potom každých 30 minut (15:30, 16:00, 16:30, …). Do každého termínu mít svou větev pushnutou, s procházejícími testy a sloučitelnou s `main`.
->
-> **15. 10., 13:15: nejvyšší priorita je kap. 19** (propojit frontend s backendem, chyby D1–D10). Až potom rozšiřování.
->
-> **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
+## TODO TEĎ: priorita před vším ostatním (15. 10., 15:00, Tomáš)
 
-> **15. 10., 10:20:** co se **hned nedělá** (schválené nápady, V3, nehody, povodeň, Moje obec), je v [NAPADY.md](NAPADY.md). Tento soubor obsahuje jen to, co se dnes dělá. Když se nápad začne dělat, přesune se sem.
+Platí od 15:00 do odevzdání. Co tu není, má nižší prioritu. Podrobnosti jsou v kap. 22 a 25.
 
-Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
+| # | Kdo | Co | Do |
+|---|---|---|---|
+| 1 | **Tomáš** | Zkušební sloučení `tomas` + `simon` + `matous` do `main` v 15:00, pak 15:30 a 16:00. Po každém `uv run pytest`, `npm run build`, `scripts/smoke_api.sh`. | 15:00, 15:30, 16:00 |
+| 2 | **Matouš** | Kap. 25, fáze 1: adresy `/`, `/sprava`, `/admin`. `/admin` bez mapy. **Přihlašovací formulář na `/sprava` i `/admin`, každý s jiným vzhledem** (25.8). Občan: rychlé přihlášení a „Pokračovat bez přihlášení“. | 16:00 |
+| 3 | **Matouš + Přemek** | Produkční detaily z 25.9: vlastní stránka 404, 403 a „server nedostupný“, název záložky podle stránky, favicon, stavy načítání a chyb. | 16:00 |
+| 4 | **Šimon** | Demo účty `obcan`, `spravce`, `admin` s jednoduchými hesly z `.env` a přihlášení krátkým jménem (25.8, S34). `home` podle role (B‑5). Pak kap. 22 (S27–S32). | 15:45 |
+| 5 | **Přemek** | Pitch, PDF/PPTX, záložní video. Ukázka jde přes `/sprava` (★1), `/` (★2), `/admin` (★3). Zkouška ukázky nanečisto na `main` přes tunel v **15:30**. | 16:30 |
+| 6 | **Šimon** | Po sloučení S21 spustit `./start-server.command` na Macu, poslat HTTPS adresu do týmového chatu (hesla ne). | 15:30 |
+| 7 | **Všichni** | **16:00 feature freeze.** 16:00–17:00 jen opravy chyb, video, zkouška pitche. **17:15 odevzdání** kódu a PDF/PPTX. | 17:15 |
+
+**Škrty, když nestíháme (odspodu):** 3 (kromě stránky 404), stavy načítání, přesměrování podle role. **Neškrtá se:** adresy `/sprava` a `/admin`, oba přihlašovací formuláře, ★1, Zdroje dat, `LICENSE`.
+
+> Co se **hned nedělá** (schválené nápady, V3, Google login, povodeň, Moje obec), je v [NAPADY.md](NAPADY.md). Když se nápad začne dělat, přesune se sem.
+>
+> Ranní stav a rizika: [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md) (NEAKTIVNÍ od 15:00, priority určuje tabulka výše).
 
 Čtení: kapitoly 1–3 říkají, co a proč stavíme. Kapitoly 4–9 popisují, jak to postavíme. Kapitoly 10–12 obsahují termíny a otevřené věci. Přehled funkcí a výhod pro uživatele (hotovo / jádro / plán) je v [docs/funkce.html](docs/funkce.html). Když se stav změní, uprav tu stránku a kapitoly 4 a 7.
 
@@ -100,6 +110,8 @@ Demo běží podle scénáře se záložním videem. Porota může otevřít web
 ---
 
 ## 4. Webová aplikace v ideálním případě (obrazovka po obrazovce)
+
+**NEAKTIVNÍ sloupec „Stav“ (15:00):** stav je z rána 15. 10., od té doby je většina hotová. Aktuální stav je v [docs/funkce.html](docs/funkce.html), cílová podoba obrazovek je v kap. 25.
 
 Stav k ránu **15. 10. 2026**. ✅ = uživatel to má v aplikaci, ◉ = výpočet je hotový a obrazovka chybí, ◐ = částečně, ❌ = chybí. Priorita: **MVP** / V2 / V3 (viz kap. 8). Stejný přehled po výhodách pro uživatele je v [docs/funkce.html](docs/funkce.html).
 
@@ -231,6 +243,8 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 
 ## 7. Stav k ránu 15. 10.
 
+**NEAKTIVNÍ (15:00):** ranní stav. Aktuální je [docs/funkce.html](docs/funkce.html) a kap. 21–25.
+
 Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/funkce.html). Tahle tabulka je totéž po oblastech. Když se něco dodělá, uprav obojí.
 
 | Oblast | V aplikaci | V jádru, uživatel to nevidí | Chybí |
@@ -303,9 +317,9 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 2. ~~**Nehody**~~ přesunuto do [NAPADY.md](NAPADY.md).
 3. ~~**Cena za km opravy**~~ vyřešeno 15. 10.: předpoklad podle stavu se zdroji, viz [NAPADY.md](NAPADY.md), č. 1.
 4. **Odpověď organizátorů** ke kódu připravenému předem.
-5. **Poskytovatel AI** a jestli klíč funguje už teď. Návrh: kap. 14.2.
+5. ~~**Poskytovatel AI**~~ vyřešeno: Šimon, `AI_PROVIDER` v `.env`, šablona jako záloha (kap. 14.2).
 6. Kdo po soutěži pohlídá odevzdání na `github.com/krhk`?
-7. Role (Šimon).
+7. ~~Role~~ vyřešeno: kap. 15 a 25.
 
 ---
 
@@ -383,41 +397,7 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 
 **NEAKTIVNÍ (15. 10., 10:45):** Šimon má AI hotovou po svém na větvi `simon` (`backend/app/ai/service.py`, `/api/ai/explain|announcement|weights`, šablona jako záloha, `nearest_road_id`). Návrh níže je jen pro srovnání, neimplementovat.
 
-**Doporučený poskytovatel:** Anthropic Claude přes oficiální SDK `anthropic` (Python).
-- Model `claude-haiku-5-5` pro všechno (rychlý a levný, stačí na krátké texty a JSON). `claude-sonnet-5-5` jen když bude oznámení znít špatně.
-- Záloha: Azure OpenAI, pokud partner Microsoft na místě dá kredit. Díky jednomu rozhraní se mění jen `.env`.
-- `.env` (už je v `.env.example`): `AI_PROVIDER=anthropic|azure|none`, `AI_API_KEY`, `AI_MODEL=claude-haiku-5-5`, `AI_ENDPOINT` (jen Azure). Klíč nikdy do gitu ani do frontendu.
-- `uv add anthropic` v `backend/` (Šimon).
-
-**Struktura `backend/app/ai/` (vlastní Šimon, úkol S10):**
-| Soubor | Co dělá |
-|---|---|
-| `provider.py` | Jedna funkce `complete_json(system, user, schema) -> dict \| None`. Volá model s nástrojem (tool use) s JSON schématem, timeout 8 s. Při chybě, timeoutu nebo `AI_PROVIDER=none` vrátí `None`. |
-| `prompts.py` | 4 systémové prompty, česky, krátké. Každý říká: „Používej jen čísla ze vstupu. Nic nevymýšlej.“ |
-| `fallback.py` | Šablony bez AI pro všechny 4 použití. Když `complete_json` vrátí `None`, použije se šablona. |
-| `cache.py` | Výsledek podle `hash(vstup)` v SQLite. Při demu se nic nevolá dvakrát a funguje i bez Wi‑Fi, pokud se demo jednou proklikne předem. |
-
-**4 použití, vstupy a výstupy:**
-| # | Endpoint (Šimon) | Vstup z `Engine` (Tomáš, už existuje) | Výstup (JSON schéma) | Obrazovka (Matouš) | Kdy |
-|---|---|---|---|---|---|
-| 1 | `POST /api/ai/zduvodneni {road_id}` | `breakdown(road_id)`, `road(road_id)` | `{text, faktory_pouzite[]}` | Detail úseku, Top N | 12:30–15:00, první |
-| 2 | `POST /api/ai/oznameni {road_id, od, do}` | `closure_impact(...)`, `detour(road_id)` | `{titulek, text, objizdka_popis}` | Simulátor uzavírky (★1), nahradí šablonu z `src/lib/announce.ts` | druhé |
-| 3 | `POST /api/ai/vahy {text}` | aktuální `Weights` | `{vahy: {faktor: 0–100}, duvod}` | Váhy, tlačítko „Navrhnout z textu“ | třetí, škrtá se první |
-| 4 | `POST /api/ai/hlaseni {text, lon, lat}` | nejbližší úsek (Tomáš: helper `nearest_road(lon, lat)`, zatím chybí) | `{typ: enum, zavaznost: 1–3, road_id}` | Fronta hlášení | jen když zbude čas |
-
-**Pravidla, která drží porotu (kap. 1, body 10 a 11):**
-- AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
-- Každý AI text má ve UI štítek **„návrh AI“** a tlačítko „Použít“ nebo „Upravit“. Bez potvrzení člověkem se nic neuloží ani neodešle.
-- Text od občana (použití 4) jde do modelu jako data v `<hlaseni>…</hlaseni>`. Výstup je jen enum a čísla; nic se z něj nespouští.
-- Audit: kdo potvrdil AI návrh a kdy (Šimonův audit log).
-
-**Pořadí práce, ať AI nebrzdí MVP:**
-1. Šimon: `fallback.py` + endpoint 1 a 2 **jen se šablonou** (15 min). Matouš může hned napojit UI.
-2. Šimon: `provider.py` s Claude, zapnout přes `.env`. Ověřit 1 voláním z terminálu.
-3. Tomáš: zkontrolovat, že `breakdown` a `closure_impact` vrací vše, co prompt potřebuje (čísla, názvy obcí, počty). Doplnit jen přidáním polí do `schemas.py`.
-4. Demo: proklikat 2–3 ukázkové uzavírky předem, aby byly v `cache.py`.
-
-Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho, jaký klíč máme.
+Původní návrh (provider, prompty, cache) smazán při revizi plánu 15:00, je v historii gitu (`git show 279f467:PLAN_FINAL.md`, kap. 14.2). Pravidla AI platí dál: AI nemění skóre ani pořadí, každý text má štítek „návrh AI“ a potvrzuje ho člověk.
 
 ---
 
@@ -457,6 +437,8 @@ Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho,
 8. **Odhlášení** `POST /api/auth/logout` smaže cookie a zvýší `token_version`. Tím přestanou platit i staré kopie tokenu.
 
 ### 15.4 Kdo co udělá
+**NEAKTIVNÍ (15:00):** hotovo (login, registrace, cookie, role). Podoba přihlášení podle adresy je v kap. 25.8.
+
 | Kdo | Co | Stav |
 |---|---|---|
 | Šimon | `api/auth.py`, `auth/security.py`, `auth/deps.py`, `db/seed.py` | ✅ hotovo na větvi `simon`, čeká na sloučení do `main` |
@@ -473,41 +455,9 @@ Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho,
 
 ---
 
-## 16. Sloučení do `main` ve 12:00 a co zbývá (15. 10., 10:55, Tomáš)
+## 16. Sloučení do `main` ve 12:00
 
-Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všechno na `main` a šlo zkontrolovat, co máme.
-
-### 16.1 Zkušební sloučení (ověřeno 10:55, lokálně, nic se nepushlo)
-- `tomas` + `simon` + `matous` jdou sloučit **bez konfliktu**. `npm run build` projde.
-- Backend: 32 z 36 testů zelených. 4 padají jen proto, že Šimonovy testy čekají „data ještě nejsou“ a data už jsou (viz 16.2).
-- API po sloučení odpovídá: `/api/health` (4 726 úseků), `/api/demo-closures` (20 skutečných uzavírek 2022), `/api/obce` (448 obcí z Data KHK), `/api/flood` (po přihlášení).
-
-### 16.2 Šimon (před sloučením, ~20 min)
-1. **Chyba v intenzitě:** `services/access.py`, `intensity_of`. `road["intensity"]` není číslo, ale slovník `{"sv": vozidel za den, "src": "csd2025" | "odhad", "usek": …}`. Vracet `sv` a jako kvalitu `src`. Dnes API vrací celý slovník a kvalita je vždy „odhad“.
-2. **Testy čekající prázdná data** (`tests/test_api.py`) přepsat na skutečné hodnoty:
-   - `test_closure_notifies_citizen_on_route`: `vehicles_per_day`, `students_per_day`, `cut_off_obce` už mají hodnotu.
-   - `test_flood_waits_for_engine`, `test_obce_are_names_until_dataset_arrives`, `test_demo_closures_from_current_network`: teď `ready: True`.
-3. **Štítek ukázek:** `/api/demo-closures` dává `label: "demo data"`, ale jsou to skutečné plány kraje 2022. Navrhuji `"skutečný plán 2022 (Data KHK)"`. Pravidlo „označovat poctivě“ platí oběma směry.
-4. **Sloučit do `main`:** nejdřív `tomas`, pak `simon`. `uv run pytest`, push. **Do 12:00.**
-5. V `Engine` je nově: `students_on(id)`, `cut_off_obce(id)`, `people_impact(ids)`, `obce()`, `flood(level)`, `flood_geojson(level)`, `demo_closures()`, `graph.detour_set(ids)` (uzavírka přes víc úseků). Popis v `docs/BACKEND.md`, kap. 7.
-6. Volitelné: v lifespanu zavolat `engine.people` a `engine.demo_closures()`. Jinak první požadavek trvá ~3 + 5 s.
-
-### 16.3 Matouš a Přemek (po sloučení)
-1. **★1 simulátor přes API:** `POST /api/closures` vrací objížďku s geometrií, varování, auta za den, studenty a odříznuté obce. Přepnout ze snímku `public/demo/detours.json` na API. Bez toho není hlavní demo.
-2. **Seznam „Skutečné uzavírky 2022“** z `GET /api/demo-closures`. Tři mají `recommended: true` a `recommended_reason`. Klik otevře simulátor s touto uzavírkou (`road_ids`, `detour`, `people`, `alerts` jsou už spočítané).
-3. Login podle kap. 15.
-4. **Zdroje dat:** doplnit ŘSD Celostátní sčítání dopravy 2025 (CC BY‑SA 4.0), OpenStreetMap (ODbL) a z Data KHK Obce, Dojížďka do středních škol, Záplavová území a Plánované opravy 2022. itemId jsou v `docs/BACKEND.md`, kap. 7. U `intensity_src == "odhad"` ukázat štítek „odhad“.
-
-### 16.4 Tomáš
-- Do 12:00: T8 uzavírky ŘSD SRTI (`engine.srti_closures()`, Šimon na něj už má místo v `api/closures.py`), pak T11 oprava 450 m.
-- **Doplněno 11:05:** T8 i T11 hotové na `tomas`. T11 změnilo počty bodů u úseků a tím skóre a pořadí. Po sloučení se žebříček ve webu bude lišit od dopoledne, je to oprava, ne chyba.
-- Ve 12:00: pomoct se sloučením a s kontrolou.
-
-### 16.5 Kontrola ve 12:00 (všichni, 15 min)
-- ★1: proklikat 3 doporučené uzavírky 2022 od výběru po „Potvrdit“.
-- ★2: občan s trasou dostane upozornění po potvrzení uzavírky.
-- ★3: admin, export CSV/GeoJSON, dokumentace API.
-- Rozhodnout škrty podle kap. 8 a **kdo dělá pitch a PDF** (zatím nikdo).
+**Splněno a smazáno při revizi plánu 15:00.** Text je v historii gitu (`git show 279f467:PLAN_FINAL.md`, kap. 16). Nové metody `Engine` jsou v `docs/BACKEND.md`, kap. 7.
 
 ---
 
@@ -578,37 +528,9 @@ Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `do
 
 ---
 
-## 18. Stav před velkým sloučením (15. 10., 12:00, Tomáš)
+## 18. Stav před velkým sloučením (12:00)
 
-**Zkušební sloučení** `origin/simon` + `origin/matous` + `origin/tomas-next` (lokálně, nic se nepushlo): **bez konfliktů**, `npm run build` projde, backend **47 z 48 testů**.
-
-### Co je hotové na větvích (ještě ne na `main`)
-- **Šimon (`simon`, 12 commitů):** kap. 16 splněná (intenzita, testy, štítek „skutečný plán 2022 (Data KHK)“, předehřátí v lifespanu). Navíc S16 `POST /api/closures/preview`, S17 `/api/budget` nad `Engine.budget_plan`, S19 `/api/export/metadata.jsonld`, S20 `GET /api/route`. AI umí Claude (`AI_PROVIDER=anthropic`).
-- **Matouš (`matous`, 7 commitů):** jednotný design, světlý a tmavý režim, **F1 přihlášení** a **F7 patička**.
-- **Tomáš (`tomas-next`):** T18 dojezd ZZS a HZS. T17 a T10 už jsou na `main`.
-
-### Co je potřeba udělat před sloučením
-| Kdo | Co | Proč |
-|---|---|---|
-| **Šimon** | Sloučit `simon` do `main` (je 0 commitů pozadu, jde fast-forward). | Matouš potřebuje API na `main`. |
-| **Šimon** | V `tests/test_api.py::test_closure_notifies_citizen_on_route` nečekat u dojezdu IZS `None`. Po T18 je tam `{items, label: "estimate", note}`. | Jediný padající test po sloučení s `tomas-next`. |
-| **Tomáš** | Po Šimonovi sloučit `tomas-next` do `main`, `uv run pytest`. | T18 na kartě uzavírky. |
-| **Matouš** | Sloučit `matous` do `main` až po Šimonovi. | Konflikty nejsou, build projde. |
-
-### Co nesedí mezi frontendem a API (F2, hned po sloučení)
-**NEAKTIVNÍ (13:15):** nahrazeno kap. 19 a [docs/FRONTEND.md](docs/FRONTEND.md), sekce „NEJVYŠŠÍ PRIORITA“. Backend už váhy v query bere.
-
-| Frontend (`src/lib/api.ts`) | API (Šimon) | Kdo upraví |
-|---|---|---|
-| `ranking` čeká pole `RankedRoad[]` a váhy v query (`?stav=30`) | vrací `{weights_source, count, items}`, váhy bere z účtu | Matouš čte `items`; váhy v query buď Šimon přidá, nebo frontend při změně posuvníků počítá lokálně (štítek) |
-| simulátor volá `POST /api/closures` | náhled je `POST /api/closures/preview`; `/closures` ukládá do DB a chce `title` a úředníka | Matouš: náhled přes `/preview`, `/closures` až u „Potvrdit uzavírku“ |
-| AI se z frontendu nevolá | `/api/ai/explain`, `/announcement`, `/weights` | Matouš, až po F2 |
-
-### Zbývá z kap. 17
-- Tomáš: **T19** ověření modelu, **T20** faktory ve skóre (pak frontend nutně čte žebříček z API).
-- Šimon: S14 cache AI a `/api/ai/budget`, S15 rate limit na login, S18 kolize uzavírek.
-- Matouš: F2–F6.
-- Pitch a PDF: pořád **bez vlastníka** (kap. 16.5).
+**Splněno a smazáno při revizi plánu 15:00.** Text je v historii gitu (`git show 279f467:PLAN_FINAL.md`, kap. 18). Zbylé úkoly jsou v kap. 19–25.
 
 ## 19. Priorita po 13:00: propojit frontend s backendem (15. 10., ~13:15, Tomáš)
 
@@ -768,21 +690,7 @@ Ověřeno v kódu (`backend/app/api/auth.py`, `db/seed.py`, `db/models.py`, vět
 - **Pozor:** odhlášení zvýší `token_version`, takže se účet **odhlásí na všech zařízeních** najednou. U dvou lidí na jednom demo účtu (např. `obcan1` na telefonu i na notebooku) se navzájem vyhodí. Pro porotu proto registrace vlastního účtu, ne sdílený.
 
 ### 23.3 Google login (S33 Šimon, M‑g Matouš)
-**Návrh (Google Identity Services, ID token, bez client secretu):**
-1. Frontend načte `https://accounts.google.com/gsi/client` a ukáže tlačítko „Přihlásit přes Google“ **jen když** `GET /api/auth/config` vrátí `google_client_id` (bez něj tlačítko zmizí, e‑mail + heslo dál funguje).
-2. Po výběru účtu dostane frontend `credential` (JWT) a pošle `POST /api/auth/google {credential}`.
-3. Backend token **ověří** (`google-auth`: `id_token.verify_oauth2_token(credential, Request(), GOOGLE_CLIENT_ID)`), vyžaduje `email_verified == true`, správné `aud` a `iss`.
-4. Najde uživatele podle e‑mailu, nebo založí `role="citizen"` s náhodným nepoužitelným `password_hash` (sloupec zůstává povinný, schéma neměníme). Pak stejné `_issue(...)` jako při loginu (cookie).
-5. **Role nikdy z Googlu.** Účty `official` a `admin` se přes Google **nepřihlásí** (jen heslem), ať se nedá převzít úředník cizím Google účtem se stejným e‑mailem. Zablokovaný účet vrací 403 jako dnes.
-6. Env: `GOOGLE_CLIENT_ID` (veřejná hodnota, smí do `.env.example`). Žádné tajemství navíc.
-
-**Kritická omezení, která rozhodnou, jestli to půjde:**
-- **Povolený původ (Authorized JavaScript origins) musí být přesná HTTPS adresa, žádné hvězdičky.** Rychlý tunel `cloudflared tunnel --url …` dává **novou adresu při každém startu**, Google login na něm **nepůjde**. Potřebujeme **stabilní adresu**: pojmenovaný tunel Cloudflare na vlastní doméně, nebo ngrok se statickou doménou, nebo Tailscale Funnel (`*.ts.net`). Jestli Google přijme `ts.net` / `ngrok-free.app` jako původ, **ověřit v Google Cloud Console dřív, než na tom něco postavíme**. Nejjistější je vlastní doména. Tomáš rozhodne a zařídí (T25).
-- **Obrazovka souhlasu:** typ „Externí“. Ve stavu „Testing“ se přihlásí jen přidaní testovací uživatelé (do 100). Pro porotu buď přidat jejich účty, nebo přepnout na „In production“ (stačí základní rozsahy `openid email profile`, ověření aplikace se nevyžaduje, jen Google ukáže varování „neověřená aplikace“).
-- **QR z aplikací** (Instagram, Facebook, některé čtečky) otevírají vestavěný prohlížeč, kde Google přihlášení blokuje (`disallowed_useragent`). Na QR kódu proto dát adresu a na slajdu „otevřít v Chrome / Safari“.
-- Záloha vždy: e‑mail + heslo a demo účty.
-
-Reference: [Google Identity Services](https://developers.google.com/identity/gsi/web/guides/overview), [ověření ID tokenu na serveru](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token), [nastavení obrazovky souhlasu](https://support.google.com/cloud/answer/10311615).
+**Přesunuto do [NAPADY.md](NAPADY.md), část G (revize 15:00).** Do freeze nestihneme: potřebuje stabilní HTTPS adresu, projekt v Google Cloud a obrazovku souhlasu. Dnes jen e‑mail + heslo a demo účty (kap. 25.8).
 
 ### 23.4 QR kód a telefony
 - **QR vede na stabilní HTTPS adresu** (stejná jako u Google původu). Adresa se mezi zkouškou a pitchem **nesmí změnit**, jinak je QR na slajdu k ničemu. Vygenerovat PNG jednou (Přemek na slajd, Tomáš do `docs/`), např. `uv run --with qrcode[pil] python -c "import qrcode; qrcode.make('https://…').save('docs/qr.png')"`.
@@ -792,15 +700,15 @@ Reference: [Google Identity Services](https://developers.google.com/identity/gsi
 ### 23.5 Úkoly
 | # | Kdo | Co | Hotovo, když |
 |---|---|---|---|
-| S33 | Šimon | `POST /api/auth/google`, `GET /api/auth/config`, `GOOGLE_CLIENT_ID` do `.env.example`, test s falešným tokenem (ověření podpisu zamockovat) | bez `GOOGLE_CLIENT_ID` endpoint vrací 404 a testy dál prochází; role z Googlu jen `citizen` |
-| M‑g | Matouš | tlačítko Google v `LoginCard`, jen když `auth/config` vrací klientské ID | po přihlášení se zobrazí „Občan“ a session přežije obnovení |
+| ~~S33~~ | Šimon | **v nápadech (15:00).** `POST /api/auth/google`, `GET /api/auth/config`, `GOOGLE_CLIENT_ID` do `.env.example`, test s falešným tokenem (ověření podpisu zamockovat) | bez `GOOGLE_CLIENT_ID` endpoint vrací 404 a testy dál prochází; role z Googlu jen `citizen` |
+| ~~M‑g~~ | Matouš | **v nápadech (15:00).** tlačítko Google v `LoginCard`, jen když `auth/config` vrací klientské ID | po přihlášení se zobrazí „Občan“ a session přežije obnovení |
 | M‑h | Matouš | `manifest.webmanifest`, ikony | iPhone nabídne „Přidat na plochu“ |
-| T25 | Tomáš | stabilní HTTPS adresa (doména / pojmenovaný tunel), Google Cloud projekt, klientské ID, QR | adresa se po restartu serveru nemění, QR ji otevře |
+| T25 | Tomáš | stabilní HTTPS adresa (doména / pojmenovaný tunel) a QR, **jen když zbude čas**; Google Cloud projekt je v nápadech | adresa se po restartu serveru nemění, QR ji otevře |
 | P1 | Přemek | QR na slajd a „otevřít v Chrome / Safari“ | slajd obsahuje QR a stabilní adresu |
 
 ## 25. NEJVYŠŠÍ PRIORITA: tři aplikace podle role a produkční frontend (15. 10., ~14:55, Tomáš)
 
-> Kap. 23 a 24 jsou zatím na větvi `tomas` (rozhodnutí o nápadech, provoz a hosting). Na `main` přijdou se sloučením v 15:00. Tahle kapitola má číslo 25, aby se čísla nepletla.
+> Na větvi `tomas` jsou ještě rozhodnutí o nápadech a provoz/hosting. Na `main` přijdou se sloučením v 15:00 jako kap. 26 a 27.
 
 **Proč:** backend a jádro jsou hotové a silné, ale frontend vypadá nepěkně a míchá všechny role do jedné obrazovky. Porota i kraj posuzují hlavně to, co vidí. Proto je tohle **nejvyšší priorita**: před D6, F‑c, F‑d a dalšími nápady. Kap. 19–22 platí dál, tahle kapitola mění jen pořadí práce na frontendu.
 
@@ -885,3 +793,48 @@ Pravidla: nová pole jen přidávat (`schemas.py` aditivně), test na každý no
 - Tisková sestava „Plán oprav na rok“ pro zastupitelstvo (nápad č. 16) přímo ze `/sprava`.
 - Role „obec“: starosta vidí jen úseky ve své obci a posílá podněty kraji.
 - Průvodce úředníka při prvním přihlášení: tři kroky (žebříček, simulace, potvrzení).
+
+### 25.8 Přihlášení podle adresy a demo účty (upřesnění 15:00, Tomáš)
+**Tři různé přihlašovací obrazovky, jeden backend (`POST /api/auth/login`):**
+
+| Adresa | Formulář | Vzhled | Co tam není |
+|---|---|---|---|
+| `/` občan | Rychlé přihlášení (e‑mail nebo jméno, heslo) a velké tlačítko **„Pokračovat bez přihlášení“**. Pod tím „Nemám účet → registrace“. | Světlý, přátelský, přes mapu nebo vedle ní, na mobilu na celou šířku. | Nic o správě. |
+| `/sprava` úředník | Jen přihlášení. Nadpis „Cesty KHK – správa silnic“, podnadpis „Pro pracovníky Královéhradeckého kraje a obcí“. | Pracovní: tmavší petrolejový pruh, logo/znak kraje (jen jako text, ne cizí logo bez svolení), bez mapy na pozadí. | Registrace, demo vstup, „Pokračovat bez přihlášení“. |
+| `/admin` admin | Jen přihlášení. Nadpis „Cesty KHK – administrace“. | Neutrální šedá, malý formulář uprostřed, štítek „zabezpečená část“. | Registrace, demo vstup, odkaz na veřejnou mapu. |
+
+Pravidla:
+- **Admin a úředník se nikdy neregistrují.** Účet jim založí admin (nebo seed). Registrace na `/` vždy vytvoří občana.
+- Když se na `/admin` přihlásí úředník nebo občan, uvidí „Nemáte oprávnění pro administraci“ a odkaz na svou adresu (B‑5 `home`). Totéž občan na `/sprava`.
+- Chyby pod formulářem česky: „Špatné jméno nebo heslo“, „Účet je zablokovaný“, „Server je nedostupný, zkuste to za chvíli“. Heslo s ikonou „ukázat“. Tlačítko během odesílání zamčené.
+
+**Demo účty pro tým a porotu (S34, Šimon):**
+| Přihlašovací jméno | Role | Kam po přihlášení |
+|---|---|---|
+| `obcan` | občan | `/` |
+| `spravce` | úředník | `/sprava` |
+| `admin` | admin | `/admin` |
+
+- Backend přijme **krátké jméno** i e‑mail: `spravce` = `spravce@cesty-khk.test` (doplní doménu, když chybí `@`). Seed založí tyhle tři účty (staré `urednik@`, `obcan1@` můžou zůstat).
+- **Hesla jsou jednoduchá na zapamatování, ale jen v `.env`** (`CESTY_SEED_ADMIN_PASSWORD`, `CESTY_SEED_OFFICIAL_PASSWORD`, `CESTY_SEED_CITIZEN_PASSWORD`). **Repo je veřejné, do gitu ani do plánu se nepíšou.** Tým je dostane soukromě, porota na papíře nebo na slajdu.
+- **Riziko:** server je přes tunel veřejný. S jednoduchým heslem admina se tam může přihlásit kdokoli, kdo ho uvidí. Proto: po pitchi hesla změnit (`.env` + `RESET_DB=1 ./start-server.command`) a před nasazením po hackathonu jednoduchá hesla zrušit.
+- Hotovo, když: na `/sprava` se přihlásím `spravce` + heslo z `.env` a skončím v žebříčku; `admin` na `/admin`; `obcan` na `/`; špatná role dostane stránku „Nemáte oprávnění“.
+
+### 25.9 Produkční detaily, které „rychle splácnuté“ aplikace nemají (Matouš + Přemek)
+Pořadí = priorita. Do freeze aspoň body 1–5.
+
+1. **Vlastní stránka 404** („Tahle stránka neexistuje“, odkaz na `/`, `/sprava`, vyhledání), ve stejném designu. Plus **403** („Nemáte oprávnění“) a **„Server je nedostupný“** (offline režim se štítkem).
+2. **Zachycení chyb** (React error boundary): místo bílé obrazovky karta „Něco se pokazilo“ a tlačítko „Načíst znovu“. Žádná chyba nesmí shodit celou aplikaci (viz F13).
+3. **Název záložky podle stránky** („Žebříček – Cesty KHK správa“), `<html lang="cs">`, favicon, `meta description` a náhled odkazu (Open Graph obrázek) pro sdílení.
+4. **Stavy každé obrazovky:** načítání (skeleton), prázdno s radou, chyba s „Zkusit znovu“ (25.4).
+5. **Vypršelé přihlášení:** hláška a návrat na správný formulář podle adresy, rozpracovaná data se neztratí.
+6. **Formuláře:** kontrola polí hned u pole, zamčené tlačítko během odesílání, potvrzení u nevratných akcí („Potvrdit uzavírku a upozornit 37 občanů?“).
+7. **Česká čísla a data** všude (`Intl.NumberFormat('cs-CZ')`, „15. 10. 2026“), jednotky (km, min, vozidel/den).
+8. **Klávesnice a přístupnost:** viditelný focus, `Esc` zavře panel, `aria-label` u ikon, kontrast AA.
+9. **Patička:** verze a datum dat („data k 15. 10. 2026, verze abc123“), odkaz na Zdroje dat, Soukromí, licenci EUPL a GitHub.
+10. **`manifest.webmanifest` a ikony** (M‑h z kap. 23.4): přidat na plochu, push na iPhonu.
+11. **`robots.txt`** (`/sprava` a `/admin` neindexovat), `noindex` na přihlašovacích stránkách.
+12. **Tisk** detailu úseku a rozpočtu (čistý tiskový styl bez mapových ovládacích prvků).
+13. **Žádné ladicí výpisy** v konzoli, žádné „undefined“, „NaN“, „null“ v UI, žádné anglické hlášky.
+
+Backend k tomu: jednotné chyby `{detail, code}` (B‑12), `GET /api/health` vrací verzi a datum dat (pro patičku), `home` podle role (B‑5), přihlášení krátkým jménem (S34).

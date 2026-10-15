@@ -443,6 +443,16 @@ Povodeň (E7), hlasování a hlášení na serveru (F‑f), stabilita (F‑g), r
 
 ---
 
+## Část G: přesunuto z PLAN_FINAL.md při revizi 15:00 (Tomáš)
+
+### G1. Přihlášení přes Google (dříve kap. 23.3, úkoly S33, M‑g)
+**Nedělá se do freeze.** Důvod: potřebuje stabilní HTTPS adresu (rychlý tunel mění adresu), projekt a obrazovku souhlasu v Google Cloud a na QR z aplikací (Instagram, Facebook) Google přihlášení blokuje.
+- Návrh: Google Identity Services, frontend pošle `credential` na `POST /api/auth/google`, backend ověří podpis (`google-auth`, `aud`, `iss`, `email_verified`).
+- Role vždy jen `citizen`. Úředník a admin se přes Google nepřihlásí.
+- `GOOGLE_CLIENT_ID` v `.env`; bez něj tlačítko zmizí.
+- Plné znění: `git show 6f2fee2:PLAN_FINAL.md`, kap. 23.3.
+- Navazuje na provoz po hackathonu (stálá doména).
+
 ## Zamítnuto
 
 - Nehody Policie ČR (č. 10) pro dnešek, 15. 10. Po hackathonu znovu.
