@@ -412,3 +412,40 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 4. Demo: proklikat 2–3 ukázkové uzavírky předem, aby byly v `cache.py`.
 
 Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho, jaký klíč máme.
+
+---
+
+## 16. Sloučení do `main` ve 12:00 a co zbývá (15. 10., 11:15, Tomáš)
+
+Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všechno na `main` a šlo zkontrolovat, co máme.
+
+### 16.1 Zkušební sloučení (ověřeno 11:10, lokálně, nic se nepushlo)
+- `tomas` + `simon` + `matous` jdou sloučit **bez konfliktu**. `npm run build` projde.
+- Backend: 32 z 36 testů zelených. 4 padají jen proto, že Šimonovy testy čekají „data ještě nejsou“ a data už jsou (viz 16.2).
+- API po sloučení odpovídá: `/api/health` (4 726 úseků), `/api/demo-closures` (20 skutečných uzavírek 2022), `/api/obce` (448 obcí z Data KHK), `/api/flood` (po přihlášení).
+
+### 16.2 Šimon (před sloučením, ~20 min)
+1. **Chyba v intenzitě:** `services/access.py`, `intensity_of`. `road["intensity"]` není číslo, ale slovník `{"sv": vozidel za den, "src": "csd2025" | "odhad", "usek": …}`. Vracet `sv` a jako kvalitu `src`. Dnes API vrací celý slovník a kvalita je vždy „odhad“.
+2. **Testy čekající prázdná data** (`tests/test_api.py`) přepsat na skutečné hodnoty:
+   - `test_closure_notifies_citizen_on_route`: `vehicles_per_day`, `students_per_day`, `cut_off_obce` už mají hodnotu.
+   - `test_flood_waits_for_engine`, `test_obce_are_names_until_dataset_arrives`, `test_demo_closures_from_current_network`: teď `ready: True`.
+3. **Štítek ukázek:** `/api/demo-closures` dává `label: "demo data"`, ale jsou to skutečné plány kraje 2022. Navrhuji `"skutečný plán 2022 (Data KHK)"`. Pravidlo „označovat poctivě“ platí oběma směry.
+4. **Sloučit do `main`:** nejdřív `tomas`, pak `simon`. `uv run pytest`, push. **Do 12:00.**
+5. V `Engine` je nově: `students_on(id)`, `cut_off_obce(id)`, `people_impact(ids)`, `obce()`, `flood(level)`, `flood_geojson(level)`, `demo_closures()`, `graph.detour_set(ids)` (uzavírka přes víc úseků). Popis v `docs/BACKEND.md`, kap. 7.
+6. Volitelné: v lifespanu zavolat `engine.people` a `engine.demo_closures()`. Jinak první požadavek trvá ~3 + 5 s.
+
+### 16.3 Matouš a Přemek (po sloučení)
+1. **★1 simulátor přes API:** `POST /api/closures` vrací objížďku s geometrií, varování, auta za den, studenty a odříznuté obce. Přepnout ze snímku `public/demo/detours.json` na API. Bez toho není hlavní demo.
+2. **Seznam „Skutečné uzavírky 2022“** z `GET /api/demo-closures`. Tři mají `recommended: true` a `recommended_reason`. Klik otevře simulátor s touto uzavírkou (`road_ids`, `detour`, `people`, `alerts` jsou už spočítané).
+3. Login podle kap. 15.
+4. **Zdroje dat:** doplnit ŘSD Celostátní sčítání dopravy 2025 (CC BY‑SA 4.0), OpenStreetMap (ODbL) a z Data KHK Obce, Dojížďka do středních škol, Záplavová území a Plánované opravy 2022. itemId jsou v `docs/BACKEND.md`, kap. 7. U `intensity_src == "odhad"` ukázat štítek „odhad“.
+
+### 16.4 Tomáš
+- Do 12:00: T8 uzavírky ŘSD SRTI (`engine.srti_closures()`, Šimon na něj už má místo v `api/closures.py`), pak T11 oprava 450 m.
+- Ve 12:00: pomoct se sloučením a s kontrolou.
+
+### 16.5 Kontrola ve 12:00 (všichni, 15 min)
+- ★1: proklikat 3 doporučené uzavírky 2022 od výběru po „Potvrdit“.
+- ★2: občan s trasou dostane upozornění po potvrzení uzavírky.
+- ★3: admin, export CSV/GeoJSON, dokumentace API.
+- Rozhodnout škrty podle kap. 8 a **kdo dělá pitch a PDF** (zatím nikdo).
