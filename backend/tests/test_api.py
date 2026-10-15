@@ -14,6 +14,9 @@ os.environ["AI_PROVIDER"] = "none"
 os.environ["AI_API_KEY"] = ""
 os.environ["VAPID_PUBLIC_KEY"] = ""
 os.environ["VAPID_PRIVATE_KEY"] = ""
+os.environ["CESTY_SEED_ADMIN_PASSWORD"] = "admin-demo"
+os.environ["CESTY_SEED_OFFICIAL_PASSWORD"] = "urednik-demo"
+os.environ["CESTY_SEED_CITIZEN_PASSWORD"] = "obcan-demo"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -87,7 +90,11 @@ def test_ranking_and_pin(client: TestClient):
     assert public.status_code == 200
     body = public.json()
     assert body["count"] > 4000
+    assert body["ai"] == "nedostupne"
     assert body["items"][0]["rank"] == 1
+    formula = client.get("/api/ranking?limit=1&ai=0").json()
+    assert formula["ai"] == "vzorec"
+    assert formula["items"][0]["road"]["id"] == body["items"][0]["road"]["id"]
     assert body["items"][0]["priority"] == "kriticka"
     last = client.get(f"/api/ranking?limit=1&offset={body['count'] - 1}").json()["items"][0]
     official = login(client, "official")
@@ -427,6 +434,45 @@ def test_ai_cache_roundtrip(client: TestClient):
 
     _cache_put("test-budget-cache", "tři věty")
     assert _cache_get("test-budget-cache") == "tři věty"
+
+
+def test_compact_ranking_and_stability(client: TestClient):
+    compact = client.get("/api/ranking?compact=1&limit=2")
+    assert compact.status_code == 200, compact.text
+    item = compact.json()["items"][0]
+    assert set(item) == {
+        "id",
+        "score",
+        "priority",
+        "model_class",
+        "rank",
+        "pinned",
+        "votes",
+        "formula_rank",
+        "ai_points",
+        "ai_reason",
+        "ai_label",
+    }
+    full = client.get("/api/ranking?limit=1").json()["items"][0]
+    assert "road" in full
+    stable = client.get("/api/stability?top=5")
+    assert stable.status_code == 200, stable.text
+    body = stable.json()
+    assert body["top_n"] == 5
+    assert len(body["items"]) == 5
+    assert body["items"][0]["label"] in {"jisté", "pravděpodobné", "nejisté"}
+    assert body["weights_source"] in {"admin", "default", "query"}
+
+
+def test_gzip_and_seed_passwords_are_not_in_source(client: TestClient):
+    from starlette.middleware.gzip import GZipMiddleware
+
+    from app.db.seed import _password
+
+    assert any(layer.cls is GZipMiddleware for layer in client.app.user_middleware)
+    password, generated = _password("CESTY_SEED_ADMIN_PASSWORD")
+    assert generated is False
+    assert password == "admin-demo"
 
 
 def test_login_rate_limit(client: TestClient):

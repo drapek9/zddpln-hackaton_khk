@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app.api.responses import ClosureImpactOut, ClosurePreviewOut
 from app.auth.deps import optional_user, require_official
 from app.db.models import Closure, User
 from app.db.session import get_session
@@ -49,7 +50,7 @@ def _check_dates(body: ClosureBody) -> None:
         raise HTTPException(status_code=400, detail="Datum konce je před začátkem.")
 
 
-@router.post("/closures/preview")
+@router.post("/closures/preview", response_model=ClosurePreviewOut)
 def preview_closure(
     body: PreviewBody,
     request: Request,
@@ -75,7 +76,7 @@ def preview_closure(
     return result
 
 
-@router.post("/closures", status_code=201)
+@router.post("/closures", status_code=201, response_model=ClosureImpactOut)
 def create_closure(
     body: ClosureBody,
     request: Request,
@@ -120,7 +121,7 @@ def list_closures(
     }
 
 
-@router.get("/closures/{closure_id}")
+@router.get("/closures/{closure_id}", response_model=ClosureImpactOut)
 def get_closure(
     closure_id: int,
     request: Request,

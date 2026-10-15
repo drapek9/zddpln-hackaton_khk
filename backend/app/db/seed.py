@@ -1,11 +1,14 @@
 """Demo accounts and two citizen commutes.
 
-Passwords belong in this file, not in the pitch. Places are map points only.
+Passwords come from the environment. This file does not store them.
+Places are map points only.
 """
 
 from __future__ import annotations
 
 import logging
+import os
+import secrets
 
 from sqlmodel import Session, select
 
@@ -17,13 +20,42 @@ from app.services.access import SETTINGS_ID, dump_ids
 
 log = logging.getLogger(__name__)
 
-# Demo passwords. Change them before any real deployment.
-DEMO_USERS = (
-    {"email": "admin@cesty-khk.test", "password": "admin-demo", "role": "admin"},
-    {"email": "urednik@cesty-khk.test", "password": "urednik-demo", "role": "official"},
-    {"email": "obcan1@cesty-khk.test", "password": "obcan-demo", "role": "citizen"},
-    {"email": "obcan2@cesty-khk.test", "password": "obcan-demo", "role": "citizen"},
+_ACCOUNTS = (
+    ("admin@cesty-khk.test", "admin", "CESTY_SEED_ADMIN_PASSWORD"),
+    ("urednik@cesty-khk.test", "official", "CESTY_SEED_OFFICIAL_PASSWORD"),
+    ("obcan1@cesty-khk.test", "citizen", "CESTY_SEED_CITIZEN_PASSWORD"),
+    ("obcan2@cesty-khk.test", "citizen", "CESTY_SEED_CITIZEN_PASSWORD"),
 )
+
+
+def _password(env_name: str) -> tuple[str, bool]:
+    """Return (password, generated). A missing env value is a one-run secret."""
+    raw = os.getenv(env_name, "").strip()
+    if raw:
+        return raw, False
+    return secrets.token_urlsafe(12), True
+
+
+def demo_users() -> list[dict[str, str]]:
+    users: list[dict[str, str]] = []
+    generated: list[tuple[str, str, str]] = []
+    seen: dict[str, str] = {}
+    for email, role, env_name in _ACCOUNTS:
+        if env_name not in seen:
+            password, made = _password(env_name)
+            seen[env_name] = password
+            if made:
+                generated.append((email, env_name, password))
+        users.append({"email": email, "password": seen[env_name], "role": role})
+    if generated:
+        # Server console only. Do not return this from the API or write it to git.
+        print("Cesty KHK: demo hesla nejsou v .env a platí jen pro tento běh serveru.")
+        for email, env_name, password in generated:
+            print(f"  {email}  {env_name}={password}")
+    return users
+
+
+DEMO_USERS = demo_users()
 
 
 def seed_if_empty(session: Session, engine: Engine) -> None:

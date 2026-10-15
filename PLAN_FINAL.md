@@ -404,7 +404,8 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 | 4 | `POST /api/ai/hlaseni {text, lon, lat}` | nejbližší úsek (Tomáš: helper `nearest_road(lon, lat)`, zatím chybí) | `{typ: enum, zavaznost: 1–3, road_id}` | Fronta hlášení | jen když zbude čas |
 
 **Pravidla, která drží porotu (kap. 1, body 10 a 11):**
-- AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
+- **NEAKTIVNÍ jako jediná věta (15. 10., Šimon, kap. 21):** AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
+- Vzorec dál pořadí počítá jen `Engine` a skóre se nemění. Veřejný pohled města k tomu smí posunout úsek nejvýš o 5 míst, se štítkem „návrh AI“. Filtr `ai=0` nechá čistý vzorec. Podrobně kap. 21.
 - Každý AI text má ve UI štítek **„návrh AI“** a tlačítko „Použít“ nebo „Upravit“. Bez potvrzení člověkem se nic neuloží ani neodešle.
 - Text od občana (použití 4) jde do modelu jako data v `<hlaseni>…</hlaseni>`. Výstup je jen enum a čísla; nic se z něj nespouští.
 - Audit: kdo potvrdil AI návrh a kdy (Šimonův audit log).
@@ -683,3 +684,23 @@ Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, 
 ### 20.1 Pitch: vlastník Přemek (15. 10., ~13:30)
 - **Rozhodnuto:** pitch, PDF/PPTX a záložní video dělá **Přemek** (řádek 1 tabulky výše je vyřešený). Společně ho doladíme kolem 15:00.
 - Do té doby se pitch jen rozepisuje v [docs/PITCH.md](docs/PITCH.md): osnova 5 min, demo klik po kliku, čísla se zdroji, věty pro porotu, odpovědi na výtky, slajdy, záloha a kontrola v 16:00. Kdo něco rozhodne, připíše to tam.
+
+---
+
+## 21. AI v produkci: Groq a pořadí pro město (15. 10., Šimon)
+
+Poskytovatel na hackathon jsou dva modely Groq na jednom klíči. Claude z kap. 14.2 zůstává neaktivní alternativa.
+
+- Klíč se zakládá na [console.groq.com/keys](https://console.groq.com/keys). Napojení: [OpenAI kompatibilita](https://console.groq.com/docs/openai). Modely: [seznam](https://console.groq.com/docs/models). Limity: [tabulka](https://console.groq.com/docs/rate-limits).
+- Soubor je `.env` v kořeni repa. Načítá ho `start-server.command`. Vzor bez klíče je v `.env.example`. Klíč nikdy do gitu, do frontendu ani do tohoto plánu.
+- `AI_PROVIDER=groq`, `AI_ENDPOINT=https://api.groq.com/openai/v1`, `AI_MODEL=openai/gpt-oss-120b`, `AI_MODEL_FALLBACK=openai/gpt-oss-20b`.
+- Limity každého modelu na volném tarifu: 1 000 požadavků denně, 30 za minutu, 8 000 tokenů za minutu. Záloha má vlastní strop. Když hlavní spadne (429, timeout, prázdná odpověď), zkusí se `gpt-oss-20b`. Když spadnou oba, zůstane šablona a u žebříčku čistý vzorec (`ai=nedostupne`).
+
+Veřejný žebříček města (trvalé váhy, ne soukromý pohled úředníka a ne váhy z query):
+
+- Výchozí je vzorec plus návrh AI. `?ai=0` je filtr „jen vzorec“.
+- Vstup modelu je prvních 40 úseků podle `Engine`. Jedno volání, teplota 0, cache podle vstupu. Výstup je `id`, body 0–100 a jedna věta jen z dodaných polí. Model nové pořadí nevrací.
+- Body jsou další faktor při řazení. Úsek se smí posunout nejvýš o 5 míst. Připíchnutý úsek se nehýbe. Mimo čtyřicítku se nic nehýbe, takže do top 10 nejde úsek, který tam vzorec aspoň nepřiblížil.
+- U posunu je `ai_label` „návrh AI“, věta v `ai_reason` a původní pořadí v `formula_rank`. Skóre vzorce zůstává v `score`.
+- Vzorec v `backend/app/core/` se nemění (Tomáš). Směs a záložní model jsou v `backend/app/ai/` a na `GET /api/ranking` (Šimon). Filtr na obrazovce je Matouš, `src/` se kvůli tomu needituje.
+- Pitch: „AI je označený faktor se stropem a jde ho vypnout. Vzorec zůstává.“

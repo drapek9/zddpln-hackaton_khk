@@ -172,38 +172,58 @@ def budget_explanation(engine: Engine, amount: int, amount2: int | None, weights
     return text
 
 
-def complete(system: str, user: str) -> str | None:
+def complete(system: str, user: str, *, temperature: float = 0.2) -> str | None:
     settings = get_settings()
     if not settings.ai_configured:
         return None
+    if settings.ai_provider == "anthropic":
+        model = settings.ai_model or "claude-haiku-5-5"
+        return _cached(settings, model, system, user, temperature, lambda: _anthropic(settings, system, user))
+    primary = settings.ai_model or "gpt-4o-mini"
+    text = _cached_chat(settings, primary, system, user, temperature)
+    fallback = settings.ai_model_fallback
+    if text or not fallback or fallback == primary:
+        return text
+    return _cached_chat(settings, fallback, system, user, temperature)
+
+
+def _cached_chat(settings: Settings, model: str, system: str, user: str, temperature: float) -> str | None:
+    return _cached(
+        settings,
+        model,
+        system,
+        user,
+        temperature,
+        lambda: _chat_completions(settings, system, user, model, temperature),
+    )
+
+
+def _cached(settings: Settings, model: str, system: str, user: str, temperature: float, call) -> str | None:
     cache_key = hashlib.sha256(
-        f"{settings.ai_provider}\n{settings.ai_model}\n{system}\n{user}".encode()
+        f"{settings.ai_provider}\n{model}\n{temperature}\n{system}\n{user}".encode()
     ).hexdigest()
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
-    if settings.ai_provider == "anthropic":
-        text = _anthropic(settings, system, user)
-    else:
-        text = _chat_completions(settings, system, user)
+    text = call()
     if text:
         _cache_put(cache_key, text)
     return text
 
 
-def _chat_completions(settings: Settings, system: str, user: str) -> str | None:
+def _chat_completions(settings: Settings, system: str, user: str, model: str, temperature: float) -> str | None:
     url = settings.ai_endpoint.rstrip("/")
     if not url.endswith("/chat/completions"):
         url = url + "/chat/completions"
     payload = {
-        "model": settings.ai_model or "gpt-4o-mini",
-        "temperature": 0.2,
+        "model": model,
+        "temperature": temperature,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
     }
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "User-Agent": "cesty-khk/1.0"}
     if settings.ai_provider == "azure":
         headers["api-key"] = settings.ai_api_key
     else:
@@ -212,10 +232,30 @@ def _chat_completions(settings: Settings, system: str, user: str) -> str | None:
     try:
         with request.urlopen(req, timeout=8) as response:
             body = json.loads(response.read().decode())
-        return str(body["choices"][0]["message"]["content"])
-    except (error.URLError, TimeoutError, KeyError, IndexError, json.JSONDecodeError, TypeError, ValueError):
-        log.info("AI provider failed; using the template")
+        return _message_text(body["choices"][0]["message"])
+    except error.HTTPError as exc:
+        log.info("AI model %s failed with HTTP %s", model, exc.code)
         return None
+    except (error.URLError, TimeoutError, KeyError, IndexError, json.JSONDecodeError, TypeError, ValueError):
+        log.info("AI model %s failed; trying the fallback or the template", model)
+        return None
+
+
+def _message_text(message: dict) -> str | None:
+    content = message.get("content")
+    if isinstance(content, str) and content.strip():
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                parts.append(str(block.get("text") or ""))
+        text = "\n".join(part for part in parts if part).strip()
+        if text:
+            return text
+    return None
 
 
 def _anthropic(settings: Settings, system: str, user: str) -> str | None:
@@ -230,6 +270,7 @@ def _anthropic(settings: Settings, system: str, user: str) -> str | None:
         data=json.dumps(payload).encode(),
         headers={
             "content-type": "application/json",
+            "user-agent": "cesty-khk/1.0",
             "x-api-key": settings.ai_api_key,
             "anthropic-version": "2023-06-01",
         },
@@ -285,6 +326,7 @@ def ai_status(settings: Settings, enabled: bool) -> dict[str, Any]:
         "configured": settings.ai_configured,
         "enabled": enabled,
         "model": settings.ai_model,
+        "model_fallback": settings.ai_model_fallback,
     }
 
 

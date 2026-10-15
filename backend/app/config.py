@@ -24,6 +24,7 @@ class Settings:
     ai_api_key: str
     ai_endpoint: str
     ai_model: str
+    ai_model_fallback: str
     vapid_public_key: str
     vapid_private_key: str
     vapid_subject: str
@@ -52,6 +53,7 @@ def get_settings() -> Settings:
         ai_api_key=os.getenv("AI_API_KEY", "").strip(),
         ai_endpoint=os.getenv("AI_ENDPOINT", "").strip(),
         ai_model=os.getenv("AI_MODEL", "").strip(),
+        ai_model_fallback=os.getenv("AI_MODEL_FALLBACK", "").strip(),
         vapid_public_key=os.getenv("VAPID_PUBLIC_KEY", "").strip(),
         vapid_private_key=os.getenv("VAPID_PRIVATE_KEY", "").strip(),
         vapid_subject=os.getenv("VAPID_SUBJECT", "mailto:admin@cesty-khk.test").strip(),
