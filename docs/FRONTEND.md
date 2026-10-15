@@ -149,3 +149,6 @@ Ověřeno na `main` (`7ea72fc`) přes `curl`. Pořadí v tabulce = pořadí prá
 **Až potom rozšiřování:** M-c (uzavírky 2022), M-d (rozpočet přes API), M-e (Moje cesty), M-f (povodeň, Moje obec) a nápady F‑c, F‑d, F‑f, F‑g z `NAPADY.md`.
 
 **Hotovo, když:** úředník vidí štítek „živá data“, pin přežije obnovení stránky, simulátor ukáže dojezd ZZS z backendu a posuvník přes `start-server.command` (tunel) reaguje do 1 s.
+
+## Kontrola 15. 10. ~14:30
+Opravy F0–F13 jsou na `matous`, nálezy a 10 otázek v `PLAN_FINAL.md`, kap. 21. Zbývá F7 (AI tlačítka) a F8 (rozpočet z `/api/budget`).

@@ -9,6 +9,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
+> **PRIORITA TOP (15. 10.): další zkušební sloučení do `main` je v 15:00.** Potom každých 30 minut (15:30, 16:00, 16:30, …). Do každého termínu mít svou větev pushnutou, s procházejícími testy a sloučitelnou s `main`.
+>
 > **15. 10., 13:15: nejvyšší priorita je kap. 19** (propojit frontend s backendem, chyby D1–D10). Až potom rozšiřování.
 >
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
@@ -404,8 +406,8 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 | 4 | `POST /api/ai/hlaseni {text, lon, lat}` | nejbližší úsek (Tomáš: helper `nearest_road(lon, lat)`, zatím chybí) | `{typ: enum, zavaznost: 1–3, road_id}` | Fronta hlášení | jen když zbude čas |
 
 **Pravidla, která drží porotu (kap. 1, body 10 a 11):**
-- **NEAKTIVNÍ jako jediná věta (15. 10., Šimon, kap. 21):** AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
-- Vzorec dál pořadí počítá jen `Engine` a skóre se nemění. Veřejný pohled města k tomu smí posunout úsek nejvýš o 5 míst, se štítkem „návrh AI“. Filtr `ai=0` nechá čistý vzorec. Podrobně kap. 21.
+- **NEAKTIVNÍ jako jediná věta (15. 10., Šimon, kap. 22):** AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
+- Vzorec dál pořadí počítá jen `Engine` a skóre se nemění. Veřejný pohled města k tomu smí posunout úsek nejvýš o 5 míst, se štítkem „návrh AI“. Filtr `ai=0` nechá čistý vzorec. Podrobně kap. 22.
 - Každý AI text má ve UI štítek **„návrh AI“** a tlačítko „Použít“ nebo „Upravit“. Bez potvrzení člověkem se nic neuloží ani neodešle.
 - Text od občana (použití 4) jde do modelu jako data v `<hlaseni>…</hlaseni>`. Výstup je jen enum a čísla; nic se z něj nespouští.
 - Audit: kdo potvrdil AI návrh a kdy (Šimonův audit log).
@@ -687,7 +689,48 @@ Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, 
 
 ---
 
-## 21. AI v produkci: Groq a pořadí pro město (15. 10., Šimon)
+## 21. Kontrola frontendu a rozhraní (15. 10., ~14:30, Tomáš)
+
+Zkontrolováno na větvi `matous` (commity od AI nástroje 04527a8 a f4f32e0). Opravy jsou už **na `origin/matous`** (a `produkce`), Matouš: `git pull` před další prací. Backend se nezměnil.
+
+### 21.1 Nálezy a opravy
+| # | Kde | Chyba | Stav / oprava |
+|---|---|---|---|
+| F0 | `AdminApp.tsx`, `ranking.ts` | Build padal: chybějící import `api`, nepoužitý import. | **Opraveno.** `npm run build` projde. |
+| F1 | `api.confirmClosure` | Zakládal jen návrh (`POST /closures`), `/confirm` nevolal, špatný typ odpovědi. Nikdo nebyl upozorněn. | **Opraveno:** create + `/closures/{id}/confirm`, toast „upozorněno N občanů“, chyba je vidět. |
+| F2 | `AdminApp.tsx` | `pins` chyběly v závislostech žebříčku, bez přihlášení pin tiše padal na 401. | **Opraveno:** pin na server jen úředník/admin, jinak lokálně s poctivou hláškou. |
+| F3 | `LoginCard.tsx` f4f32e0 | Vstup „Demo bez hesla“ vždy, vypadá jako obejití přihlášení, zápisy pak dávají 401. | **Vráceno (revert).** Jen když server neběží. |
+| F5 | Občan ★2 | Místa jen v `localStorage`, `PUT /me/places` se nevolal, takže nikdo nemohl být upozorněn. | **Opraveno:** přihlášený občan s oběma místy je uloží na server. |
+| F6 | Ukázkové uzavírky | Lokální seznam místo `GET /api/demo-closures`. | **Opraveno:** z API (doporučené první, štítek „skutečný plán 2022“), bez serveru lokální seznam. |
+| F9 | Zdroje dat | Text tvrdil, že kraj plán oprav nezveřejňuje (plán 2022 používáme). | **Opraveno.** |
+| F10 | Legenda | Chyběla SRTI. | **Opraveno** (admin i veřejná mapa). |
+| F13 | `ClosureCard` | **Pád celé stránky** po výběru ukázky: API vrací dojezd IZS jako `{items,label,note}` s českými poli (`sluzba`, `pred_min`, `po_min`, `nad_20_min`), frontend čekal `obce` z `schemas.py`. | **Opraveno** normalizací v `closure.ts`. **Šimon:** buď sjednoť `services/collisions.py` se `schemas.RescueImpact`, nebo to uveď v kontraktu. |
+| F7 | AI ve frontendu | Endpointy `/ai/*` nikdo nevolá. | **Zbývá** (Matouš): tlačítka „návrh AI“ (vysvětlení, oznámení, váhy, rozpočet), vždy popsaná, nikdy nemění pořadí, plynulá hláška při vypnuté AI. |
+| F8 | Rozpočet | Jen lokální odhad, ne `/api/budget`. | **Zbývá** (Matouš): volat API, lokální záloha, štítek zdroje. |
+| F11 | Bezpečnost | Výchozí `CESTY_SECRET_KEY` má 18 bajtů a přes tunel jde padělat token. Hesla demo účtů jsou stále v `seed.py` (S21). | **Šimon:** S21. **Tomáš:** nastavit klíč ≥ 32 bajtů v `.env`. |
+| F12 | Web Push | Kód je (`sw.js`, `notifications.ts`), chybí VAPID klíče, nikdy neproklikáno. | **Tomáš:** `cd backend && uv run python -m app.notify.vapid`, klíče do `.env`, zkusit v jednom prohlížeči. |
+
+Ověřeno v prohlížeči (backend :8010, frontend :5180, dočasná DB): přihlášení úředníka, ranking z API, ukázky z API, legenda SRTI, výběr ukázky už nepadá. Neověřeno v UI: potvrzení uzavírky tlačítkem a notifikace občanovi z uložených míst (API cesta ověřena ručně, `notified: 1`).
+
+### 21.2 Deset otázek k frontendu a backendu
+1. **Kdo potvrzuje uzavírku a co UI ukáže?** Úředník tlačítkem „Potvrdit“: create, pak confirm, toast „upozorněno N občanů“ (F1).
+2. **Jak se místa občana dostanou na server?** `PUT /me/places` (`{home:{lon,lat}, work:{lon,lat}}`) po nastavení obou, `GET /me/route` vrací trasu a zásahy. `localStorage` jen pro nepřihlášené (F5).
+3. **Co ukazují ukázkové uzavírky?** `GET /api/demo-closures`, doporučené první, skutečný plán 2022 (F6). Plné předpočtené dopady z API zatím nezobrazujeme, simulace se spouští přes `/closures/preview` nad hlavním úsekem.
+4. **Kdy je povolen offline demo vstup?** Jen když server neběží, s označením offline režimu (F3).
+5. **Jediný zdroj pravdy pro piny?** Server pro úředníka/admina, lokálně jinak. Po změně se žebříček načte znovu, `pins` jsou v závislostech (F2).
+6. **Kde je AI vidět a jak je označená?** Čtyři místa (RoadPanel, ClosureCard, AdminSystem, BudgetPlanner), vždy „návrh AI“, nikdy nemění skóre, potvrzuje člověk (F7, zbývá).
+7. **Rozpočet?** `GET /api/budget?amount=&amount2=` s lokální zálohou a štítkem zdroje (F8, zbývá).
+8. **Web Push?** Hotové na větvi, potřebuje VAPID v `.env`. Záloha: seznam upozornění v „Moje cesty“ (F12).
+9. **Bezpečnost kontraktu?** Typy odpovědí se rozcházely dvakrát (F1, F13). Jedna smoke zkouška na endpoint (`scripts/smoke_api.sh`, T23) po každém sloučení, později typy z OpenAPI (S26).
+10. **Spolehlivost před porotou?** gzip, malý žebříček a předpočet (S22–S24, T21), silný `SECRET_KEY`, smoke po každém sloučení, žádná session přihlášená ve špatné roli, záložní build s offline štítkem.
+
+### 21.3 Co zbývá
+- Matouš: F7, F8, proklik potvrzení uzavírky a upozornění v UI, mobil 375 px.
+- **NEAKTIVNÍ část S21 (15. 10., Šimon):** S21 je na větvi `simon` hotové, hesla jsou z `.env`. Zbývá sjednotit tvar `rescue` (F13).
+- Tomáš: `SECRET_KEY`, VAPID, smoke po sloučení.
+
+
+## 22. AI v produkci: Groq a pořadí pro město (15. 10., Šimon)
 
 Poskytovatel na hackathon jsou dva modely Groq na jednom klíči. Claude z kap. 14.2 zůstává neaktivní alternativa.
 
