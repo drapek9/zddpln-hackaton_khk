@@ -6,17 +6,19 @@ weights and closures; the engine computes. Load it once at startup.
 
 from __future__ import annotations
 
+import heapq
 import math
+import random
 import threading
 from datetime import date
 from pathlib import Path
 from typing import Any, Iterable
 
-from . import demo, impact, scoring
+from . import budget, demo, impact, scoring
 from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph, to_xy
 from .people import People
-from .schemas import Alert, DemoClosure, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .schemas import Alert, BudgetPlan, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -28,6 +30,8 @@ class Engine:
         self._demo: list[DemoClosure] | None = None
         self._demo_lock = threading.Lock()
         self._road_grid: dict[tuple[int, int], list[tuple[float, float, int]]] | None = None
+        self._stavby: list[Stavba] | None = None
+        self._stavby_lock = threading.Lock()
 
     @property
     def people(self) -> People:
@@ -68,6 +72,117 @@ class Engine:
         votes: dict[int, int] | None = None,
     ) -> list[RankedRoad]:
         return scoring.ranking(self.data.roads, weights or Weights(), pins, votes)
+
+    def stability(
+        self, weights: Weights | None = None, top_n: int = 100, samples: int = 50, spread: float = 0.5, seed: int = 0
+    ) -> StabilityResult:
+        """How sure the top N is (T10). Model order only, no pins and no votes.
+
+        Each part of the score is linear in its weight, so the parts are computed
+        once at weight 100 and rescaled for each random weight set.
+        """
+        w = weights or Weights()
+        samples = max(1, samples)
+        keys = list(Weights.model_fields)
+        full = Weights(**{k: 100 for k in keys})
+        roads = self.data.roads
+        base = [[pt for _, _, pt in scoring._raw_parts(r, full, 0, None)] for r in roads]
+        ids = [r["id"] for r in roads]
+        n = min(top_n, len(roads))
+
+        def top(wv: list[float]) -> list[int]:
+            scores = []
+            for rid, parts in zip(ids, base):
+                total = 0.0
+                for pt, k in zip(parts, wv):
+                    total += pt * k / 100
+                scores.append((-scoring.js_round(total), rid))
+            return [rid for _, rid in heapq.nsmallest(n, scores)]
+
+        given = [getattr(w, k) for k in keys]
+        ranked = top(given)
+        rng = random.Random(seed)
+        hits = dict.fromkeys(ranked, 0)
+        for _ in range(samples):
+            wv = [min(100.0, max(0.0, v * rng.uniform(1 - spread, 1 + spread))) for v in given]
+            for rid in top(wv):
+                if rid in hits:
+                    hits[rid] += 1
+        items = []
+        for i, rid in enumerate(ranked, start=1):
+            share = round(hits[rid] / samples, 2)
+            label = "jisté" if share >= 0.9 else "pravděpodobné" if share >= 0.5 else "nejisté"
+            items.append(StableRoad(road_id=rid, rank=i, share=share, label=label))
+        return StabilityResult(
+            top_n=n,
+            samples=samples,
+            spread=spread,
+            items=items,
+            note=f"{samples} náhodných sad vah (každá váha ±{round(spread * 100)} %). "
+            f"„jisté“ = v top {n} aspoň v 90 % sad.",
+        )
+
+    # ---- budget (T17) ---------------------------------------------------
+
+    def stavby(self) -> list[Stavba]:
+        """All candidate stavby (bad úseky joined per road and okres), without score and cost."""
+        if self._stavby is None:
+            with self._stavby_lock:
+                if self._stavby is None:
+                    self._stavby = budget.build_stavby(self.data.roads, self.graph)
+        return [s.model_copy(deep=True) for s in self._stavby]
+
+    def budget_plan(
+        self,
+        amount_kc: int,
+        weights: Weights | None = None,
+        okres: str | None = None,
+        prices: dict[str, int] | None = None,
+        order: str = "per_kc",
+        with_detours: bool = True,
+    ) -> BudgetPlan:
+        """Stavby a budget buys (T17). Prices are an estimate; the plan is deterministic."""
+        w = weights or Weights()
+        p = {**budget.PRICES_KC_PER_KM, **(prices or {})}
+        by_id = self.data.by_id
+        cands = [s for s in self.stavby() if okres is None or s.okres == okres]
+        for s in cands:
+            bad = [by_id[r] for r in s.road_ids if r not in s.gap_road_ids]
+            km = sum(r["delka"] for r in bad) or 1
+            s.score = round(sum(scoring.score(r, w) * r["delka"] for r in bad) / km, 1)
+            s.cost_kc = budget.price(s, p)
+            if s.km < budget.MIN_KM:
+                s.warnings.append("Krátká stavba (pod 0,5 km).")
+        chosen = budget.select(cands, max(0, int(amount_kc)), "score" if order == "score" else "per_kc")
+        if with_detours:
+            for s in chosen:
+                s.detour = self.graph.detour_set(s.road_ids)
+                if not s.detour.found:
+                    s.warnings.append("Objížďka nenalezena: úplná uzavírka by odřízla část sítě.")
+                elif (s.detour.extra_km or 0) > 15:
+                    s.warnings.append(f"Dlouhá objížďka: +{s.detour.extra_km:.1f} km.")
+        hav = lambda s: sum(km for st, km in s.stav_km.items() if st in budget.HAVARIJNI)  # noqa: E731
+        hav_total = sum(
+            r["delka"]
+            for r in self.data.roads
+            if r["stav"] in budget.HAVARIJNI and r["id"] in self.graph.road_ends and (okres is None or r["okres"] == okres)
+        ) / 1000
+        hav_total, hav_fixed = round(hav_total, 1), round(sum(hav(s) for s in chosen), 1)
+        return BudgetPlan(
+            amount_kc=int(amount_kc),
+            spent_kc=sum(s.cost_kc for s in chosen),
+            km=round(sum(s.km for s in chosen), 2),
+            stavby=chosen,
+            havarijni_km_total=hav_total,
+            havarijni_km_fixed=hav_fixed,
+            havarijni_km_left=round(hav_total - hav_fixed, 1),
+            candidates=len(cands),
+            prices_kc_per_km=p,
+            order="score" if order == "score" else "per_kc",
+            okres=okres,
+            note="Ceny za km jsou předpoklad (CDV, Liberecký kraj), ne rozpočet. "
+            "Pořadí a poměry platí, přesné částky ne.",
+        )
 
     # ---- closures and routes -------------------------------------------
 

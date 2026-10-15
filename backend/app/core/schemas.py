@@ -212,3 +212,72 @@ class SrtiClosure(BaseModel):
     """Our úsek, e.g. "III/29920 (Kuks)"."""
     snapshot: str = ""
     source: str = "ŘSD / NDIC, SRTI, CC BY 4.0"
+
+
+# ---- added 15 Oct (T17): budget assistant, (T10): ranking stability -----------
+
+
+class Stavba(BaseModel):
+    """One construction: adjacent bad úseky of one road (same `sil`) in one okres."""
+
+    id: str
+    """Stable id from road number, okres and first úsek, e.g. "29920-Náchod-1234"."""
+    sil: str
+    trida: str
+    okres: str
+    road_ids: list[int] = Field(default_factory=list)
+    """All úseky in the stavba, in order along the road, including absorbed gaps."""
+    gap_road_ids: list[int] = Field(default_factory=list)
+    """Short good úseky between two bad ones, repaired with them so the road closes once."""
+    km: float
+    stav_km: dict[str, float] = Field(default_factory=dict)
+    """Km per surface state (gaps under their own state)."""
+    cost_kc: int
+    """Estimate: km x price per km by state (see BudgetPlan.prices_kc_per_km)."""
+    score: float
+    """Length-weighted mean score of the bad úseky."""
+    obce: list[str] = Field(default_factory=list)
+    detour: DetourResult | None = None
+    """Detour with the whole stavba closed. Only for selected stavby."""
+    warnings: list[str] = Field(default_factory=list)
+
+
+class BudgetPlan(BaseModel):
+    """What a budget buys. Prices are an estimate, the selection is deterministic."""
+
+    amount_kc: int
+    spent_kc: int = 0
+    km: float = 0
+    stavby: list[Stavba] = Field(default_factory=list)
+    """Selected stavby in selection order."""
+    havarijni_km_total: float = 0
+    """Havarijní + SUPERhavarijní km in scope (okres filter applied)."""
+    havarijni_km_fixed: float = 0
+    havarijni_km_left: float = 0
+    candidates: int = 0
+    """Stavby that could be bought in scope."""
+    prices_kc_per_km: dict[str, int] = Field(default_factory=dict)
+    order: Literal["per_kc", "score"] = "per_kc"
+    """per_kc = score per crown (cheap repairs first), score = most urgent first."""
+    okres: str | None = None
+    price_src: Literal["estimate"] = "estimate"
+    note: str = ""
+
+
+class StableRoad(BaseModel):
+    road_id: int
+    rank: int
+    """Rank with the given weights (1 = first), model only, no pins."""
+    share: float
+    """Share of random weight sets where the road stays in the top N (0-1)."""
+    label: Literal["jisté", "pravděpodobné", "nejisté"]
+
+
+class StabilityResult(BaseModel):
+    top_n: int
+    samples: int
+    spread: float
+    """Each weight is multiplied by a random factor in [1 - spread, 1 + spread], clamped to 0-100."""
+    items: list[StableRoad] = Field(default_factory=list)
+    """Roads in the top N with the given weights, in rank order."""
+    note: str = ""

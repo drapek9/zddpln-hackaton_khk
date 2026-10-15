@@ -256,3 +256,56 @@ def test_srti_closures(engine: Engine):
     assert snapped and all(engine.road(i.road_id) for i in snapped) and snapped[0].road_label
     active = engine.srti_closures(on="2026-10-15", active_only=True)
     assert all(i.active for i in active) and len(active) <= len(items)
+
+
+def test_stavby_are_one_road_one_okres_and_bad_at_ends(engine: Engine) -> None:
+    from app.core import budget
+
+    stavby = engine.stavby()
+    assert stavby
+    seen: set[int] = set()
+    for s in stavby:
+        roads = [engine.road(r) for r in s.road_ids]
+        assert {r["sil"] for r in roads} == {s.sil}
+        assert {r["okres"] for r in roads} == {s.okres}
+        assert roads[0]["stav"] in budget.BAD and roads[-1]["stav"] in budget.BAD
+        assert all(engine.road(g)["delka"] <= budget.GAP_M for g in s.gap_road_ids)
+        assert not seen & set(s.road_ids)
+        seen |= set(s.road_ids)
+    assert max(s.km for s in stavby) <= budget.MAX_KM + 2.5  # one úsek can overshoot
+
+
+def test_budget_plan_fits_and_is_deterministic(engine: Engine) -> None:
+    a = engine.budget_plan(100_000_000, with_detours=False)
+    b = engine.budget_plan(100_000_000, with_detours=False)
+    assert a.model_dump() == b.model_dump()
+    assert 0 < a.spent_kc <= a.amount_kc
+    assert a.spent_kc == sum(s.cost_kc for s in a.stavby)
+    assert a.havarijni_km_left == round(a.havarijni_km_total - a.havarijni_km_fixed, 1)
+    more = engine.budget_plan(250_000_000, with_detours=False)
+    assert more.km > a.km
+    urgent = engine.budget_plan(100_000_000, order="score", with_detours=False)
+    assert urgent.havarijni_km_fixed > a.havarijni_km_fixed
+    assert engine.budget_plan(0, with_detours=False).stavby == []
+    okres = engine.budget_plan(100_000_000, okres="Náchod", with_detours=False)
+    assert okres.stavby and {s.okres for s in okres.stavby} == {"Náchod"}
+
+
+def test_budget_plan_detours(engine: Engine) -> None:
+    plan = engine.budget_plan(30_000_000, order="score")
+    assert plan.stavby and all(s.detour is not None for s in plan.stavby)
+    assert all(s.detour.closed_road_ids == s.road_ids or len(s.road_ids) == 1 for s in plan.stavby)
+
+
+def test_stability(engine: Engine) -> None:
+    r = engine.stability(top_n=50, samples=20)
+    assert [i.road_id for i in r.items] == [x.road.id for x in engine.ranking()][:50]
+    assert all(0 <= i.share <= 1 for i in r.items)
+    assert r.items[0].label == "jisté"
+    assert engine.stability(top_n=50, samples=20).model_dump() == r.model_dump()
+    w = Weights(stav=60, schools=100, transit=20, age=90)
+    assert [i.road_id for i in engine.stability(w, top_n=50, samples=1).items] == [
+        x.road.id for x in engine.ranking(w)
+    ][:50]
+    same = engine.stability(top_n=50, samples=5, spread=0)
+    assert all(i.share == 1 for i in same.items)
