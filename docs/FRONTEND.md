@@ -5,6 +5,8 @@
 - Backend dělají Tomáš a Šimon, viz [BACKEND.md](BACKEND.md).
 - Co a proč stavíme: [PLAN_FINAL.md](../PLAN_FINAL.md), hlavně kap. 2 (pitch) a kap. 4 (obrazovky).
 
+> **15. 10., 14:55: NOVÁ NEJVYŠŠÍ PRIORITA je [PLAN_FINAL.md, kap. 25](../PLAN_FINAL.md): tři aplikace podle role (`/` veřejnost, `/sprava` úředník, `/admin` bez mapy) a produkční vzhled.** Fáze 1 do freeze v 16:00, fáze 2 je produkční verze. Sekce níže platí dál, ale až po fázi 1.
+>
 > **15. 10., 13:15: nejvyšší priorita je sekce „NEJVYŠŠÍ PRIORITA“ na konci souboru** (opravy propojení s backendem D1–D8). Až potom M-c až M-f a nové obrazovky.
 
 ## Co dělat (podle milníků)

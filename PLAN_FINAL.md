@@ -797,3 +797,91 @@ Reference: [Google Identity Services](https://developers.google.com/identity/gsi
 | M‑h | Matouš | `manifest.webmanifest`, ikony | iPhone nabídne „Přidat na plochu“ |
 | T25 | Tomáš | stabilní HTTPS adresa (doména / pojmenovaný tunel), Google Cloud projekt, klientské ID, QR | adresa se po restartu serveru nemění, QR ji otevře |
 | P1 | Přemek | QR na slajd a „otevřít v Chrome / Safari“ | slajd obsahuje QR a stabilní adresu |
+
+## 25. NEJVYŠŠÍ PRIORITA: tři aplikace podle role a produkční frontend (15. 10., ~14:55, Tomáš)
+
+> Kap. 23 a 24 jsou zatím na větvi `tomas` (rozhodnutí o nápadech, provoz a hosting). Na `main` přijdou se sloučením v 15:00. Tahle kapitola má číslo 25, aby se čísla nepletla.
+
+**Proč:** backend a jádro jsou hotové a silné, ale frontend vypadá nepěkně a míchá všechny role do jedné obrazovky. Porota i kraj posuzují hlavně to, co vidí. Proto je tohle **nejvyšší priorita**: před D6, F‑c, F‑d a dalšími nápady. Kap. 19–22 platí dál, tahle kapitola mění jen pořadí práce na frontendu.
+
+**Dnešní stav:** `src/App.tsx` přepíná pohledy jen stavem (`view = home | login | public | office | …`). Adresa v prohlížeči se nemění. Úředník i admin sdílí `AdminApp.tsx` s mapou. Neexistuje odkaz, který by úředník kraje dostal jako „svoji aplikaci“.
+
+### 25.1 Tři aplikace, tři adresy
+Jeden kód, jeden build, jeden backend. Liší se adresa, přihlášení, rozvržení a hustota informací.
+
+| Adresa | Pro koho | Hlavní úkol | Vzhled |
+|---|---|---|---|
+| `/` | **Veřejnost a občan** | Kde se opravuje a kde je zavřeno, Moje cesty, upozornění. | Mapa přes celou obrazovku, velké prvky, minimum čísel, mobil první. Přihlášení jen kvůli Moje cesty a upozorněním (registrace jedním formulářem). |
+| `/sprava` | **Úředník kraje nebo města. Hlavní cílová skupina.** | Pořadí oprav, proč je úsek nahoře, simulace uzavírky, potvrzení a upozornění občanů, rozpočet. | Pracovní aplikace: vlevo seznam (žebříček s filtry), uprostřed mapa, vpravo detail. Hustší, ale čitelná. |
+| `/admin` | **Správce systému** | Uživatelé a role, výchozí váhy a strop hlasů, audit, zdroje dat a jejich stáří, AI, push, export. | **Bez mapy.** Tabulky a karty jako v administraci. |
+
+Pravidla:
+- **Každá adresa má vlastní přihlášení.** `/sprava` a `/admin` mají formulář s nadpisem „Cesty KHK – správa“ a „Cesty KHK – administrace“, bez registrace a bez demo vstupu, s textem „přístup jen pro pracovníky úřadu“. `/` má přihlášení občana a registraci.
+- **Role hlídá server, ne adresa.** Občan na `/sprava` uvidí „Nemáte oprávnění“ a odkaz na `/`. Úředník na `/admin` totéž. Admin smí i na `/sprava`.
+- **Po přihlášení** pošle frontend uživatele na adresu podle role (`citizen` → `/`, `official` → `/sprava`, `admin` → `/admin`).
+- **Odkazy jdou sdílet:** `/sprava/usek/581`, `/sprava/uzavirka/12`, `/?usek=581`. Obnovení stránky nesmí ztratit, kde uživatel je.
+- Landing (`/` bez přihlášení) má dole nenápadný odkaz „Pro úřad“ na `/sprava`.
+
+### 25.2 `/sprava`: jednoduchá, ale podrobná, když úředník chce
+Princip: **výchozí pohled je jednoduchý, všechno ostatní je o jeden klik dál.** Nic se neschovává natrvalo, úředník smí změnit všechno.
+
+1. **Žebříček (levý panel):** prvních 20 úseků, u každého číslo silnice, úsek, skóre, třída a jedna věta proč (největší faktor). Nahoře hledání (číslo silnice, obec) a filtry: třída, ORP/okres, stav, „jen havarijní“, „jen na trase k nemocnici“. Řazení: skóre, intenzita, studenti, objížďka, délka.
+2. **Váhy:** přepínač **„Jednoduché / Podrobné“**.
+   - Jednoduché: 4 předvolby jako tlačítka („Vyvážené“ = výchozí kraje, „Bezpečnost a IZS“, „Doprava a hospodářství“, „Lidé a školy“) a jeden posuvník „stav vozovky vs. dopad na lidi“.
+   - Podrobné: všechny váhy jako posuvníky (včetně T20: objížďka, odříznutí, studenti), u každé „co znamená“ a číslo. Tlačítko „Zpět na výchozí kraje“.
+   - Po každé změně se ukáže **co se pohnulo**: „5 úseků nově v top 20, II/303 z 3. na 7. místo“.
+   - Uložit jako „můj pohled“ (`PUT /me/weights`). Výchozí váhy kraje mění jen admin.
+3. **Detail úseku (pravý panel):** skóre a rozpad po faktorech z API (`breakdown`, F‑c), stav, intenzita se zdrojem, obce, školy, nemocnice, tlačítka „Simulovat uzavírku“, „Zdůvodnit (návrh AI)“, „Připnout“.
+4. **Uzavírka:** karta s objížďkou, auty, studenty, odříznutými obcemi, dojezdem IZS a kolizemi. „Potvrdit uzavírku“, pak text oznámení (návrh AI, úředník upraví) a „upozorněno N občanů“. Seznam uzavírek (návrhy, potvrzené, aktuální SRTI) s filtrem podle data.
+5. **Rozpočet:** částka (posuvník a pole), výsledek z `/api/budget`: kolik km, které stavby, mapa, porovnání dvou částek, export CSV.
+6. **Nahoře vždy:** štítek „živá data / offline snímek“, kdo je přihlášený, odhlášení. U mapy legenda.
+
+### 25.3 `/` veřejnost a `/admin`
+- **`/`**: mapa uzavírek a plánovaných oprav, vyhledání obce, **Moje cesty** (dvě nebo více pojmenovaných míst, trasa, „na vaší trase je uzavírka“), upozornění (seznam a push), „Proč se opravuje tady?“ (jednoduché vysvětlení skóre), Zdroje dat, Soukromí. Žádné váhy, žádné tabulky.
+- **`/admin`**: Přehled (počet uživatelů, uzavírek, upozornění, stáří dat, stav AI a push), Uživatelé (seznam, změna role), Výchozí váhy a strop hlasů, Audit (filtr podle uživatele a akce), Data (zdroje, licence, datum snímku, export s metadaty), Nastavení AI. **Žádná mapa.**
+
+### 25.4 Produkční vzhled (pravidla pro všechny tři)
+- Jeden design systém (petrolejový akcent, světlý a tmavý režim zůstávají). Velikosti písma 14/16/20/28, mřížka 8 px, nejvýš 2 úrovně stínu.
+- **Každá obrazovka má 4 stavy:** načítání (skeleton, ne prázdno), prázdno („Zatím žádné uzavírky“ + co udělat), chyba (česky, co se stalo, tlačítko „Zkusit znovu“), data.
+- Čísla vždy s jednotkou a zdrojem (`csd2025` = „sčítání 2025“, `odhad` = „odhad“). Žádná anglická slova ani technické klíče v UI.
+- Mobil 375 px: `/` plně, `/sprava` čitelně (seznam a detail jako vysouvací panely), `/admin` stačí tablet.
+- Přístupnost: kontrast AA, ovládání klávesnicí v seznamech a formulářích, `aria-label` u ikon.
+- Před porotou: žádné chyby v konzoli, žádné „undefined“, „NaN“ ani prázdné karty.
+
+### 25.5 Co k tomu musí umět backend (frontend jen volá, nic nepočítá sám)
+Dnes `GET /api/ranking` umí jen `limit`, `offset`, `compact` a váhy v query. Řazení, filtry, hledání a porovnání by si frontend musel počítat sám nad 4 726 úseky. To přesuneme na server.
+
+| # | Co | Endpoint (návrh) | Vlastník |
+|---|---|---|---|
+| B‑1 | **Filtry a řazení žebříčku** | `GET /api/ranking?sort=score\|intensity\|students\|detour\|km&order=desc&trida=II,III&orp=…&stav=…&min_score=&havarijni=1&q=`, v odpovědi navíc `total` kvůli stránkování | jádro `Engine.query_roads(filters, sort)`: Tomáš. Endpoint: Šimon |
+| B‑2 | **Hledání** silnice, úseku a obce v jednom poli | `GET /api/search?q=II/303` nebo `?q=Hronov` → `[{type: road\|obec, id, label, bbox}]` | `Engine.search(q)`: Tomáš. Endpoint: Šimon |
+| B‑3 | **Předvolby vah** | `GET /api/weights/presets` → `[{id, nazev, popis, weights}]` | předvolby v jádře: Tomáš. Endpoint: Šimon |
+| B‑4 | **Co se změnilo po změně vah** | `GET /api/ranking/diff?<váhy>&top=20` → nově v top, vypadlé, posuny | `Engine.rank_diff(a, b, top)`: Tomáš. Endpoint: Šimon |
+| B‑5 | **Hlavní adresa podle role** | `POST /api/auth/login` a `GET /api/me` vrací navíc `home: "/" \| "/sprava" \| "/admin"` | Šimon |
+| B‑6 | **Adresy `/sprava`, `/admin`, `/sprava/usek/…` při obnovení stránky** | Vite to umí sám. V produkci (FastAPI `StaticFiles`, Cloudflare nebo GitHub Pages) přidat fallback na `index.html` (`_redirects`, `404.html`) | Šimon (server), Přemek (Pages) |
+| B‑7 | **Přehled pro admina** | `GET /api/admin/overview` → počty uživatelů podle role, uzavírek podle stavu, upozornění, poslední audit, stáří snímku dat, AI a push zapnuto | Šimon (čísla o datech z `Engine`: Tomáš) |
+| B‑8 | **Filtry uzavírek** | `GET /api/closures?status=&od=&do=&road_id=&sort=` | Šimon |
+| B‑9 | **Filtry auditu** | `GET /api/audit?user=&action=&od=&do=&limit=&offset=` | Šimon |
+| B‑10 | **Souhrn obce pro veřejnost** | `GET /api/obce/{kod}` → úseky v obci, plánované opravy, uzavírky, nejbližší nemocnice a dojezd | `Engine.obec_summary(kod)`: Tomáš. Endpoint: Šimon |
+| B‑11 | **Rozpočet jako CSV** | `GET /api/budget.csv?amount=` (PDF až později) | Šimon |
+| B‑12 | **Jednotné chyby** | všechny chyby jako `{detail, code}` s českou zprávou, frontend jen zobrazí `detail` | Šimon |
+
+Pravidla: nová pole jen přidávat (`schemas.py` aditivně), test na každý nový endpoint, doplnit `scripts/smoke_api.sh`.
+
+### 25.6 Kdo co dělá
+**Freeze je v 16:00.** Do té doby jen fáze 1. Fáze 2 je produkční verze (po hackathonu, nebo hned, když zbude čas).
+
+| Kdo | Fáze 1 (do 16:00, malé a bezpečné) | Fáze 2 (produkční verze) |
+|---|---|---|
+| **Matouš** | 1. Adresy `/`, `/sprava`, `/admin` v `App.tsx` (čtení `location.pathname`, `history.pushState`, bez nové knihovny). 2. `/admin` bez mapy: `AdminSystem` a seznamy. 3. Přihlášení na `/sprava` a `/admin` bez registrace a demo vstupu, nadpis podle adresy. 4. Po přihlášení přesměrovat podle role. 5. Stavy načítání, prázdno a chyba aspoň v žebříčku a kartě uzavírky. | Rozvržení `/sprava` podle 25.2 (seznam, mapa, detail), přepínač Jednoduché/Podrobné, předvolby, „co se změnilo“, odkazy na úsek a uzavírku, napojení B‑1 až B‑12, mobil. |
+| **Přemek** | Rychlý návrh tří obrazovek (drátěný model, klidně ručně nebo ve Figmě) podle 25.1–25.4 a seznam 10 nejhorších vizuálních chyb dnešní verze pro Matouše. Pitch dál podle kap. 20.1: ukázka jde přes `/sprava` (★1), `/` (★2), `/admin` (★3). | Design systém (barvy, písmo, komponenty), review každé obrazovky, test mobilu, fallback adres na Pages (B‑6). |
+| **Šimon** | B‑5 (`home` podle role) a kontrola, že role hlídá server na všech admin endpointech. Dál kap. 22 (S27–S32). | B‑1 až B‑4 endpointy nad jádrem, B‑6 až B‑9, B‑11, B‑12, testy. |
+| **Tomáš** | Sloučení v 15:00 a smoke. Jádro pro B‑1 (`Engine.query_roads`) a B‑3 (předvolby), pokud je Šimon stihne vystavit. | B‑1 až B‑4 a B‑10 v jádře (`query_roads`, `search`, `presets`, `rank_diff`, `obec_summary`), testy, data pro B‑7. |
+
+**Škrty ve fázi 1, když nestíháme (odspodu):** stavy načítání a chyby (5), přesměrování (4), vlastní přihlášení (3). **Adresy `/sprava` a `/admin` bez mapy se neškrtají.** To porota uvidí jako „aplikace pro úřad“.
+
+### 25.7 Další návrhy (po fázi 2, zatím jen nápady)
+- Pojmenované scénáře vah a porovnání A vs B vedle sebe (navazuje na nápad č. 9).
+- Tisková sestava „Plán oprav na rok“ pro zastupitelstvo (nápad č. 16) přímo ze `/sprava`.
+- Role „obec“: starosta vidí jen úseky ve své obci a posílá podněty kraji.
+- Průvodce úředníka při prvním přihlášení: tři kroky (žebříček, simulace, potvrzení).
