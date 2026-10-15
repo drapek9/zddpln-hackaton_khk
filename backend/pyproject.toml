@@ -9,6 +9,9 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.8",
     "networkx>=3.3",
+    "sqlmodel>=0.0.48",
+    "pyjwt>=2.15.1",
+    "pywebpush>=2.5.0",
 ]
 
 [dependency-groups]

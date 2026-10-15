@@ -570,3 +570,35 @@ Prošel jsem celý starý plán (je v historii gitu, `git show 5ee1fa1:PLAN_OD_B
 
 ### 17.6 Aktualizace
 Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `docs/BACKEND.md` upraví a pushnou na `main`. Hotové úkoly se tu označí ✅.
+
+---
+
+## 18. Stav před velkým sloučením (15. 10., 12:00, Tomáš)
+
+**Zkušební sloučení** `origin/simon` + `origin/matous` + `origin/tomas-next` (lokálně, nic se nepushlo): **bez konfliktů**, `npm run build` projde, backend **47 z 48 testů**.
+
+### Co je hotové na větvích (ještě ne na `main`)
+- **Šimon (`simon`, 12 commitů):** kap. 16 splněná (intenzita, testy, štítek „skutečný plán 2022 (Data KHK)“, předehřátí v lifespanu). Navíc S16 `POST /api/closures/preview`, S17 `/api/budget` nad `Engine.budget_plan`, S19 `/api/export/metadata.jsonld`, S20 `GET /api/route`. AI umí Claude (`AI_PROVIDER=anthropic`).
+- **Matouš (`matous`, 7 commitů):** jednotný design, světlý a tmavý režim, **F1 přihlášení** a **F7 patička**.
+- **Tomáš (`tomas-next`):** T18 dojezd ZZS a HZS. T17 a T10 už jsou na `main`.
+
+### Co je potřeba udělat před sloučením
+| Kdo | Co | Proč |
+|---|---|---|
+| **Šimon** | Sloučit `simon` do `main` (je 0 commitů pozadu, jde fast-forward). | Matouš potřebuje API na `main`. |
+| **Šimon** | V `tests/test_api.py::test_closure_notifies_citizen_on_route` nečekat u dojezdu IZS `None`. Po T18 je tam `{items, label: "estimate", note}`. | Jediný padající test po sloučení s `tomas-next`. |
+| **Tomáš** | Po Šimonovi sloučit `tomas-next` do `main`, `uv run pytest`. | T18 na kartě uzavírky. |
+| **Matouš** | Sloučit `matous` do `main` až po Šimonovi. | Konflikty nejsou, build projde. |
+
+### Co nesedí mezi frontendem a API (F2, hned po sloučení)
+| Frontend (`src/lib/api.ts`) | API (Šimon) | Kdo upraví |
+|---|---|---|
+| `ranking` čeká pole `RankedRoad[]` a váhy v query (`?stav=30`) | vrací `{weights_source, count, items}`, váhy bere z účtu | Matouš čte `items`; váhy v query buď Šimon přidá, nebo frontend při změně posuvníků počítá lokálně (štítek) |
+| simulátor volá `POST /api/closures` | náhled je `POST /api/closures/preview`; `/closures` ukládá do DB a chce `title` a úředníka | Matouš: náhled přes `/preview`, `/closures` až u „Potvrdit uzavírku“ |
+| AI se z frontendu nevolá | `/api/ai/explain`, `/announcement`, `/weights` | Matouš, až po F2 |
+
+### Zbývá z kap. 17
+- Tomáš: **T19** ověření modelu, **T20** faktory ve skóre (pak frontend nutně čte žebříček z API).
+- Šimon: S14 cache AI a `/api/ai/budget`, S15 rate limit na login, S18 kolize uzavírek.
+- Matouš: F2–F6.
+- Pitch a PDF: pořád **bez vlastníka** (kap. 16.5).
