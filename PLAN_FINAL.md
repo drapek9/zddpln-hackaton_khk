@@ -5,7 +5,7 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 - review od Matouše (M1–M4),
 - rešerše dopravních dat od Tomáše.
 
-`PLAN_OD_BIDAKA.md` zůstává jako historie. **Platí tento soubor.**
+`PLAN_OD_BIDAKA.md` byl 15. 10. smazán, aby se neplietl (je v historii gitu: `git show 5ee1fa1:PLAN_OD_BIDAKA.md`). **Platí jen tento soubor.**
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
@@ -307,9 +307,9 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 
 ## 12. Odkud co je
 
-- Šimonovy poznatky o datech: `PLAN_OD_BIDAKA.md`, kap. 6 a otázka 4a.
-- Matoušovo review M1–M4: `PLAN_OD_BIDAKA.md`, kap. 13.
-- Rešerše dopravních dat: `PLAN_OD_BIDAKA.md`, kap. 6, „Zdroje dopravních dat a pravidla“.
+- Šimonovy poznatky o datech: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 6 a otázka 4a.
+- Matoušovo review M1–M4: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 13.
+- Rešerše dopravních dat: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 6, „Zdroje dopravních dat a pravidla“.
 - Pravidla, porota a minulí vítězové: `docs/ROZBOR.md`.
 
 ---
@@ -502,3 +502,63 @@ Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všec
 - ★2: občan s trasou dostane upozornění po potvrzení uzavírky.
 - ★3: admin, export CSV/GeoJSON, dokumentace API.
 - Rozhodnout škrty podle kap. 8 a **kdo dělá pitch a PDF** (zatím nikdo).
+
+---
+
+## 17. Rozbor nápadů a rozdělení práce po 12:00 (15. 10., ~11:05, Tomáš)
+
+Tomáš prošel všech 19 nápadů z [NAPADY.md](NAPADY.md) a rozhodl. Kap. 16 (sloučení do 12:00) má přednost. Tohle je práce **po sloučení**. Pořadí v každém seznamu = priorita. Škrtá se odspodu.
+
+### 17.1 Rozhodnutí
+| Nápad | Rozhodnutí | Proč |
+|---|---|---|
+| 1 Rozpočtový asistent + 15 porovnání dvou částek | **do plánu** | Silné pro porotu z ekonomické gesce. PDF (16) zůstává v NAPADY. |
+| 2 Dojezd ZZS + HZS | **do plánu jako varování** na kartě uzavírky | Porota z krizového řízení. Graf už máme. |
+| 3 Kolize uzavírek | **do plánu jako varování** | Malé. Časová osa (14) zůstává v NAPADY. |
+| 4 DCAT‑AP‑CZ + 19 názvy stavů v exportu | **do plánu** | Porota je z Data KHK. |
+| 5 Bezpečnost a GDPR | **do plánu** (patička, souhlas, rate limit) | Porota se zeptá. |
+| 6 QR na poslední slajd | **do plánu** pro pitch | Jen když mobil v 16:00 funguje. |
+| 7 Povodeň Q5/Q20/Q100 | **do plánu** | Jádro i API jsou hotové, chybí jen tlačítko a mapa. |
+| 8 Ověření modelu | **zkusit** | Ukázat jen když vyjde dobře. |
+| 11 Moje obec | **do plánu** | Widget (12) zůstává v NAPADY. |
+| 17 Ranní souhrn „Moje cesty“ | **do plánu** | Malé, posílí ★2. |
+| 18 Trasa po silnicích | **do plánu** | `Engine.route` a `/api/me/route` existují. |
+| 9 A vs B, 12 widget, 13 e‑maily, 14 časová osa, 16 PDF | zůstává v NAPADY | Není kapacita. |
+| 10 Nehody Policie ČR | **zamítnuto pro dnešek** | Data neověřená, mění skóre na poslední chvíli. |
+
+### 17.2 Tomáš (jádro `backend/app/core/`, data)
+| Úkol | Co | Výstup pro Šimona |
+|---|---|---|
+| T11 | Oprava bodů do 450 m (nadsazené školy u objížďky). Z kap. 16. | beze změny API |
+| **T17** | **Rozpočtový asistent:** z částky vybrat souvislé stavby. Stavba = navazující úseky na stejné silnici (`sil`) v jednom okrese, malé dobré mezery se pohltí. Cena podle stavu (2,5 / 12 / 17 mil. Kč/km, štítek `estimate`, zdroje v NAPADY č. 1). Výběr hladově podle skóre na Kč. | `Engine.budget_plan(amount_kc, weights) -> BudgetPlan` (stavby, km, Kč, kolik havarijních km zůstane) |
+| **T18** | **Dojezd ZZS + HZS:** pro uzavírku spočítat, u kterých obcí se prodlouží dojezd z nejbližší základny, o kolik minut a jestli přesáhne 20 min. | pole v `PeopleImpact` nebo `Alert` „Dojezd záchranky do X se prodlouží o N min“ |
+| **T19** | **Ověření modelu:** kolik % opravených úseků 2018–2024 mělo skóre v horní třetině. Ukázat jen když vyjde. | `Engine.backtest()` → jedno číslo + počet úseků |
+
+### 17.3 Šimon (`backend/app/api|db|auth|notify|ai`)
+| Úkol | Co | Endpoint |
+|---|---|---|
+| **S14** | **AI dokončit:** poskytovatel Claude (`AI_PROVIDER=anthropic`, `AI_MODEL=claude-haiku-5-5`, klíč jen v `.env`), šablona jako záloha (už je), cache odpovědí v SQLite pro demo bez Wi‑Fi, štítek „návrh AI“ v každé odpovědi. Nově AI text k rozpočtovému plánu (3–5 vět, jen čísla z výpočtu). | `/api/ai/explain`, `/api/ai/announcement`, `/api/ai/weights` (hotové), nově `POST /api/ai/budget` |
+| **S15** | **Login pro frontend (kap. 15):** po sloučení poslat Matoušovi tvar `/api/auth/login`, `/api/auth/me`, `/api/auth/register`. Rate limit na login (5 pokusů / min na IP). | `/api/auth/*` (hotové) |
+| **S16** | **Napojení frontendu:** dohodnout s Matoušem tvar `/api/ranking` (`{items}` vs pole, váhy v query) a náhled uzavírky bez uložení do DB. | `POST /api/closures/preview` (úředník, bez zápisu) |
+| **S17** | **Rozpočet:** volá T17, umí dvě částky najednou pro porovnání. | `GET /api/budget?amount=…&amount2=…` |
+| **S18** | **Kolize uzavírek:** při náhledu uzavírky varovat, když objížďka vede přes jinou aktivní uzavírku (z DB nebo SRTI, T8) s překrývajícím se termínem. + výstup T18 do odpovědi uzavírky. | v odpovědi `POST /api/closures` |
+| **S19** | **Export:** `metadata.jsonld` podle DCAT‑AP‑CZ (vzor: `https://open.datakhk.cz/katalog.jsonld`) a sloupec s názvem stavu pro lidi vedle původní hodnoty. | `/api/export.*`, `/api/export/metadata.jsonld` |
+| **S20** | **Trasa bez přihlášení:** pro „Moje cesty“ na veřejném webu. | `GET /api/route?home=lon,lat&work=lon,lat` |
+
+### 17.4 Matouš a Přemek (frontend `src/`)
+| Úkol | Co | Závisí na |
+|---|---|---|
+| **F1** | **Login (kap. 15):** landing „Pokračovat bez přihlášení“ / „Přihlásit se“, formulář, registrace občana, obrazovka podle role, „Odhlásit“. | S15 |
+| **F2** | **★1 přes API:** simulátor, ukázkové uzavírky 2022 (kap. 16.3). Karta uzavírky: auta za den, studenti, odříznuté obce, dojezd IZS, kolize. | S16, S18 |
+| **F3** | **Moje cesty po silnicích** místo pásu 1,5 km + **ranní souhrn** nahoře („Dnes na vaší cestě: …“). | S20, `/api/me/notifications` |
+| **F4** | **Povodeň:** tlačítko Q5 / Q20 / Q100 u úředníka, zatopené silnice a odříznuté obce na mapě. | `/api/flood` (hotové) |
+| **F5** | **Rozpočtový asistent:** zadat částku (nebo dvě), stavby na mapě, tabulka, AI text se štítkem „návrh AI“. | S17, S14 |
+| **F6** | **Moje obec:** výběr obce, stav jejích silnic, uzavírky, pořadí v kraji. | `/api/obce` (hotové) |
+| **F7** | **Patička:** zásady ochrany údajů, souhlas při registraci, odkaz na Zdroje dat. | — |
+
+### 17.5 Pitch (kdo dělá pitch, kap. 16.5)
+- Poslední slajd: QR na web, **jen když mobil v 16:00 funguje** (NAPADY č. 6).
+- Když T19 vyjde: „X % úseků, které kraj opravil, mělo u nás skóre v horní třetině.“
+
+### 17.6 Aktualizace
+Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `docs/BACKEND.md` upraví a pushnou na `main`. Hotové úkoly se tu označí ✅.

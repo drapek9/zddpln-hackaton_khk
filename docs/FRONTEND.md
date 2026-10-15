@@ -77,3 +77,8 @@ Podle připomínek Matouše k designu. Přemek, prosím, projdi (review designu)
 | Všude | Bez viditelných posuvníků v bočních panelech (scrollovat jde dál), větší písmo (základ 16 px). |
 
 Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i veřejnost, čára objížďky se na mapě vykreslí. Neověřeno: mobilní šířka 375 px.
+
+## Úkoly po sloučení ve 12:00 (15. 10., rozhodl Tomáš)
+
+Podrobně v [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 17.4. Pořadí = priorita:
+F1 login (kap. 15) → F2 ★1 přes API + karta uzavírky → F3 Moje cesty po silnicích + ranní souhrn → F4 povodeň → F5 rozpočtový asistent → F6 Moje obec → F7 patička a souhlas.
