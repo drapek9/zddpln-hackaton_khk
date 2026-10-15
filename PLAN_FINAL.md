@@ -7,6 +7,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 `PLAN_OD_BIDAKA.md` zůstává jako historie. **Platí tento soubor.**
 
+> **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
+
 Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
 
 Čtení: kapitoly 1–3 říkají, co a proč stavíme. Kapitoly 4–9 popisují, jak to postavíme. Kapitoly 10–12 obsahují termíny a otevřené věci.
