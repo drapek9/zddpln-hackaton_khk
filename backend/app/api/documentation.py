@@ -62,7 +62,7 @@ PAGE = """<!DOCTYPE html>
     <tr><td>PUT</td><td><code>/api/me/weights</code></td><td>Váhy jen pro vlastní pohled.</td></tr>
     <tr><td>POST</td><td><code>/api/pins</code></td><td>Připíchnutí priority a důvodu. Má přednost před modelem.</td></tr>
     <tr><td>POST</td><td><code>/api/closures/preview</code></td><td>Náhled objížďky a varování. Tělo <code>{road_id, date_from, date_to, restriction}</code>. Do databáze se nezapíše.</td></tr>
-    <tr><td>POST</td><td><code>/api/closures</code></td><td>Návrh uzavírky. Odpověď obsahuje objížďku, varování, auta za den, studenty a odříznuté obce.</td></tr>
+    <tr><td>POST</td><td><code>/api/closures</code></td><td>Návrh uzavírky. Odpověď obsahuje objížďku, varování, auta za den, studenty a odříznuté obce. Dojezd záchranky a hasičů je <code>rescue</code> ve tvaru RescueCard (<code>items</code> s <code>sluzba</code>, <code>pred_min</code>, <code>po_min</code>, <code>nad_20_min</code>), ne anglický RescueImpact z jádra.</td></tr>
     <tr><td>GET</td><td><code>/api/flood?level=q5|q20|q100</code></td><td>Povodňový scénář Q5, Q20 nebo Q100.</td></tr>
     <tr><td>GET</td><td><code>/api/budget?amount=…&amp;amount2=…</code></td><td>Rozpočet. Dokud chybí výpočet jádra, vrátí ready false a žádnou cenu.</td></tr>
     <tr><td>POST</td><td><code>/api/closures/{id}/confirm</code></td><td>Potvrdí uzavírku a pošle nejvýš jedno upozornění občanům, kteří mají úsek na trase.</td></tr>

@@ -57,16 +57,31 @@ if [ ! -f .env ]; then
   say "Vytvářím .env z .env.example"
   cp .env.example .env
 fi
-if grep -q '^CESTY_SECRET_KEY=change-me-dev-only' .env; then
-  key="$(openssl rand -hex 24 2>/dev/null || uv run --no-project python -c 'import secrets; print(secrets.token_hex(24))')"
-  # sed -i differs on macOS and Linux; write via a temp file instead.
-  sed "s/^CESTY_SECRET_KEY=.*/CESTY_SECRET_KEY=$key/" .env >.env.tmp && mv .env.tmp .env
-  echo "Vygenerován nový CESTY_SECRET_KEY (jen v .env, do gitu nejde)."
-fi
+key_line="$(grep -E '^CESTY_SECRET_KEY=' .env | head -1 || true)"
+key_value="${key_line#CESTY_SECRET_KEY=}"
+case "$key_value" in
+  ""|change-me-dev-only|dev-only-change-me)
+    key="$(openssl rand -hex 24 2>/dev/null || uv run --no-project python -c 'import secrets; print(secrets.token_hex(24))')"
+    # sed -i differs on macOS and Linux; write via a temp file instead.
+    if grep -q '^CESTY_SECRET_KEY=' .env; then
+      sed "s/^CESTY_SECRET_KEY=.*/CESTY_SECRET_KEY=$key/" .env >.env.tmp && mv .env.tmp .env
+    else
+      printf '\nCESTY_SECRET_KEY=%s\n' "$key" >>.env
+    fi
+    echo "Vygenerován nový CESTY_SECRET_KEY (jen v .env, do gitu nejde)."
+    ;;
+esac
 set -a
 # shellcheck disable=SC1091
 . ./.env
 set +a
+# The tunnel starts after the API, so the cookie flag has to be set before uvicorn.
+if [ "${NO_TUNNEL:-0}" != "1" ]; then
+  export CESTY_COOKIE_SECURE=1
+fi
+if [ -z "${VAPID_PUBLIC_KEY:-}" ] || [ -z "${VAPID_PRIVATE_KEY:-}" ]; then
+  echo "Push vypnut: chybí VAPID"
+fi
 # The relative DB path from .env.example depends on the working directory.
 # Without it the backend uses its default: backend/cesty.db (absolute, see app/config.py).
 if [ "${CESTY_DB_URL:-}" = "sqlite:///./backend/cesty.db" ]; then unset CESTY_DB_URL; fi
@@ -145,7 +160,7 @@ cat <<EOF
 
  Vývoj frontendu u kolegy proti tomuto serveru:
    CESTY_API_TARGET=${PUBLIC_URL:-http://${LAN_IP:-<IP-tohoto-Macu>}:$WEB_PORT} npm run dev
- Demo účty: backend/app/db/seed.py.  Logy: .server-logs/
+ Hesla demo účtů: .env (CESTY_SEED_*) nebo .server-logs/api.log při prvním startu.  Logy: .server-logs/
  Ukončit: Ctrl+C
 ================================================================
 EOF

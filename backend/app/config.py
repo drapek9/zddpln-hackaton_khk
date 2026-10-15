@@ -6,6 +6,12 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Repo root is two levels above this file: backend/app/config.py.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+_WEAK_KEYS = {"", "dev-only-change-me", "change-me-dev-only"}
+
 
 def _flag(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
@@ -40,7 +46,21 @@ class Settings:
         return bool(self.ai_endpoint)
 
 
+def require_secret(settings: Settings) -> None:
+    """Refuse a missing, placeholder, or short token key. Tests set CESTY_ALLOW_DEV_KEY=1."""
+    if _flag("CESTY_ALLOW_DEV_KEY", False):
+        return
+    key = settings.secret_key.strip()
+    if key in _WEAK_KEYS or len(key) < 32:
+        raise RuntimeError(
+            "CESTY_SECRET_KEY chybí, je výchozí, nebo má méně než 32 znaků. "
+            "Doplň ho do .env v kořeni repa. Pro testy nastav CESTY_ALLOW_DEV_KEY=1."
+        )
+
+
 def get_settings() -> Settings:
+    # Do not override variables the shell already set.
+    load_dotenv(_ENV_FILE, override=False)
     backend_dir = Path(__file__).resolve().parents[1]
     default_db = backend_dir / "cesty.db"
     origins = [item.strip() for item in os.getenv("CESTY_CORS_ORIGINS", "http://localhost:5173").split(",") if item.strip()]

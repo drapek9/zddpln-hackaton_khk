@@ -726,7 +726,7 @@ Ověřeno v prohlížeči (backend :8010, frontend :5180, dočasná DB): přihl�
 
 ### 21.3 Co zbývá
 - Matouš: F7, F8, proklik potvrzení uzavírky a upozornění v UI, mobil 375 px.
-- **NEAKTIVNÍ část S21 (15. 10., Šimon):** S21 je na větvi `simon` hotové, hesla jsou z `.env`. Zbývá sjednotit tvar `rescue` (F13).
+- **NEAKTIVNÍ část S21 a F13 (15. 10., Šimon):** S21 je na větvi `simon` hotové, hesla jsou z `.env`. F13 je zapsané v dokumentaci API: veřejný kontrakt je `RescueCard`, jádro dál vrací `RescueImpact`. Tvar odpovědi se nemění.
 - Tomáš: `SECRET_KEY`, VAPID, smoke po sloučení.
 
 ## 22. AI v produkci: Groq a pořadí pro město (15. 10., Šimon)
@@ -762,6 +762,8 @@ Zkušební sloučení `main` + `tomas` + `simon` (kontrola z 15:00): kód se slo
 | S30 | Zastaralé texty: banner v `start-server.command`, README a `docs/DEMO.md` na `produkce` píšou „hesla v `seed.py`“. | Matouš a Přemek hledají hesla tam, kde nejsou. | Banner: „hesla jsou v `.env` (`CESTY_SEED_*`) nebo v `.server-logs/api.log` při prvním startu“. Opravit i README, `docs/DEMO.md`. | `grep -rn "seed.py" README.md docs start-server.command` nevrátí zavádějící větu. |
 | S31 | Web Push: bez VAPID klíčů `push/vapid-public-key` vrací `configured: false`, nikdy neproklikáno. | Upozornění na telefonu (★2) nepůjde. | **Tomáš** vygeneruje klíče (`cd backend && uv run python -m app.notify.vapid`), vloží do `.env` na Macu. Šimon doplní do `start-server.command` kontrolu a varování „Push vypnut: chybí VAPID“. | Při startu je v logu řádek, jestli push je zapnutý. |
 | S32 | `CESTY_COOKIE_SECURE` je vypnuté a `CESTY_CORS_ORIGINS` jen `localhost:5173`. | Přes HTTPS tunel má být cookie `Secure`. CORS neřeší nic (stejný původ přes Vite), ale musí být zdokumentováno. | Do `.env.example` dopsat `CESTY_COOKIE_SECURE=1` pro tunel a vysvětlit CORS. Do `start-server.command` nastavit `CESTY_COOKIE_SECURE=1`, když běží tunel. | Přihlášení přes `https://…trycloudflare.com` nastaví cookie `Secure; HttpOnly`. |
+
+**Hotovo na větvi `simon` (15. 10., Šimon):** S27–S32 jsou v kódu. Veřejný dojezd IZS zůstává `RescueCard` (F13), anglický `RescueImpact` je jen v jádře. Ostrý test v 23.2 ještě neproběhl: čeká na hesla a VAPID v `.env` a na sloučení `tomas` a `matous`.
 
 ### 23.2 První ostrý test na Šimonově počítači (po sloučení S27–S32)
 Cíl: **jedna databáze, jedno místo**, Tomáš se přihlásí z telefonu nebo svého počítače a účet i přihlášení se uloží.

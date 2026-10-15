@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -20,11 +21,13 @@ from app.api.reports import router as reports_router
 from app.api.responses import HealthOut
 from app.api.roads import router as roads_router
 from app.api.scenarios import router as scenarios_router
-from app.config import get_settings
+from app.config import get_settings, require_secret
 from app.core.engine import Engine
 from app.db.models import User
 from app.db.seed import seed_if_empty
 from app.db.session import get_db_engine
+
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -37,6 +40,11 @@ async def lifespan(app: FastAPI):
     else:
         app.state.engine.people
         app.state.engine.demo_closures()
+    settings = get_settings()
+    if settings.vapid_public_key and settings.vapid_private_key:
+        log.info("Push zapnut")
+    else:
+        log.warning("Push vypnut: chybí VAPID")
     SQLModel.metadata.create_all(get_db_engine())
     with Session(get_db_engine()) as session:
         seed_if_empty(session, app.state.engine)
@@ -46,6 +54,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    require_secret(settings)
     application = FastAPI(title="Cesty KHK API", version="0.2.0", lifespan=lifespan)
     application.add_middleware(
         CORSMiddleware,

@@ -17,12 +17,15 @@ os.environ["VAPID_PRIVATE_KEY"] = ""
 os.environ["CESTY_SEED_ADMIN_PASSWORD"] = "admin-demo"
 os.environ["CESTY_SEED_OFFICIAL_PASSWORD"] = "urednik-demo"
 os.environ["CESTY_SEED_CITIZEN_PASSWORD"] = "obcan-demo"
+os.environ["CESTY_ALLOW_DEV_KEY"] = "1"
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db.seed import DEMO_USERS
+from app.db.seed import demo_users
 from app.main import app
+
+DEMO_USERS = demo_users()
 
 
 @pytest.fixture(scope="module")

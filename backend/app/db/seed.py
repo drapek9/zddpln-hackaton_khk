@@ -55,17 +55,16 @@ def demo_users() -> list[dict[str, str]]:
     return users
 
 
-DEMO_USERS = demo_users()
-
-
 def seed_if_empty(session: Session, engine: Engine) -> None:
     if session.exec(select(User).limit(1)).first() is not None:
         return
+    # Passwords are printed only when accounts are actually created.
+    accounts = demo_users()
     if session.get(AppSetting, SETTINGS_ID) is None:
         session.add(AppSetting(id=SETTINGS_ID, weights_json=Weights().model_dump_json(), vote_cap=10, ai_enabled=True))
 
     users = []
-    for item in DEMO_USERS:
+    for item in accounts:
         user = User(email=item["email"], password_hash=hash_password(item["password"]), role=item["role"])
         session.add(user)
         users.append(user)
