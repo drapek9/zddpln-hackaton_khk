@@ -8,6 +8,8 @@ Cesty KHK is a web app for Hackathon KHK 2026 (15 Oct 2026). It works with open 
 - **Repair prioritization:** score, classes, budget scenario.
 - **Closure impacts:** detour, vehicles per day, alerts, notifying citizens.
 
+**TOP PRIORITY (15 Oct): the next trial merge into `main` is at 15:00, then every 30 minutes (15:30, 16:00, 16:30, …).** Before each slot, have your branch pushed, with passing tests and mergeable with `main`.
+
 Read these documents first:
 - `PLAN_FINAL.md`: product plan, in Czech.
 - `docs/BACKEND.md`: backend split, API contract and milestones, in Czech.
