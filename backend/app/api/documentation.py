@@ -23,7 +23,7 @@ PAGE = """<!DOCTYPE html>
 <body>
   <h1>Cesty KHK — veřejné API</h1>
   <p>Licence aplikace i tohoto rozhraní je <strong>EUPL-1.2</strong>. Export obsahuje skóre, třídu priority a stav úseku. Auta za den jsou ze sčítání ŘSD 2025 (CC BY-SA 4.0) nebo mají štítek <code>odhad</code>. Když údaj chybí, kvalita je <code>chybi</code>.</p>
-  <p>Simulované uzavírky mají štítek <code>demo data</code>. Texty z modelu mají štítek <code>návrh AI</code>, náhradní text bez modelu má štítek <code>šablona</code>. Model pořadí nepočítá a nic neukládá, dokud to člověk nepotvrdí.</p>
+  <p>Simulované uzavírky mají štítek <code>demo data</code>. Texty z modelu mají štítek <code>návrh AI</code>, náhradní text bez modelu má štítek <code>šablona</code>. Veřejný žebříček města může pořadí posunout nejvýš o 5 míst a každý posun má štítek <code>návrh AI</code>. Parametr <code>ai=0</code> nechá čistý vzorec. Soukromé váhy úředníka model neposouvá.</p>
 
   <h2>Veřejné, bez přihlášení</h2>
   <table>
@@ -31,7 +31,8 @@ PAGE = """<!DOCTYPE html>
     <tr><td>GET</td><td><code>/api/health</code></td><td>Žije server, počet úseků a uzlů grafu.</td></tr>
     <tr><td>GET</td><td><code>/api/useky</code></td><td>GeoJSON úseků se skóre, třídou, stavem a intenzitou. Volitelně <code>limit</code> a <code>offset</code>.</td></tr>
     <tr><td>GET</td><td><code>/api/useky/{id}</code></td><td>Detail, rozpad skóre, geometrie.</td></tr>
-    <tr><td>GET</td><td><code>/api/ranking</code></td><td>Objekt <code>{items, count, weights_source, vypocteno}</code>, ne holé pole. Položka je úsek se skóre. Váhy v query (<code>stav</code>, <code>schools</code>, …) platí jen pro ten požadavek. Bez nich platí váhy úředníka, jinak trvalé váhy.</td></tr>
+    <tr><td>GET</td><td><code>/api/ranking</code></td><td>Objekt <code>{items, count, weights_source, vypocteno, ai, ai_note}</code>, ne holé pole. U vah města je výchozí pohled s návrhem AI (<code>ai=navrh</code>): prvních 40 úseků, posun nejvýš o 5 míst, štítek u posunu. <code>?ai=0</code> je jen vzorec. Když model neběží, <code>ai=nedostupne</code> a pořadí je vzorec. <code>?compact=1</code> vrací id, skóre, třídu, pořadí, připíchnutí, hlasy a pole návrhu AI. Váhy v query platí jen pro ten požadavek a model se na ně nepoužije.</td></tr>
+    <tr><td>GET</td><td><code>/api/stability?top=100</code></td><td>Jak jistý je vrchol žebříčku, když se váhy trochu pohnou. Štítek jisté, pravděpodobné nebo nejisté.</td></tr>
     <tr><td>GET</td><td><code>/api/route?home=lon,lat&amp;work=lon,lat</code></td><td>Trasa mezi dvěma body bez přihlášení. Nic se neukládá.</td></tr>
     <tr><td>GET</td><td><code>/api/uzavirky</code></td><td>Potvrzené uzavírky. Koncepty veřejnost nevidí.</td></tr>
     <tr><td>GET</td><td><code>/api/statistiky</code></td><td>Souhrn sítě a počet potvrzených uzavírek.</td></tr>
@@ -61,7 +62,7 @@ PAGE = """<!DOCTYPE html>
     <tr><td>PUT</td><td><code>/api/me/weights</code></td><td>Váhy jen pro vlastní pohled.</td></tr>
     <tr><td>POST</td><td><code>/api/pins</code></td><td>Připíchnutí priority a důvodu. Má přednost před modelem.</td></tr>
     <tr><td>POST</td><td><code>/api/closures/preview</code></td><td>Náhled objížďky a varování. Tělo <code>{road_id, date_from, date_to, restriction}</code>. Do databáze se nezapíše.</td></tr>
-    <tr><td>POST</td><td><code>/api/closures</code></td><td>Návrh uzavírky. Odpověď obsahuje objížďku, varování, auta za den, studenty a odříznuté obce.</td></tr>
+    <tr><td>POST</td><td><code>/api/closures</code></td><td>Návrh uzavírky. Odpověď obsahuje objížďku, varování, auta za den, studenty a odříznuté obce. Dojezd záchranky a hasičů je <code>rescue</code> ve tvaru RescueCard (<code>items</code> s <code>sluzba</code>, <code>pred_min</code>, <code>po_min</code>, <code>nad_20_min</code>), ne anglický RescueImpact z jádra.</td></tr>
     <tr><td>GET</td><td><code>/api/flood?level=q5|q20|q100</code></td><td>Povodňový scénář Q5, Q20 nebo Q100.</td></tr>
     <tr><td>GET</td><td><code>/api/budget?amount=…&amp;amount2=…</code></td><td>Rozpočet. Dokud chybí výpočet jádra, vrátí ready false a žádnou cenu.</td></tr>
     <tr><td>POST</td><td><code>/api/closures/{id}/confirm</code></td><td>Potvrdí uzavírku a pošle nejvýš jedno upozornění občanům, kteří mají úsek na trase.</td></tr>

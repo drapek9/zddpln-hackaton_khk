@@ -33,6 +33,8 @@ npm install
 npm run dev
 ```
 
+Před prvním startem vyplň v `.env` v kořeni repa hesla `CESTY_SEED_ADMIN_PASSWORD`, `CESTY_SEED_OFFICIAL_PASSWORD` a `CESTY_SEED_CITIZEN_PASSWORD`. Když chybí, server je vypíše jen při založení prázdné databáze.
+
 Otevřete [http://localhost:5173](http://localhost:5173). API dokumentace běží na `http://localhost:8000/docs`.
 
 Testy a build:
@@ -44,7 +46,7 @@ cd ..
 npm run build
 ```
 
-Při prvním startu backend založí demo účty (úředník, admin, dva občané). Jejich hesla nejsou v tomto README. Pro demo je najdete v `backend/app/db/seed.py`, pro reálné nasazení je před spuštěním změňte.
+Při prvním startu backend založí demo účty (úředník, admin, dva občané). Jejich hesla nejsou v repu: jsou v `.env` (`CESTY_SEED_*_PASSWORD`), `start-server.command` je při prvním spuštění vygeneruje.
 
 ## Konfigurace
 

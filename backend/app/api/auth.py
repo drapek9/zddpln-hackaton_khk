@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app.api.responses import TokenOut, UserOut
 from app.auth.deps import require_user
 from app.auth.security import COOKIE, create_token, hash_password, verify_password
 from app.config import get_settings
@@ -55,7 +56,7 @@ def _issue(response: Response, user: User) -> dict:
     return {"token": token, "user": _user_payload(user)}
 
 
-@router.post("/register", status_code=201)
+@router.post("/register", status_code=201, response_model=TokenOut)
 def register(body: Credentials, response: Response, session: Session = Depends(get_session)) -> dict:
     email = body.email.strip().lower()
     if "@" not in email:
@@ -70,7 +71,7 @@ def register(body: Credentials, response: Response, session: Session = Depends(g
     return _issue(response, user)
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenOut)
 def login(
     body: Credentials,
     response: Response,
@@ -103,6 +104,6 @@ def logout(response: Response, user: User = Depends(require_user), session: Sess
     return {"ok": True}
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserOut)
 def me(user: User = Depends(require_user)) -> dict:
     return _user_payload(user)

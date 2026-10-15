@@ -43,10 +43,15 @@ class Rescue:
 
         return nx.multi_source_dijkstra_path_length(self.p.g.graph, self.bases[service], weight=weight)
 
-    def _edge_of_closure(self, node: int, closed: frozenset[int], after: dict[int, float]) -> float | None:
-        """An obec point that lies on the closed stretch itself (a closed průtah) is
-        reached at the nearest end of the closure: residents there use local streets,
-        which the graph does not have. None when no end of the closure is reachable."""
+    def _edge_of_closure(
+        self, node: int, closed: frozenset[int], before: dict[int, float], after: dict[int, float]
+    ) -> float | None:
+        """An obec point that lies on the closed stretch itself (a closed průtah).
+
+        The crew drives to an end of the closure, then the rest of the way on local
+        streets, which the graph does not have. That rest is taken as long as the
+        closed road from that end (before[node] - before[end]). None when no end of
+        the closure is reachable."""
         G = self.p.g.graph
         seen, stack = {node}, [node]
         while stack:
@@ -55,7 +60,7 @@ class Rescue:
                 if v not in seen and all(d["road_id"] in closed for d in data.values()):
                     seen.add(v)
                     stack.append(v)
-        ends = [after[n] for n in seen if n in after]
+        ends = [after[n] + max(0.0, before[node] - before.get(n, before[node])) for n in seen if n in after]
         return min(ends) if ends else None
 
     def impact(self, closed: Iterable[int]) -> RescueImpact:
@@ -69,7 +74,7 @@ class Rescue:
                     continue
                 b, a = before[node], after.get(node)
                 if a is None:
-                    a = self._edge_of_closure(node, closed_set, after)
+                    a = self._edge_of_closure(node, closed_set, before, after)
                 if a is not None and a - b < MIN_EXTRA:
                     continue
                 o = self.p.obce[kod]
@@ -93,7 +98,7 @@ class Rescue:
             people_slower=sum(r.obyvatel for r in zzs),
             zzs_over_limit=sum(r.over_limit for r in zzs),
             limit_min=LIMIT_MIN,
-            alerts=_alerts(rows),
+            alerts=_alerts(rows, frozenset(s for s in SERVICES if not self.bases[s])),
             note=(
                 "Odhad: nejrychlejší cesta po silnicích z nejbližší základny ZZS / stanice HZS (Data KHK), "
                 "rychlosti podle třídy silnice. Obec = jeden bod v síti; leží-li bod přímo na uzavírce, "
@@ -102,7 +107,7 @@ class Rescue:
         )
 
 
-def _alerts(rows: list[RescueObec]) -> list[Alert]:
+def _alerts(rows: list[RescueObec], missing: frozenset[str] = frozenset()) -> list[Alert]:
     alerts: list[Alert] = []
     over = [r for r in rows if r.over_limit]
     if over:
@@ -111,10 +116,15 @@ def _alerts(rows: list[RescueObec]) -> list[Alert]:
             Alert(
                 level="critical",
                 title=f"Záchranka přes {LIMIT_MIN:.0f} min: {_obce(len(over))}",
-                detail=f"Dojezd ZZS do obcí {names} překročí {LIMIT_MIN:.0f} min (odhad).",
+                detail=f"Dojezd ZZS do {'obce' if len(over) == 1 else 'obcí'} {names} překročí {LIMIT_MIN:.0f} min (odhad).",
             )
         )
     for s in SERVICES:
+        if not any(r.service == s for r in rows) and missing and s in missing:
+            alerts.append(
+                Alert(level="info", title=f"Dojezd {NAMES[s]} nepočítáme", detail=f"V datech chybí základny {NAMES[s]}.")
+            )
+            continue
         worst = next((r for r in rows if r.service == s and not r.over_limit), None)
         if worst is None:
             continue
@@ -131,4 +141,5 @@ def _alerts(rows: list[RescueObec]) -> list[Alert]:
 
 
 def _obce(n: int) -> str:
+    # Czech with digits: 1 obec, 2-4 obce, else obcí (also 21, 22: "21 obcí").
     return f"{n} obec" if n == 1 else f"{n} obce" if 2 <= n <= 4 else f"{n} obcí"

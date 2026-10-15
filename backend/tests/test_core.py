@@ -338,3 +338,48 @@ def test_t20_factors_off_by_default_and_on_when_weighted(engine: Engine) -> None
     top = engine.ranking(w)
     assert top[0].score >= top[-1].score
     assert engine.score(2773, w) >= engine.score(2773)
+
+
+def test_warmup_builds_every_cache(engine: Engine) -> None:
+    times = engine.warmup()
+    assert set(times) == {"people", "rescue", "demo_closures", "factors", "stavby", "road_grid"}
+    assert engine._factors_ready and engine._road_grid is not None
+    assert all("factors" in r for r in engine.data.roads)
+    again = engine.warmup()
+    assert sum(again.values()) < 1  # everything cached
+
+
+def test_road_obce_are_unique_ignoring_case(engine: Engine) -> None:
+    """T22: the layers spell some obce in two ways ("Hradec králové")."""
+    dupes = [r["id"] for r in engine.data.roads if len({o.lower() for o in r["obce"]}) < len(r["obce"])]
+    assert dupes == []
+
+
+def test_detour_factor_cut_off_only_when_network_is_cut(engine: Engine) -> None:
+    """Review 15 Oct: a loop úsek got the cut-off maximum; it has no detour to compute."""
+    engine.warmup()
+    loops = [r for r in engine.data.roads if (e := engine.graph.road_ends.get(r["id"])) and e[0] == e[1]]
+    assert loops and not any(r["factors"]["cut_off"] for r in loops)
+    cut = [r for r in engine.data.roads if r["factors"]["cut_off"]]
+    assert cut and all(r["factors"]["detour_min"] is None for r in cut)
+
+
+def test_stavby_never_longer_than_max(engine: Engine) -> None:
+    from app.core import budget
+
+    assert max(s.km for s in engine.stavby()) <= budget.MAX_KM + 1e-9
+
+
+def test_rescue_czech_plural() -> None:
+    from app.core.rescue import _obce
+
+    assert [_obce(n) for n in (1, 3, 5, 11, 21, 22, 25, 112)] == [
+        "1 obec", "3 obce", "5 obcí", "11 obcí", "21 obcí", "22 obcí", "25 obcí", "112 obcí",
+    ]
+
+
+def test_rescue_obec_on_closure_never_faster(engine: Engine) -> None:
+    """Review 15 Oct: an obec on the closed stretch was dropped as 'faster after closure'."""
+    for c in engine.demo_closures():
+        if c.rescue:
+            assert all(r.extra_min is None or r.extra_min >= 0 for r in c.rescue.obce)

@@ -6,10 +6,12 @@
 #   NO_PULL=1      nestahovat main z GitHubu (použít, co je na disku)
 #   NO_TUNNEL=1    nespouštět veřejnou HTTPS adresu (cloudflared)
 #   API_PORT=8000  port backendu (jen lokálně), WEB_PORT=5173 port webu
+#   RESET_DB=1     zálohovat backend/cesty.db a založit novou (demo účty s hesly z .env)
 #
 # Co se stane:
 #   1. git pull větve main (jen když nejsou neuložené změny)
-#   2. kontrola nástrojů (uv, node, npm), .env z .env.example s náhodným klíčem
+#   2. kontrola nástrojů (uv, node, npm), .env z .env.example: náhodný klíč,
+#      náhodná hesla demo účtů a VAPID klíče pro push (vše jen v .env, nikdy v gitu)
 #   3. uv sync + npm install
 #   4. backend (FastAPI + SQLite backend/cesty.db) na 127.0.0.1:$API_PORT
 #   5. web (Vite) na 0.0.0.0:$WEB_PORT, /api posílá na backend
@@ -57,12 +59,43 @@ if [ ! -f .env ]; then
   say "Vytvářím .env z .env.example"
   cp .env.example .env
 fi
-if grep -q '^CESTY_SECRET_KEY=change-me-dev-only' .env; then
-  key="$(openssl rand -hex 24 2>/dev/null || uv run --no-project python -c 'import secrets; print(secrets.token_hex(24))')"
-  # sed -i differs on macOS and Linux; write via a temp file instead.
-  sed "s/^CESTY_SECRET_KEY=.*/CESTY_SECRET_KEY=$key/" .env >.env.tmp && mv .env.tmp .env
-  echo "Vygenerován nový CESTY_SECRET_KEY (jen v .env, do gitu nejde)."
+random_hex() { openssl rand -hex "$1" 2>/dev/null || uv run --no-project python -c "import secrets; print(secrets.token_hex($1))"; }
+env_get() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- || true; }
+# Replace or append KEY=VALUE in .env. sed -i differs on macOS and Linux; use a temp file.
+env_set() {
+  grep -vE "^$1=" .env >.env.tmp || true
+  printf '%s=%s\n' "$1" "$2" >>.env.tmp
+  mv .env.tmp .env
+}
+
+# F11: a short or default key lets anyone forge a login token through the tunnel.
+key="$(env_get CESTY_SECRET_KEY)"
+if [ "${#key}" -lt 32 ] || [ "$key" = "change-me-dev-only" ]; then
+  env_set CESTY_SECRET_KEY "$(random_hex 32)"
+  echo "Vygenerován nový CESTY_SECRET_KEY (64 znaků, jen v .env). Staré přihlášení přestane platit."
 fi
+
+# S21: demo account passwords come from .env. Generate them once so they stay stable.
+NEW_PASSWORDS=0
+for role in ADMIN OFFICIAL CITIZEN; do
+  if [ -z "$(env_get "CESTY_SEED_${role}_PASSWORD")" ]; then
+    env_set "CESTY_SEED_${role}_PASSWORD" "$(random_hex 8)"
+    NEW_PASSWORDS=1
+  fi
+done
+[ "$NEW_PASSWORDS" = 1 ] && echo "Vygenerována hesla demo účtů (CESTY_SEED_*_PASSWORD v .env)."
+
+DB_FILE="$ROOT/backend/cesty.db"
+if [ "${RESET_DB:-0}" = "1" ] && [ -f "$DB_FILE" ]; then
+  backup="$DB_FILE.$(date +%Y%m%d-%H%M%S).bak"
+  mv "$DB_FILE" "$backup"
+  echo "Databáze zazálohována do $backup, založí se nová."
+elif [ "$NEW_PASSWORDS" = 1 ] && [ -f "$DB_FILE" ]; then
+  # Seeding runs only on an empty DB, so the old public passwords from seed.py still work.
+  printf '\033[33mPOZOR: backend/cesty.db už existuje a demo účty v ní mají stará veřejná hesla.\n'
+  printf 'Před tunelem pro porotu spusť: RESET_DB=1 ./start-server.command\033[0m\n'
+fi
+
 set -a
 # shellcheck disable=SC1091
 . ./.env
@@ -70,10 +103,28 @@ set +a
 # The relative DB path from .env.example depends on the working directory.
 # Without it the backend uses its default: backend/cesty.db (absolute, see app/config.py).
 if [ "${CESTY_DB_URL:-}" = "sqlite:///./backend/cesty.db" ]; then unset CESTY_DB_URL; fi
+# The tunnel starts after the API, so the cookie flag has to be set before uvicorn.
+if [ "${NO_TUNNEL:-0}" != "1" ]; then
+  export CESTY_COOKIE_SECURE=1
+fi
 
 # ---- 3. dependencies -------------------------------------------------------
 say "Instaluji závislosti (poprvé to chvíli trvá)"
 (cd backend && uv sync --quiet)
+
+# F12: Web Push needs a VAPID key pair. Generate it once into .env; never print it.
+if [ -z "${VAPID_PUBLIC_KEY:-}" ] || [ -z "${VAPID_PRIVATE_KEY:-}" ]; then
+  vapid="$(cd backend && uv run python -m app.notify.vapid)" || fail "VAPID klíče nejdou vygenerovat."
+  env_set VAPID_PUBLIC_KEY "$(printf '%s\n' "$vapid" | sed -n 's/^VAPID_PUBLIC_KEY=//p' | tr -d '\r')"
+  env_set VAPID_PRIVATE_KEY "$(printf '%s\n' "$vapid" | sed -n 's/^VAPID_PRIVATE_KEY=//p' | tr -d '\r')"
+  unset vapid
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+  if [ "${CESTY_DB_URL:-}" = "sqlite:///./backend/cesty.db" ]; then unset CESTY_DB_URL; fi
+  echo "Vygenerovány VAPID klíče pro push (jen v .env)."
+fi
 npm install --no-audit --no-fund --loglevel=error
 
 # ---- 4-6. run --------------------------------------------------------------
@@ -145,7 +196,9 @@ cat <<EOF
 
  Vývoj frontendu u kolegy proti tomuto serveru:
    CESTY_API_TARGET=${PUBLIC_URL:-http://${LAN_IP:-<IP-tohoto-Macu>}:$WEB_PORT} npm run dev
- Demo účty: backend/app/db/seed.py.  Logy: .server-logs/
+ Demo účty: admin@ / urednik@ / obcan1@cesty-khk.test,
+   hesla v .env (CESTY_SEED_*_PASSWORD).  Logy: .server-logs/
+ Kontrola API:  scripts/smoke_api.sh ${PUBLIC_URL:-http://localhost:$WEB_PORT}
  Ukončit: Ctrl+C
 ================================================================
 EOF

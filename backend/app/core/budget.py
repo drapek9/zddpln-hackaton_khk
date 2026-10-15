@@ -102,7 +102,7 @@ def _order(comp: set[int], keep: set[int], neighbours) -> list[int]:
 
 
 def _cut(order: list[int], by_id: dict[int, dict[str, Any]]) -> list[list[int]]:
-    """Pieces of at most MAX_KM. A short last piece joins the previous one."""
+    """Pieces of at most MAX_KM. A short last piece joins the previous one if that still fits."""
     pieces: list[list[int]] = [[]]
     km = 0.0
     for rid in order:
@@ -112,7 +112,8 @@ def _cut(order: list[int], by_id: dict[int, dict[str, Any]]) -> list[list[int]]:
             km = 0.0
         pieces[-1].append(rid)
         km += d
-    if len(pieces) > 1 and sum(by_id[r]["delka"] for r in pieces[-1]) / 1000 < MIN_KM:
+    piece_km = lambda p: sum(by_id[r]["delka"] for r in p) / 1000  # noqa: E731
+    if len(pieces) > 1 and piece_km(pieces[-1]) < MIN_KM and piece_km(pieces[-2]) + piece_km(pieces[-1]) <= MAX_KM:
         last = pieces.pop()
         pieces[-1] += last
     return pieces

@@ -5,6 +5,8 @@
 - Backend dělají Tomáš a Šimon, viz [BACKEND.md](BACKEND.md).
 - Co a proč stavíme: [PLAN_FINAL.md](../PLAN_FINAL.md), hlavně kap. 2 (pitch) a kap. 4 (obrazovky).
 
+> **15. 10., 14:55: NOVÁ NEJVYŠŠÍ PRIORITA je [PLAN_FINAL.md, kap. 25](../PLAN_FINAL.md): tři aplikace podle role (`/` veřejnost, `/sprava` úředník, `/admin` bez mapy) a produkční vzhled.** Fáze 1 do freeze v 16:00, fáze 2 je produkční verze. Sekce níže platí dál, ale až po fázi 1.
+>
 > **15. 10., 13:15: nejvyšší priorita je sekce „NEJVYŠŠÍ PRIORITA“ na konci souboru** (opravy propojení s backendem D1–D8). Až potom M-c až M-f a nové obrazovky.
 
 ## Co dělat (podle milníků)
@@ -148,7 +150,15 @@ Ověřeno na `main` (`7ea72fc`) přes `curl`. Pořadí v tabulce = pořadí prá
 
 **Až potom rozšiřování:** M-c (uzavírky 2022), M-d (rozpočet přes API), M-e (Moje cesty), M-f (povodeň, Moje obec) a nápady F‑c, F‑d, F‑f, F‑g z `NAPADY.md`.
 
+**Doplněno 14:20 (rozhodnutí Tomáše, kap. 26 v `PLAN_FINAL.md`):** z nápadů jdou do plánu jen dva, oba až po D a ★2:
+- **F‑c rozpad skóre z API:** v detailu úseku brát `breakdown` z `GET /api/useky/{id}` (seznam `{key, label, points}`) místo `src/lib/priority.ts`. Lokální výpočet nechat jen pro režim bez serveru. Asi 20 min.
+- **F‑d aktuální uzavírky ŘSD:** šedá vrstva na mapě z `GET /api/closures`, pole `srti` (`lon`, `lat`, `label`, `full_closure`, `active`, `road_label`). Do Zdrojů dat přidat NDIC SRTI (CC BY 4.0). Asi 30 min.
+- F‑f a F‑g zůstávají v nápadech.
+
 **Hotovo, když:** úředník vidí štítek „živá data“, pin přežije obnovení stránky, simulátor ukáže dojezd ZZS z backendu a posuvník přes `start-server.command` (tunel) reaguje do 1 s.
+
+## Kontrola 15. 10. ~14:30
+Opravy F0–F13 jsou na `matous`, nálezy a 10 otázek v `PLAN_FINAL.md`, kap. 21. Zbývá F7 (AI tlačítka) a F8 (rozpočet z `/api/budget`).
 
 ## Stav 15. 10. ~15:30 (Matouš, větev `matous`)
 Navazuje na kap. 21 v `PLAN_FINAL.md`. Priorita je veřejnost (rozhodnutí týmu).

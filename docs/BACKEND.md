@@ -312,6 +312,19 @@ Ctrl+C ukončí vše. Logy jsou v `.server-logs/` (v `.gitignore`). Volby: `NO_P
 - Adresa `trycloudflare.com` se mění při každém spuštění. Kdo ji potřebuje, vezme ji z výpisu.
 - macOS se při prvním spuštění zeptá, jestli Node smí přijímat spojení ze sítě: Povolit.
 - Na hackathonové Wi‑Fi bývají zařízení od sebe izolovaná. Pak funguje jen HTTPS adresa z tunelu.
-- Tunel je veřejný: admin a úředník jen po přihlášení. Demo účty jsou v `backend/app/db/seed.py`; před porotou zvážit změnu hesel.
+- Tunel je veřejný: admin a úředník jen po přihlášení. Hesla demo účtů jsou v `.env` (`CESTY_SEED_*`), ne v gitu. Když chybí, vypíšou se jen při prvním založení databáze do konzole serveru.
 - `vite.config.ts`: přidané `allowedHosts` (`.trycloudflare.com`, `.ts.net`, `.local`) a `changeOrigin` u proxy. Bez toho Vite 7 adresu z tunelu odmítne (403).
 - Ověřeno na Windows (Git Bash): start, `/api` přes Vite, přihlášení a rozpočet přes druhý Vite (režim „kolega“), cizí `Host` dostane 403. Na Macu zatím nespuštěno.
+
+### Stav 15. 10., ~14:00 (Tomáš): T21–T23
+- **`Engine.warmup() -> dict[str, float]`** (T21): postaví všechny líné cache najednou (`people`, `rescue`, `demo_closures`, faktory T20, `stavby`, mřížka úseků pro SRTI). Asi 9 s, vrací sekundy po krocích. Volat jednou v lifespanu (S24). Druhé volání nic nepočítá.
+- **Obce** (T22): vrstvy kraje píšou některé obce dvakrát („Hradec králové“). `scripts/fetch-data.mjs` sjednocuje na nejčastější zápis, snímek `public/data` je opravený. Skóre se nezměnilo.
+- **`scripts/smoke_api.sh [adresa]`** (T23): zavolá všechny veřejné endpointy a s přihlášením i úřednické. Vypíše kód, čas a velikost a hlásí vypnutý gzip. Heslo bere ze `SMOKE_EMAIL` / `SMOKE_PASSWORD` nebo z `CESTY_SEED_OFFICIAL_*` v `.env`, nikdy z kódu. Výchozí adresa je `http://localhost:5173` (přes Vite proxy), jde i tunel.
+- **Ukázkové uzavírky 2022:** `recommended_reason` má čísla („Nejvíc středoškoláků denně (589 studentů)“). Když vybraná uzavírka není první v pořadí, píše se „Hodně …“ nebo „Dlouhá objížďka“.
+- **Review jádra (14:15), opraveno:**
+  - Faktor objížďky T20: 83 úseků, které začínají a končí ve stejném uzlu, dostávalo maximum jako „uzavírka odřízne síť“. Teď mají příznak `cut_off` jen úseky, pro které graf opravdu nenajde objížďku (790).
+  - Dojezd IZS do obce přímo na uzavřeném průtahu: obec se dřív ztratila jako „rychlejší po uzavírce“. Teď se k času na okraj uzavírky přičte zbytek cesty (Hronov u II/303: +2 min).
+  - Stavba rozpočtu nikdy nepřesáhne 5 km. Krátký konec se připojí jen tehdy, když se vejde.
+  - Texty: „odhad“ u cen, desetinná čárka, „do obce X“ u jedné obce. Mřížka úseků má zámek.
+  - Zamítnuto: návrh skloňovat „21 obec“ a „22 obce“. S číslicemi se píše „21 obcí“ i „22 obcí“.
+
