@@ -38,18 +38,39 @@ class Credentials(BaseModel):
     password: str = Field(min_length=8, max_length=200)
 
 
+class LoginBody(BaseModel):
+    # Short demo names ("spravce") and simple demo passwords are allowed at login.
+    email: str = Field(min_length=1, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+DEMO_DOMAIN = "cesty-khk.test"
+
+
+def _login_email(raw: str) -> str:
+    email = raw.strip().lower()
+    return email if "@" in email else f"{email}@{DEMO_DOMAIN}"
+
+
+def _is_https(request: Request) -> bool:
+    # cloudflared and other proxies send X-Forwarded-Proto; the Vite proxy passes it on.
+    forwarded = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    return request.url.scheme == "https" or forwarded == "https"
+
+
 def _user_payload(user: User) -> dict:
     return {"id": user.id, "email": user.email, "role": user.role, "blocked": user.blocked}
 
 
-def _issue(response: Response, user: User) -> dict:
+def _issue(response: Response, user: User, request: Request) -> dict:
     token = create_token(user.id, user.role, user.token_version)
     response.set_cookie(
         COOKIE,
         token,
         httponly=True,
         samesite="lax",
-        secure=get_settings().cookie_secure,
+        # A Secure cookie over plain HTTP (Wi-Fi address) is dropped and login silently fails.
+        secure=get_settings().cookie_secure and _is_https(request),
         max_age=60 * 60 * 24 * 7,
         path="/",
     )
@@ -57,7 +78,12 @@ def _issue(response: Response, user: User) -> dict:
 
 
 @router.post("/register", status_code=201, response_model=TokenOut)
-def register(body: Credentials, response: Response, session: Session = Depends(get_session)) -> dict:
+def register(
+    body: Credentials,
+    response: Response,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> dict:
     email = body.email.strip().lower()
     if "@" not in email:
         raise HTTPException(status_code=400, detail="E-mail nemá platný tvar.")
@@ -68,12 +94,12 @@ def register(body: Credentials, response: Response, session: Session = Depends(g
     session.add(user)
     session.commit()
     session.refresh(user)
-    return _issue(response, user)
+    return _issue(response, user, request)
 
 
 @router.post("/login", response_model=TokenOut)
 def login(
-    body: Credentials,
+    body: LoginBody,
     response: Response,
     request: Request,
     session: Session = Depends(get_session),
@@ -83,16 +109,16 @@ def login(
     _failures[ip] = recent
     if len(recent) >= _MAX_FAILURES:
         raise HTTPException(status_code=429, detail="Příliš mnoho pokusů. Zkuste to za minutu.")
-    email = body.email.strip().lower()
+    email = _login_email(body.email)
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None or not verify_password(body.password, user.password_hash):
         _failures[ip] = [*recent, time.monotonic()]
-        raise HTTPException(status_code=401, detail="Špatný e-mail nebo heslo.")
+        raise HTTPException(status_code=401, detail="Špatné jméno, e-mail nebo heslo.")
     if user.blocked:
         _failures[ip] = [*recent, time.monotonic()]
         raise HTTPException(status_code=403, detail="Účet je zablokovaný.")
     _failures.pop(ip, None)
-    return _issue(response, user)
+    return _issue(response, user, request)
 
 
 @router.post("/logout")

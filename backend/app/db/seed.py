@@ -12,7 +12,7 @@ import secrets
 
 from sqlmodel import Session, select
 
-from app.auth.security import hash_password
+from app.auth.security import hash_password, verify_password
 from app.core.engine import Engine
 from app.core.schemas import Weights
 from app.db.models import AppSetting, Place, SavedRoute, User
@@ -25,6 +25,9 @@ _ACCOUNTS = (
     ("urednik@cesty-khk.test", "official", "CESTY_SEED_OFFICIAL_PASSWORD"),
     ("obcan1@cesty-khk.test", "citizen", "CESTY_SEED_CITIZEN_PASSWORD"),
     ("obcan2@cesty-khk.test", "citizen", "CESTY_SEED_CITIZEN_PASSWORD"),
+    # Short login names for the demo (PLAN_FINAL 25.8): obcan, spravce, admin.
+    ("spravce@cesty-khk.test", "official", "CESTY_SEED_OFFICIAL_PASSWORD"),
+    ("obcan@cesty-khk.test", "citizen", "CESTY_SEED_CITIZEN_PASSWORD"),
 )
 
 
@@ -127,3 +130,31 @@ def _demo_routes(engine: Engine, count: int) -> list[tuple]:
             if obec:
                 seen_obce.add(obec)
     return picked
+
+
+def sync_demo_accounts(session: Session) -> None:
+    """Make demo accounts match the passwords in .env on every start.
+
+    Seeding runs only on an empty DB, so without this an old DB keeps old passwords
+    and nobody can log in. Accounts without an env password are left alone.
+    """
+    for email, role, env_name in _ACCOUNTS:
+        password = os.getenv(env_name, "").strip()
+        if not password:
+            continue
+        user = session.exec(select(User).where(User.email == email)).first()
+        if user is None:
+            session.add(User(email=email, password_hash=hash_password(password), role=role))
+            log.info("demo account %s created", email)
+            continue
+        changed = False
+        if not verify_password(password, user.password_hash):
+            user.password_hash = hash_password(password)
+            user.token_version += 1
+            changed = True
+        if user.role != role:
+            user.role = role
+            changed = True
+        if changed:
+            session.add(user)
+            log.info("demo account %s updated from .env", email)

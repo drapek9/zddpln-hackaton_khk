@@ -508,3 +508,41 @@ def test_demo_closures_are_2022_plans(client: TestClient):
     assert body["items"][0]["label"] == body["label"]
     assert sum(1 for item in body["items"] if item.get("recommended")) == 3
 
+
+
+def test_login_by_short_demo_name(client: TestClient):
+    response = client.post("/api/auth/login", json={"email": "spravce", "password": "urednik-demo"})
+    assert response.status_code == 200, response.text
+    assert response.json()["user"]["email"] == "spravce@cesty-khk.test"
+    assert response.json()["user"]["role"] == "official"
+    client.cookies.clear()
+
+
+def test_secure_cookie_only_over_https(client: TestClient, monkeypatch):
+    monkeypatch.setenv("CESTY_COOKIE_SECURE", "1")
+    body = {"email": "obcan", "password": "obcan-demo"}
+    plain = client.post("/api/auth/login", json=body)
+    assert plain.status_code == 200
+    assert "secure" not in plain.headers["set-cookie"].lower()
+    tunnel = client.post("/api/auth/login", json=body, headers={"X-Forwarded-Proto": "https"})
+    assert "secure" in tunnel.headers["set-cookie"].lower()
+    client.cookies.clear()
+
+
+def test_demo_password_follows_env(client: TestClient, monkeypatch):
+    from sqlmodel import Session
+
+    from app.db.seed import sync_demo_accounts
+    from app.db.session import get_db_engine
+
+    monkeypatch.setenv("CESTY_SEED_ADMIN_PASSWORD", "admin")
+    with Session(get_db_engine()) as session:
+        sync_demo_accounts(session)
+        session.commit()
+    response = client.post("/api/auth/login", json={"email": "admin", "password": "admin"})
+    assert response.status_code == 200, response.text
+    monkeypatch.setenv("CESTY_SEED_ADMIN_PASSWORD", "admin-demo")
+    with Session(get_db_engine()) as session:
+        sync_demo_accounts(session)
+        session.commit()
+    client.cookies.clear()

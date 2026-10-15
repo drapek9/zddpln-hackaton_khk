@@ -24,7 +24,7 @@ from app.api.scenarios import router as scenarios_router
 from app.config import get_settings, require_secret
 from app.core.engine import Engine
 from app.db.models import User
-from app.db.seed import seed_if_empty
+from app.db.seed import seed_if_empty, sync_demo_accounts
 from app.db.session import get_db_engine
 
 log = logging.getLogger(__name__)
@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     SQLModel.metadata.create_all(get_db_engine())
     with Session(get_db_engine()) as session:
         seed_if_empty(session, app.state.engine)
+        sync_demo_accounts(session)
         session.commit()
     yield
 
