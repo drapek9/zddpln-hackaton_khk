@@ -426,6 +426,7 @@ Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho,
    - **„Pokračovat bez přihlášení“** → veřejná mapa (role Veřejnost). Nic se neukládá na server.
    - **„Přihlásit se“** → login formulář.
    - Dnešní dvě karty „Správa silnic“ a „Veřejný přehled“ zůstanou, jen „Správa silnic“ nejdřív vyžádá přihlášení.
+   - **NEAKTIVNÍ (15. 10. odpoledne):** karty nahradil úvod rozdělený napůl, vlevo název a popis, vpravo přihlášení. Podrobně v [docs/FRONTEND.md](docs/FRONTEND.md), „Rozhodnutí týmu k rozhraní“ (R1–R6).
 2. **Login formulář:** e‑mail, heslo, tlačítko „Přihlásit“. Pod ním odkaz „Nemám účet → registrace“ (jen pro občany). Chybová hláška z backendu se ukáže pod formulářem („Špatný e‑mail nebo heslo.“, „Účet je zablokovaný.“).
 3. **Po přihlášení** frontend podle role otevře správnou obrazovku:
    | Role v DB | Česky | Kam ho pošleme | Co může |
