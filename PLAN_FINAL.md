@@ -679,3 +679,7 @@ Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, 
 - **★1 úředník:** žebříček → detail → simulace skutečné uzavírky 2022 (II/303 Velké Poříčí – Hronov) → objížďka, auta, studenti, IZS → „Potvrdit“.
 - **★2 občan:** Moje cesty → upozornění na potvrzenou uzavírku.
 - **★3 admin a data:** váhy, audit, export s metadaty, Zdroje dat.
+
+### 20.1 Pitch: vlastník Přemek (15. 10., ~13:30)
+- **Rozhodnuto:** pitch, PDF/PPTX a záložní video dělá **Přemek** (řádek 1 tabulky výše je vyřešený). Společně ho doladíme kolem 15:00.
+- Do té doby se pitch jen rozepisuje v [docs/PITCH.md](docs/PITCH.md): osnova 5 min, demo klik po kliku, čísla se zdroji, věty pro porotu, odpovědi na výtky, slajdy, záloha a kontrola v 16:00. Kdo něco rozhodne, připíše to tam.
