@@ -11,3 +11,5 @@ __pycache__/
 .ruff_cache/
 backend/cesty.db
 backend/data/cache/
+.server-logs/
+.env.tmp

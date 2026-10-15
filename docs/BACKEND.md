@@ -286,3 +286,32 @@ Všechno na větvi `tomas-next`, jen přidaná pole a nové modely. Testy 25/25.
   - Výchozí hodnoty přepnout na 50 až ve chvíli, kdy frontend bere žebříček z API (F2). Do té doby by se Python a `priority.ts` rozešly.
   - Při všech třech na 50 se top 100 změní o 15 úseků.
 - **T19 NEAKTIVNÍ:** poctivě nejde. Stav povrchu má u 98 % úseků jediný průzkum (2022–2024), většinou až po opravě. Průzkum před opravou mají jen 3 úseky. Číslo by nic neříkalo, do pitche nedávat.
+
+### Sdílený server na Šimonově Macu (15. 10., ~12:45, Tomáš)
+Jeden Mac drží API i databázi (`backend/cesty.db`), ostatní se k němu připojí. Všichni tak vidí stejné účty, uzavírky a hlášení.
+
+**Šimon (Mac), jednorázově:**
+```bash
+brew install uv node cloudflared
+```
+
+**Spuštění:** dvojklik na `start-server.command` v kořeni repa (nebo `./start-server.command` v terminálu). Skript:
+1. stáhne `main` (`git pull --ff-only`, s neuloženými změnami pull přeskočí),
+2. vytvoří `.env` z `.env.example` a vygeneruje `CESTY_SECRET_KEY`,
+3. `uv sync` a `npm install`,
+4. backend na `127.0.0.1:8000`, web (Vite) na `0.0.0.0:5173`, `/api` jde přes Vite na backend,
+5. vypíše adresy: stejná Wi‑Fi `http://<IP Macu>:5173`, odkudkoli `https://….trycloudflare.com` (cloudflared, nutné pro telefony a push).
+
+Ctrl+C ukončí vše. Logy jsou v `.server-logs/` (v `.gitignore`). Volby: `NO_PULL=1`, `NO_TUNNEL=1`, `API_PORT=…`, `WEB_PORT=…`.
+
+**Ostatní:**
+- Jen používat: otevřít adresu, kterou skript vypsal.
+- Vyvíjet frontend proti Šimonově databázi: `CESTY_API_TARGET=https://….trycloudflare.com npm run dev` (nebo `http://<IP Macu>:5173`). Přihlášení přes tuto proxy funguje (ověřeno).
+
+**Poznámky:**
+- Adresa `trycloudflare.com` se mění při každém spuštění. Kdo ji potřebuje, vezme ji z výpisu.
+- macOS se při prvním spuštění zeptá, jestli Node smí přijímat spojení ze sítě: Povolit.
+- Na hackathonové Wi‑Fi bývají zařízení od sebe izolovaná. Pak funguje jen HTTPS adresa z tunelu.
+- Tunel je veřejný: admin a úředník jen po přihlášení. Demo účty jsou v `backend/app/db/seed.py`; před porotou zvážit změnu hesel.
+- `vite.config.ts`: přidané `allowedHosts` (`.trycloudflare.com`, `.ts.net`, `.local`) a `changeOrigin` u proxy. Bez toho Vite 7 adresu z tunelu odmítne (403).
+- Ověřeno na Windows (Git Bash): start, `/api` přes Vite, přihlášení a rozpočet přes druhý Vite (režim „kolega“), cizí `Host` dostane 403. Na Macu zatím nespuštěno.
