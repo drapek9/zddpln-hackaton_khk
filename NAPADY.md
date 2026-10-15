@@ -192,6 +192,38 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 
 ---
 
+## Část C: nápady k designu (Matouš, 15. 10. odpoledne)
+
+Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho se hned nedělá.
+
+### 14. Časová osa uzavírek na mapě
+- Posuvník s datem nad mapou. Mapa ukáže uzavírky a opravy platné v ten den (dnes, za týden, v listopadu).
+- **Proč:** úředník hned vidí souběh uzavírek (navazuje na č. 3), občan vidí, kdy ho to potká.
+- **Kdo:** Matouš (frontend). Data už jsou v opravách (`from`, `to`).
+
+### 15. Porovnání dvou rozpočtů vedle sebe
+- V rozpočtovém asistentu (č. 1) dvě částky vedle sebe, třeba 100 a 250 mil. Kč: kolik km, kolik havarijních km zůstane, které stavby přibudou.
+- **Proč:** zastupitelstvo rozhoduje o částce, ne o úsecích. Silný moment pro porotu z MF a ekonomické gesce.
+- **Kdo:** Matouš (obrazovka), výpočet je stejný jako č. 1.
+
+### 16. Plán staveb jako PDF pro zastupitelstvo
+- Tlačítko „Tisk / PDF“: mapa staveb, tabulka, předpoklady ceny a štítek „návrh, ne rozhodnutí“.
+- **Kdo:** Matouš (tiskový styl v CSS, bez backendu).
+
+### 17. Ranní souhrn „Moje cesty“
+- Po přihlášení jedna věta nahoře: „Dnes na vaší cestě: bez omezení“ nebo „od pondělí uzavírka II/300, objížďka +6 min“.
+- Navazuje na Web Push (v3). Bez přihlášení jen v prohlížeči.
+- **Kdo:** Matouš (frontend), Šimon (push), Tomáš (trasa po silnicích místo pásu kolem spojnice).
+
+### 18. Trasa po silnicích místo pásu kolem spojnice
+- „Moje cesty“ teď berou silnice v pásu 1,5 km kolem přímky domov–práce (odhad). Lepší je skutečná trasa z grafu (`Engine.route`), stejně jako objížďka.
+- **Kdo:** Tomáš (`core/`), Šimon endpoint `GET /api/route`.
+
+### 19. Srozumitelné názvy stavů v exportu
+- V UI teď „Rozpadlá vozovka“ místo „SUPERhavarijní“, „Opotřebovaná“ místo „nevyhovující“ atd. V datech kraje zůstávají původní hodnoty. Do exportu (č. 4) přidat oba sloupce: původní hodnota a název pro lidi.
+
+---
+
 ## Zamítnuto
 
 - Veřejný odkaz a QR ke každé uzavírce (pro web obce, zastávku). Stačí upozornění pro přihlášené.

@@ -299,7 +299,7 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 2. ~~**Nehody**~~ přesunuto do [NAPADY.md](NAPADY.md).
 3. ~~**Cena za km opravy**~~ vyřešeno 15. 10.: předpoklad podle stavu se zdroji, viz [NAPADY.md](NAPADY.md), č. 1.
 4. **Odpověď organizátorů** ke kódu připravenému předem.
-5. **Poskytovatel AI** a jestli klíč funguje už teď.
+5. **Poskytovatel AI** a jestli klíč funguje už teď. Návrh: kap. 14.2.
 6. Kdo po soutěži pohlídá odevzdání na `github.com/krhk`?
 7. Role (Šimon).
 
@@ -341,3 +341,74 @@ Vynecháváme `Omezení_v_autobusové_dopravě` (4 záznamy) a `Výluky_v_želez
 
 ### Priorita
 Pořadí: toky studentů → odříznuté obce → ukázky 2022 (rozhodnuto 15. 10.: Tomáš dělá hned, je to datový základ ★1). Když nestíháme, škrtá se **před** V2. Úkoly: Tomáš T13–T16, Šimon S12–S13 v `docs/BACKEND.md`, kap. 7.
+
+---
+
+## 14. Zkratky pro Tomáše a Šimona: přesné odkazy a AI (15. 10.)
+
+Hotové podklady, ať se nic nemusí dohledávat. Kapitoly 0–13 platí.
+
+### 14.1 Data: přesné odkazy
+
+**Data KHK (ArcGIS REST).** Základ pro všechny sady:
+`https://services6.arcgis.com/ogJAiK65nXL1mXAW/arcgis/rest/services/<Název_sady>/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson`
+Stránka sady pro „Zdroje dat“: `https://www.datakhk.cz/datasets/<itemId>_0`. Stránkování: `resultOffset` + `resultRecordCount=2000` (už umí `scripts/fetch_khk_extra.py`).
+
+| Sada | itemId (stránka na Data KHK) | Kdo, kde |
+|---|---|---|
+| `Stav_povrchu_silnic` | [311df195461541069a5690e9491eb092](https://www.datakhk.cz/datasets/311df195461541069a5690e9491eb092_0) | Tomáš, `scripts/fetch-data.mjs` (hotovo) |
+| `Dojížďka_do_středních_škol` | [c62b3bf8a0dd40b4b1d70bc419d5d6e4](https://www.datakhk.cz/datasets/c62b3bf8a0dd40b4b1d70bc419d5d6e4_0) | Tomáš T13–T14, `scripts/fetch_khk_extra.py` |
+| `Obce` | [70564613fe434f149655e79a85e94efc](https://www.datakhk.cz/datasets/70564613fe434f149655e79a85e94efc_0) | Tomáš T13, T15; Šimon S13 |
+| `Plánované_opravy_silniční_infrastruktury_na_rok_2022_liniové` | [1915aa2911d74672a6ab58d5b615055b](https://www.datakhk.cz/datasets/1915aa2911d74672a6ab58d5b615055b_0) | Tomáš T16; Šimon S13 |
+| `Záplavové_území_stoleté_vody` (+ pětileté, dvacetileté) | [7d93751a3221478ca39a6e1ca6578047](https://www.datakhk.cz/datasets/7d93751a3221478ca39a6e1ca6578047_0) | jen [NAPADY.md](NAPADY.md) č. 7 |
+| `Výjezdové_základny_zdravotnické_záchranné_služby` | [1c28da5d644445d3a5f4b578ce22ed40](https://www.datakhk.cz/datasets/1c28da5d644445d3a5f4b578ce22ed40_0) | varování IZS, NAPADY č. 2 |
+| `Stanice_a_pracoviště_hasičského_záchranného_systému` | [3ff2f49c7f454870baf51628403ace6e](https://www.datakhk.cz/datasets/3ff2f49c7f454870baf51628403ace6e_0) | varování IZS, NAPADY č. 2 |
+
+Ostatní sady v1 (názvy služeb) jsou v `LAYERS` v `scripts/fetch-data.mjs`. Katalog kraje pro DCAT: `https://open.datakhk.cz/katalog.jsonld`.
+
+**Externí:**
+| Zdroj | Odkaz | Licence | Kde v kódu |
+|---|---|---|---|
+| ŘSD sčítání 2025 (XLSX) | `https://www.rsd.cz/documents/38144/3734982/V2_CSD_2025_20260826.xlsx/`, stránka `https://www.rsd.cz/silnice-a-dalnice/scitani-dopravy` | CC BY-SA | `scripts/fetch_rsd_counts.py` → `public/data/intensity.json` (T7, běží) |
+| ŘSD SRTI uzavírky | [NKOD](https://data.gov.cz/datová-sada?iri=https://data.gov.cz/zdroj/datové-sady/65993390/1087749998) | CC BY 4.0 | zatím nic; když bude čas, Šimon jako `GET /api/uzavirky?zdroj=srti` |
+| OSM silnice I. třídy | `https://overpass-api.de/api/interpreter` | ODbL (uvést „© přispěvatelé OpenStreetMap“) | `scripts/fetch_osm_roads.py` → `public/data/osm_roads.json` |
+
+Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s licencí a odkazem.
+
+### 14.2 AI: co, kde, kdo
+
+**Doporučený poskytovatel:** Anthropic Claude přes oficiální SDK `anthropic` (Python).
+- Model `claude-haiku-5-5` pro všechno (rychlý a levný, stačí na krátké texty a JSON). `claude-sonnet-5-5` jen když bude oznámení znít špatně.
+- Záloha: Azure OpenAI, pokud partner Microsoft na místě dá kredit. Díky jednomu rozhraní se mění jen `.env`.
+- `.env` (už je v `.env.example`): `AI_PROVIDER=anthropic|azure|none`, `AI_API_KEY`, `AI_MODEL=claude-haiku-5-5`, `AI_ENDPOINT` (jen Azure). Klíč nikdy do gitu ani do frontendu.
+- `uv add anthropic` v `backend/` (Šimon).
+
+**Struktura `backend/app/ai/` (vlastní Šimon, úkol S10):**
+| Soubor | Co dělá |
+|---|---|
+| `provider.py` | Jedna funkce `complete_json(system, user, schema) -> dict \| None`. Volá model s nástrojem (tool use) s JSON schématem, timeout 8 s. Při chybě, timeoutu nebo `AI_PROVIDER=none` vrátí `None`. |
+| `prompts.py` | 4 systémové prompty, česky, krátké. Každý říká: „Používej jen čísla ze vstupu. Nic nevymýšlej.“ |
+| `fallback.py` | Šablony bez AI pro všechny 4 použití. Když `complete_json` vrátí `None`, použije se šablona. |
+| `cache.py` | Výsledek podle `hash(vstup)` v SQLite. Při demu se nic nevolá dvakrát a funguje i bez Wi‑Fi, pokud se demo jednou proklikne předem. |
+
+**4 použití, vstupy a výstupy:**
+| # | Endpoint (Šimon) | Vstup z `Engine` (Tomáš, už existuje) | Výstup (JSON schéma) | Obrazovka (Matouš) | Kdy |
+|---|---|---|---|---|---|
+| 1 | `POST /api/ai/zduvodneni {road_id}` | `breakdown(road_id)`, `road(road_id)` | `{text, faktory_pouzite[]}` | Detail úseku, Top N | 12:30–15:00, první |
+| 2 | `POST /api/ai/oznameni {road_id, od, do}` | `closure_impact(...)`, `detour(road_id)` | `{titulek, text, objizdka_popis}` | Simulátor uzavírky (★1), nahradí šablonu z `src/lib/announce.ts` | druhé |
+| 3 | `POST /api/ai/vahy {text}` | aktuální `Weights` | `{vahy: {faktor: 0–100}, duvod}` | Váhy, tlačítko „Navrhnout z textu“ | třetí, škrtá se první |
+| 4 | `POST /api/ai/hlaseni {text, lon, lat}` | nejbližší úsek (Tomáš: helper `nearest_road(lon, lat)`, zatím chybí) | `{typ: enum, zavaznost: 1–3, road_id}` | Fronta hlášení | jen když zbude čas |
+
+**Pravidla, která drží porotu (kap. 1, body 10 a 11):**
+- AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
+- Každý AI text má ve UI štítek **„návrh AI“** a tlačítko „Použít“ nebo „Upravit“. Bez potvrzení člověkem se nic neuloží ani neodešle.
+- Text od občana (použití 4) jde do modelu jako data v `<hlaseni>…</hlaseni>`. Výstup je jen enum a čísla; nic se z něj nespouští.
+- Audit: kdo potvrdil AI návrh a kdy (Šimonův audit log).
+
+**Pořadí práce, ať AI nebrzdí MVP:**
+1. Šimon: `fallback.py` + endpoint 1 a 2 **jen se šablonou** (15 min). Matouš může hned napojit UI.
+2. Šimon: `provider.py` s Claude, zapnout přes `.env`. Ověřit 1 voláním z terminálu.
+3. Tomáš: zkontrolovat, že `breakdown` a `closure_impact` vrací vše, co prompt potřebuje (čísla, názvy obcí, počty). Doplnit jen přidáním polí do `schemas.py`.
+4. Demo: proklikat 2–3 ukázkové uzavírky předem, aby byly v `cache.py`.
+
+Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho, jaký klíč máme.
