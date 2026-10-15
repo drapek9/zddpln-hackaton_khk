@@ -1198,3 +1198,23 @@ kbd { font-family: var(--font); font-size: 11px; font-weight: 600; padding: 1px 
   .filter-toggle { padding: 4px 8px; }
   .params-body { max-height: 50vh; overflow: auto; }
 }
+
+/* Přihlášení na /sprava a /admin, stránka 404 a chyba (kap. 25.8, 25.9). Každá adresa má jiný vzhled. */
+.staff-login { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); }
+.staff-card { width: min(400px, 100%); display: grid; gap: 12px; padding: 28px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12); }
+.staff-card h1 { margin: 0; font-family: "Fraunces", serif; font-size: 26px; line-height: 1.15; }
+.staff-card > .muted { margin: 0; }
+.staff-tag { justify-self: start; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--accent-soft); color: var(--accent); }
+.staff-card .auth-form input[type="text"] { width: 100%; border: 1px solid var(--line-strong); background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; font-size: 15px; outline: none; }
+.staff-card .auth-form input:focus { border-color: var(--accent); }
+.staff-card .fine { margin: 0; text-align: center; }
+.staff-back { justify-self: start; }
+/* /sprava: pracovní petrolejový pruh nahoře */
+.staff-sprava { background: linear-gradient(180deg, #0b4f4e 0, #0b4f4e 38vh, var(--bg) 38vh); }
+.staff-sprava .staff-card { border-top: 4px solid var(--accent); }
+/* /admin: neutrální šedá, malý formulář */
+.staff-admin { background: repeating-linear-gradient(135deg, var(--bg) 0 14px, var(--surface-2) 14px 28px); }
+.staff-admin .staff-card { width: min(360px, 100%); border-top: 4px solid #4b5563; }
+.staff-admin .staff-tag { background: rgba(75, 85, 99, 0.12); color: var(--text-2); }
+.staff-admin .btn.primary { background: #374151; border-color: #374151; }
+.missing-links { display: flex; flex-wrap: wrap; gap: 8px; }

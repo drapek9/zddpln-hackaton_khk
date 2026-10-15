@@ -3,6 +3,7 @@ import LoginCard from "./LoginCard";
 import { ThemeToggle } from "../lib/theme";
 import { ROLE_LABEL, type User } from "../lib/auth";
 import type { View } from "../App";
+import { homeOf, navigate } from "../lib/route";
 
 type Props = {
   user: User | null;
@@ -49,7 +50,7 @@ export default function Landing({ user, offline, note, onUser, onDemo, onNavigat
                 <small>{ROLE_LABEL[user.role]}</small>
               </span>
             </div>
-            <button className="btn primary auth-submit" onClick={() => onNavigate(office ? "office" : "public")}>
+            <button className="btn primary auth-submit" onClick={() => (office && user ? navigate(homeOf(user.role)) : onNavigate("public"))}>
               {office ? "Pokračovat do správy →" : "Otevřít mapu →"}
             </button>
             {office && (

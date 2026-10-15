@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { AuthError, login, register, type User } from "../lib/auth";
 import type { View } from "../App";
+import { navigate } from "../lib/route";
 
 type Props = {
   /** Server s přihlášením neběží: demo vstup je jediná cesta do správy. */
@@ -146,8 +147,18 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
           <button className="btn auth-public" onClick={onPublic}>
             Pokračovat bez přihlášení →
           </button>
+          {!offline && (
+            <p className="fine auth-staff">
+              Pracujete na úřadě?{" "}
+              <a href="/sprava" onClick={(e) => { e.preventDefault(); navigate("/sprava"); }}>
+                Přihlášení do správy
+              </a>
+            </p>
+          )}
 
-          {/* Ukázka správy bez účtu (rozhodnutí Matouše 15. 10.): nic nezapisuje na server, jen do prohlížeče. */}
+          {/* Ukázka správy bez účtu (rozhodnutí Matouše 15. 10.): nic nezapisuje na server, jen do prohlížeče.
+              Od 15:40 jen když server neběží; s ním se jde na /sprava a /admin s vlastním přihlášením (kap. 25.8). */}
+          {offline && (
           <div className="auth-demo">
             <span>Ukázka správy bez účtu</span>
             <div className="auth-demo-btns">
@@ -160,6 +171,7 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
             </div>
             <small>Změny se ukládají jen v tomto prohlížeči.</small>
           </div>
+          )}
         </section>
   );
 }

@@ -4,6 +4,9 @@ import AdminApp from "./components/AdminApp";
 import PublicApp from "./components/PublicApp";
 import Sources from "./components/Sources";
 import Privacy from "./components/Privacy";
+import StaffLogin from "./components/StaffLogin";
+import NotFound from "./components/NotFound";
+import { areaOf, homeOf, navigate, onRoute } from "./lib/route";
 import { loadDataset } from "./lib/data";
 import { loadLocalRepairs, loadReports, saveRepairs, saveReports } from "./lib/store";
 import { logout, me, onUnauthorized, type Session, type User } from "./lib/auth";
@@ -23,6 +26,9 @@ export default function App() {
   const [loginNote, setLoginNote] = useState("");
   // Ukázka správy bez účtu: roli úřadu jde zvolit ručně (tlačítka Demo na přihlášení). Na server nic nezapisuje.
   const [demoRole, setDemoRole] = useState<OfficeRole | null>(null);
+  // Adresa: "/" veřejnost, "/sprava" úředník, "/admin" admin (kap. 25).
+  const [area, setArea] = useState(() => areaOf(window.location.pathname));
+  useEffect(() => onRoute(() => setArea(areaOf(window.location.pathname))), []);
 
   useEffect(() => {
     loadDataset()
@@ -54,7 +60,11 @@ export default function App() {
     setSession({ status: "user", user: next });
     setDemoRole(null);
     setLoginNote("");
-    setView(next.role === "citizen" ? "public" : "office");
+    // Na /sprava a /admin zůstaneme (špatná role uvidí „Nemáte oprávnění“), z "/" jdeme na domovskou adresu role.
+    if (areaOf(window.location.pathname) === "public") {
+      if (next.role === "citizen") setView("public");
+      else navigate(homeOf(next.role));
+    }
   };
 
   const signOut = async () => {
@@ -64,6 +74,11 @@ export default function App() {
     setView("home");
   };
 
+  useEffect(() => {
+    const titles = { public: "Cesty KHK – mapa silnic", sprava: "Správa silnic – Cesty KHK", admin: "Administrace – Cesty KHK", missing: "Stránka neexistuje – Cesty KHK" };
+    document.title = titles[area];
+  }, [area]);
+
   if (error) {
     return (
       <div className="boot">
@@ -72,12 +87,48 @@ export default function App() {
       </div>
     );
   }
+  if (area === "missing") return <NotFound />;
   if (!data || !session) {
     return (
       <div className="boot">
         <h1>Cesty KHK</h1>
         <p>Načítám silnice, zastávky, školy a nemocnice kraje…</p>
       </div>
+    );
+  }
+
+  // /sprava a /admin: vlastní přihlášení, bez registrace a bez demo vstupu (kap. 25.8).
+  if (area === "sprava" || area === "admin") {
+    const allowed = !!user && (area === "admin" ? user.role === "admin" : user.role !== "citizen");
+    if (!allowed) {
+      return (
+        <StaffLogin
+          area={area}
+          denied={user}
+          offline={offline}
+          note={loginNote}
+          onUser={enterAs}
+          onLogout={signOut}
+        />
+      );
+    }
+    return (
+      <AdminApp
+        key={area}
+        data={data}
+        role={area === "admin" ? "admin" : "official"}
+        user={user}
+        onLogout={async () => {
+          await signOut();
+          navigate(area === "admin" ? "/admin" : "/sprava");
+        }}
+        repairs={repairs}
+        onRepairs={(next) => {
+          setRepairs(next);
+          saveRepairs(next);
+        }}
+        onHome={() => navigate("/")}
+      />
     );
   }
 
