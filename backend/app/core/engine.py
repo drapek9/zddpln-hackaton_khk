@@ -32,6 +32,7 @@ class Engine:
         self._demo: list[DemoClosure] | None = None
         self._demo_lock = threading.Lock()
         self._road_grid: dict[tuple[int, int], list[tuple[float, float, int]]] | None = None
+        self._grid_lock = threading.Lock()
         self._stavby: list[Stavba] | None = None
         self._stavby_lock = threading.Lock()
         self._rescue: Rescue | None = None
@@ -84,9 +85,9 @@ class Engine:
     def _ensure_factors(self, weights: Weights | None) -> Weights:
         """Attach T20 values to the road dicts (road["factors"]) when a T20 weight is on.
 
-        detour_min = extra minutes of the single-úsek detour (None = no detour, the
-        closure cuts the network), students = students per day (Data KHK flows).
-        First call ~10 s (all detours and student flows), then cached.
+        detour_min = extra minutes of the single-úsek detour (None = none computed),
+        cut_off = no detour exists, the closure cuts the network, students = students
+        per day (Data KHK flows). First call ~5 s, then cached (see warmup).
         """
         w = weights or Weights()
         if w.detour or w.students:
@@ -100,9 +101,14 @@ class Engine:
         with self._factors_lock:
             if not self._factors_ready:
                 for road in self.data.roads:
-                    d = self.graph.detour(road["id"]) if road["id"] in self.graph.road_ends else None
+                    ends = self.graph.road_ends.get(road["id"])
+                    # A loop úsek (starts and ends in one node) or one outside the graph
+                    # has no detour to compute: unknown, not "cut off".
+                    d = self.graph.detour(road["id"]) if ends and ends[0] != ends[1] else None
                     road["factors"] = {
                         "detour_min": d.extra_min if d is not None and d.found else None,
+                        # No detour in the graph = the closure cuts the network: max points.
+                        "cut_off": d is not None and not d.found,
                         "students": people.students_on(road["id"]),
                     }
                 self._factors_ready = True
@@ -217,7 +223,7 @@ class Engine:
                 if not s.detour.found:
                     s.warnings.append("Objížďka nenalezena: úplná uzavírka by odřízla část sítě.")
                 elif (s.detour.extra_km or 0) > 15:
-                    s.warnings.append(f"Dlouhá objížďka: +{s.detour.extra_km:.1f} km.")
+                    s.warnings.append(f"Dlouhá objížďka: +{s.detour.extra_km:.1f} km.".replace(".", ",", 1))
         hav = lambda s: sum(km for st, km in s.stav_km.items() if st in budget.HAVARIJNI)  # noqa: E731
         hav_total = sum(
             r["delka"]
@@ -237,7 +243,7 @@ class Engine:
             prices_kc_per_km=p,
             order="score" if order == "score" else "per_kc",
             okres=okres,
-            note="Ceny za km jsou předpoklad (CDV, Liberecký kraj), ne rozpočet. "
+            note="Ceny za km jsou odhad (CDV, Liberecký kraj), ne rozpočet. "
             "Pořadí a poměry platí, přesné částky ne.",
         )
 
@@ -358,7 +364,7 @@ class Engine:
             date_to = demo.parse_term(plan.get("do"), end=True)
             item = DemoClosure(
                 id=i,
-                nazev=(plan.get("nazev") or "").strip(),
+                nazev=" ".join((plan.get("nazev") or "").split()),
                 silnice=plan.get("silnice") or "",
                 staniceni=plan.get("staniceni") or "",
                 typ_uzavirky=typ,
@@ -406,17 +412,27 @@ class Engine:
             out.append(item)
 
         # Three different stories for the demo: most students, most vehicles, longest detour.
+        # A closure is picked once, so a later pick may be only the second best: say so.
         good = [c for c in out if c.detour and c.detour.found and c.people and c.matched_share >= 0.5]
         picks = [
-            ("Nejvíc středoškoláků denně", lambda c: c.people.students_per_day),
-            ("Nejvíc vozidel denně (sčítání ŘSD 2025)", lambda c: c.vehicles_per_day if c.vehicles_src == "csd2025" else 0),
-            ("Nejdelší objížďka", lambda c: c.detour.extra_min or 0),
+            ("středoškoláků denně", lambda c: c.people.students_per_day, lambda v: f"{_num(v)} studentů"),
+            (
+                "vozidel denně",
+                lambda c: c.vehicles_per_day if c.vehicles_src == "csd2025" else 0,
+                lambda v: f"{_num(v)} vozidel, sčítání ŘSD 2025",
+            ),
+            ("objížďka", lambda c: c.detour.extra_min or 0, lambda v: f"+{v:.0f} min"),
         ]
-        for reason, key in picks:
+        for what, key, fmt in picks:
             rest = [c for c in good if not c.recommended and key(c) > 0]
             if rest:
                 best = max(rest, key=key)
-                best.recommended, best.recommended_reason = True, reason
+                top = max(key(c) for c in good) == key(best)
+                if what == "objížďka":
+                    head = "Nejdelší objížďka" if top else "Dlouhá objížďka"
+                else:
+                    head = f"{'Nejvíc' if top else 'Hodně'} {what}"
+                best.recommended, best.recommended_reason = True, f"{head} ({fmt(key(best))})"
         return out
 
     def srti_closures(self, on: str | None = None, active_only: bool = False) -> list[SrtiClosure]:
@@ -468,14 +484,20 @@ class Engine:
 
     def _grid(self) -> dict[tuple[int, int], list[tuple[float, float, int]]]:
         """Road vertices in 200 m cells (for SRTI snapping). Built once."""
-        if self._road_grid is None:
-            grid: dict[tuple[int, int], list[tuple[float, float, int]]] = {}
-            for r in self.data.roads:
-                for lon, lat in r["g"]:
-                    x, y = to_xy((lon, lat))
-                    grid.setdefault((int(x // 200), int(y // 200)), []).append((x, y, r["id"]))
-            self._road_grid = grid
+        if self._road_grid is not None:
+            return self._road_grid
+        with self._grid_lock:
+            if self._road_grid is None:
+                self._road_grid = self._build_grid()
         return self._road_grid
+
+    def _build_grid(self) -> dict[tuple[int, int], list[tuple[float, float, int]]]:
+        grid: dict[tuple[int, int], list[tuple[float, float, int]]] = {}
+        for r in self.data.roads:
+            for lon, lat in r["g"]:
+                x, y = to_xy((lon, lat))
+                grid.setdefault((int(x // 200), int(y // 200)), []).append((x, y, r["id"]))
+        return grid
 
     def route(self, home: LonLat, work: LonLat, closed: Iterable[int] = ()) -> RouteResult:
         """Fastest route between two points. `closed` = road ids to avoid."""
@@ -486,6 +508,11 @@ class Engine:
         if road is None:
             raise KeyError(f"Unknown road id {road_id}")
         return road
+
+
+def _num(n: float) -> str:
+    """Czech thousands separator: 8246 -> '8 246' (no-break space)."""
+    return f"{round(n):,}".replace(",", " ")
 
 
 def _road_label(road: dict[str, Any]) -> str:

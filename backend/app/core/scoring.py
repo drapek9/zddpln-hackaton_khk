@@ -76,8 +76,7 @@ def _raw_parts(road: dict[str, Any], w: Weights, votes: int, this_year: int | No
         sv = (road.get("intensity") or {}).get("sv") or 0
         parts.append(("intensity", "Intenzita dopravy", min(sv / INTENSITY_PER_POINT, 20) * w.intensity / 100))
     if w.detour:
-        extra = f.get("detour_min")
-        pts = DETOUR_CUT_OFF_POINTS if extra is None and "detour_min" in f else min(extra or 0, 30) * 0.8
+        pts = DETOUR_CUT_OFF_POINTS if f.get("cut_off") else min(f.get("detour_min") or 0, 30) * 0.8
         parts.append(("detour", "Délka objížďky", pts * w.detour / 100))
     if w.students:
         parts.append(("students", "Středoškoláci denně", min(f.get("students", 0) / STUDENTS_PER_POINT, 24) * w.students / 100))

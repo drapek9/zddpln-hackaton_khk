@@ -645,6 +645,8 @@ Pořadí: **S21 → S22 → S23 → S24** (jakmile je T21) → S25 → S26. Pak 
 
 Pořadí: **T21 → T22 → T23**, T24 až po D1 a D6.
 
+**Stav ~14:00 (větev `tomas`):** T21 ✅ `Engine.warmup()` (asi 9 s při startu, pak první žebříček s vahami T20 0,16 s místo 5 s). T22 ✅ 22 úseků bez duplicitních obcí, skóre beze změny. T23 ✅ `scripts/smoke_api.sh`, na `main` 24/24 volání OK. T24 čeká na D1 a D6. Navíc: štítky tří doporučených uzavírek 2022 už netvrdí „nejvíc“, když to není pravda, a mají čísla. **Šimon (S24):** v lifespanu nahradit `engine.people` a `engine.demo_closures()` jedním `engine.warmup()` (vrací sekundy po krocích, hodí se do logu).
+
 ### 19.5 Kdy je hotovo
 - Úředník v prohlížeči vidí žebříček z API (štítek „živá data“), piny přežijí obnovení stránky.
 - Simulátor ukáže objížďku, auta za den, studenty, odříznuté obce a dojezd ZZS z `POST /api/closures/preview`.

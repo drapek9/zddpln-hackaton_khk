@@ -353,3 +353,33 @@ def test_road_obce_are_unique_ignoring_case(engine: Engine) -> None:
     """T22: the layers spell some obce in two ways ("Hradec králové")."""
     dupes = [r["id"] for r in engine.data.roads if len({o.lower() for o in r["obce"]}) < len(r["obce"])]
     assert dupes == []
+
+
+def test_detour_factor_cut_off_only_when_network_is_cut(engine: Engine) -> None:
+    """Review 15 Oct: a loop úsek got the cut-off maximum; it has no detour to compute."""
+    engine.warmup()
+    loops = [r for r in engine.data.roads if (e := engine.graph.road_ends.get(r["id"])) and e[0] == e[1]]
+    assert loops and not any(r["factors"]["cut_off"] for r in loops)
+    cut = [r for r in engine.data.roads if r["factors"]["cut_off"]]
+    assert cut and all(r["factors"]["detour_min"] is None for r in cut)
+
+
+def test_stavby_never_longer_than_max(engine: Engine) -> None:
+    from app.core import budget
+
+    assert max(s.km for s in engine.stavby()) <= budget.MAX_KM + 1e-9
+
+
+def test_rescue_czech_plural() -> None:
+    from app.core.rescue import _obce
+
+    assert [_obce(n) for n in (1, 3, 5, 11, 21, 22, 25, 112)] == [
+        "1 obec", "3 obce", "5 obcí", "11 obcí", "21 obcí", "22 obcí", "25 obcí", "112 obcí",
+    ]
+
+
+def test_rescue_obec_on_closure_never_faster(engine: Engine) -> None:
+    """Review 15 Oct: an obec on the closed stretch was dropped as 'faster after closure'."""
+    for c in engine.demo_closures():
+        if c.rescue:
+            assert all(r.extra_min is None or r.extra_min >= 0 for r in c.rescue.obce)
