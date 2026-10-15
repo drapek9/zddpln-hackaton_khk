@@ -1,0 +1,1 @@
+"""SQLite persistence. Owner: Šimon."""
