@@ -82,3 +82,9 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 
 ### Pravidlo pro AI agenty
 Před každým blokem práce: `git fetch`, přečíst změny v `PLAN_FINAL.md` a tomto souboru na `origin/main`. Do plánů jen přidávat, nic nemazat. Zastaralé věci označit **NEAKTIVNÍ**.
+
+---
+
+## 5. Průběžné poznámky
+
+- **15. 10., ~9:45 (Tomáš):** T6 `closure_impact` je hotové a pushnuté na větev `tomas` (`990270c`), 10/10 testů. Šimon ho může volat z S5 hned, viz `docs/BACKEND.md`, „Stav 15. 10.“. Další podle kap. 4: T13 data → T14 toky studentů → T7 → T16.
