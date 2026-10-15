@@ -40,6 +40,8 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
   // Výpočet jádra na serveru (F8). Bere jen částku a váhy účtu, okres a ceny z panelu nezná.
   const [server, setServer] = useState<ServerState>({ status: online ? "loading" : "off" });
   const [showServer, setShowServer] = useState(false);
+  // Porovnání dvou částek (kap. 25.2): stejné stavby a ceny, jen jiný rozpočet.
+  const [compareTo, setCompareTo] = useState<number | null>(null);
   useEffect(() => {
     if (!online) return;
     const ctrl = new AbortController();
@@ -70,6 +72,33 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
   const okresy = useMemo(() => ["vše", ...Array.from(new Set(data.roads.map((r) => r.okres))).sort()], [data.roads]);
   const stavby = useMemo(() => buildStavby(data.roads, weights, focus, prices, okres), [data.roads, weights, focus, prices, okres]);
   const plan = useMemo(() => planBudget(stavby, budget, data.roads, strategy), [stavby, budget, data.roads, strategy]);
+  const planB = useMemo(
+    () => (compareTo != null ? planBudget(stavby, compareTo, data.roads, strategy) : null),
+    [stavby, compareTo, data.roads, strategy],
+  );
+
+  // Export vybraných staveb do CSV pro Excel (středník, BOM kvůli češtině). Ceny jsou předpoklad.
+  const exportCsv = () => {
+    const head = ["poradi", "silnice", "okres", "delka_km", "cena_mil_kc_predpoklad", "skore", "nejhorsi_stav", "useky_id"];
+    const rows = plan.chosen.map((s, i) => [
+      i + 1,
+      formatSil(s.sil, s.trida),
+      s.okres,
+      s.km.toFixed(2).replace(".", ","),
+      s.cost.toFixed(1).replace(".", ","),
+      s.score,
+      stavLabel(s.worst),
+      s.roadIds.join(" "),
+    ]);
+    const esc = (v: string | number) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+    const csv = "﻿" + [head, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `plan-oprav-${budget}-mil-${okres === "vše" ? "kraj" : okres}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   const highlight = useMemo(
     () => (showServer && serverPlan ? serverPlan.projects.flatMap((p) => p.road_ids) : plan.chosen.flatMap((s) => s.roadIds)),
@@ -235,6 +264,46 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
           <small>opraví se {badFixedPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} % havarijních a rozpadlých km</small>
         </div>
 
+        <Fold title="Porovnat s jinou částkou" meta={compareTo != null ? formatMil(compareTo) : undefined}>
+          <div className="chips">
+            {PRESETS.filter((p) => p !== budget).map((p) => (
+              <button key={p} className={`chip-btn ${compareTo === p ? "on" : ""}`} onClick={() => setCompareTo(compareTo === p ? null : p)}>
+                {formatMil(p)}
+              </button>
+            ))}
+          </div>
+          {planB && compareTo != null ? (
+            <table className="compare">
+              <thead>
+                <tr>
+                  <th />
+                  <th>{formatMil(budget)}</th>
+                  <th>{formatMil(compareTo)}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Opravíme</td>
+                  <td>{plan.kmFixed.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km</td>
+                  <td>{planB.kmFixed.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km</td>
+                </tr>
+                <tr>
+                  <td>Staveb</td>
+                  <td>{plan.chosen.length}</td>
+                  <td>{planB.chosen.length}</td>
+                </tr>
+                <tr>
+                  <td>Havarijních km zůstane</td>
+                  <td>{plan.kmBadLeft.toLocaleString("cs-CZ", { maximumFractionDigits: 0 })}</td>
+                  <td>{planB.kmBadLeft.toLocaleString("cs-CZ", { maximumFractionDigits: 0 })}</td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <p className="fine">Vyberte druhou částku. Porovnání bere stejné stavby, okres a ceny.</p>
+          )}
+        </Fold>
+
         <Fold
           title="Výpočet serveru (jádro)"
           meta={
@@ -346,11 +415,11 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
           </ul>
         </Fold>
         <div className="row-actions">
-          <button className="btn primary" disabled title="Uložení plánu přijde s backendem (POST /api/budget)">
-            Uložit jako návrh plánu
-          </button>
-          <button className="btn" disabled title="Export připravujeme">
+          <button className="btn primary" disabled={!plan.chosen.length} onClick={exportCsv} title="Vybrané stavby do tabulky (Excel)">
             Export CSV
+          </button>
+          <button className="btn" onClick={() => window.print()} title="Vytisknout nebo uložit jako PDF">
+            Tisk
           </button>
         </div>
       </aside>

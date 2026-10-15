@@ -12,23 +12,52 @@ const STAV_SCORE: Record<string, number> = {
 
 const THIS_YEAR = new Date().getFullYear();
 
-export function roadScore(road: Road, weights: Weights) {
+/** Body skóre po faktorech, stejný vzorec jako roadScore. Slouží k větě „proč je úsek vysoko“. */
+export function scoreParts(road: Road, weights: Weights): { key: keyof Weights; points: number }[] {
   const c = road.counts || {};
   const yearsAgo = road.lastRepair ? Math.min(THIS_YEAR - road.lastRepair, 12) : 10;
-  const raw =
-    ((STAV_SCORE[road.stav] ?? 20) * weights.stav) / 100 +
-    ((road.worse ? 18 : 0) * weights.worse) / 100 +
-    ((road.trida?.includes("2") ? 14 : 4) * weights.trida) / 100 +
-    Math.min((c.school || 0) * 4, 28) * (weights.schools / 100) +
-    Math.min((c.hospital || 0) * 12 + (c.doctor || 0) + (c.social || 0) * 2, 36) *
-      (weights.hospitals / 100) +
-    Math.min((c.zzs || 0) * 10 + (c.hzs || 0) * 8 + (c.police || 0) * 4, 32) *
-      (weights.rescue / 100) +
-    Math.min((c.stop || 0) * 1.2 + road.lines.length * 3, 28) * (weights.transit / 100) +
-    Math.min((c.industry || 0) * 8, 20) * (weights.industry / 100) +
-    ((road.hsoo?.length ? 12 : 0) * weights.social) / 100 +
-    Math.min(yearsAgo * 4, 32) * (weights.age / 100);
-  return Math.round(raw);
+  return [
+    { key: "stav", points: ((STAV_SCORE[road.stav] ?? 20) * weights.stav) / 100 },
+    { key: "worse", points: ((road.worse ? 18 : 0) * weights.worse) / 100 },
+    { key: "trida", points: ((road.trida?.includes("2") ? 14 : 4) * weights.trida) / 100 },
+    { key: "schools", points: Math.min((c.school || 0) * 4, 28) * (weights.schools / 100) },
+    {
+      key: "hospitals",
+      points: Math.min((c.hospital || 0) * 12 + (c.doctor || 0) + (c.social || 0) * 2, 36) * (weights.hospitals / 100),
+    },
+    { key: "rescue", points: Math.min((c.zzs || 0) * 10 + (c.hzs || 0) * 8 + (c.police || 0) * 4, 32) * (weights.rescue / 100) },
+    { key: "transit", points: Math.min((c.stop || 0) * 1.2 + road.lines.length * 3, 28) * (weights.transit / 100) },
+    { key: "industry", points: Math.min((c.industry || 0) * 8, 20) * (weights.industry / 100) },
+    { key: "social", points: ((road.hsoo?.length ? 12 : 0) * weights.social) / 100 },
+    { key: "age", points: Math.min(yearsAgo * 4, 32) * (weights.age / 100) },
+  ];
+}
+
+export function roadScore(road: Road, weights: Weights) {
+  return Math.round(scoreParts(road, weights).reduce((s, p) => s + p.points, 0));
+}
+
+const REASON: Partial<Record<keyof Weights, (road: Road) => string>> = {
+  stav: (r) => `Povrch ve stavu ${stavLabel(r.stav)}`,
+  worse: () => "Stav se zhoršuje",
+  trida: (r) => `Důležitá silnice (${r.trida})`,
+  schools: () => "Vede ke školám",
+  hospitals: () => "Vede k nemocnici a lékařům",
+  rescue: () => "Jezdí tudy záchranáři a hasiči",
+  transit: (r) => {
+    const n = r.lines.length;
+    if (!n) return "Zastávky autobusů";
+    return n === 1 ? "Jezdí tudy 1 autobusová linka" : n < 5 ? `Jezdí tudy ${n} autobusové linky` : `Jezdí tudy ${n} autobusových linek`;
+  },
+  industry: () => "Vede k průmyslu",
+  social: () => "Vede ohroženou oblastí",
+  age: (r) => (r.lastRepair ? `Naposledy opraveno ${r.lastRepair}` : "Dlouho bez opravy"),
+};
+
+/** Jedna věta: největší faktor skóre (kap. 25.2). Váhy jen ze serveru (D6) lokální vzorec nezná. */
+export function mainReason(road: Road, weights: Weights): string {
+  const top = scoreParts(road, weights).sort((a, b) => b.points - a.points)[0];
+  return top && top.points > 0 ? REASON[top.key]?.(road) ?? "" : "";
 }
 
 export type Alert = {

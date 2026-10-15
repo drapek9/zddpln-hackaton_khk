@@ -112,6 +112,10 @@ export type Weights = {
   industry: number;
   social: number;
   age: number;
+  /** D6 (T20): vozidla za den, délka objížďky, studenti. Počítá jen server, lokální výpočet je ignoruje. */
+  intensity: number;
+  detour: number;
+  students: number;
 };
 
 export type Dataset = {
@@ -158,4 +162,41 @@ export const DEFAULT_WEIGHTS: Weights = {
   industry: 45,
   social: 40,
   age: 50,
+  intensity: 0,
+  detour: 0,
+  students: 0,
 };
+
+/** Váhy, které umí jen výpočet na serveru (D6). */
+export const SERVER_ONLY_WEIGHTS: (keyof Weights)[] = ["intensity", "detour", "students"];
+
+/**
+ * Předvolby vah pro režim „Jednoduché“ (kap. 25.2). Jsou jen v prohlížeči, ne z kraje:
+ * výchozí jsou vždy váhy kraje, předvolba je jen rychlý start pro úředníka.
+ */
+export const WEIGHT_PRESETS: { key: string; label: string; hint: string; weights: Partial<Weights> }[] = [
+  {
+    key: "stav",
+    label: "Hlavně stav silnice",
+    hint: "Nejhorší povrch a zhoršování první.",
+    weights: { stav: 100, worse: 90, trida: 40, schools: 30, hospitals: 30, rescue: 30, transit: 30, industry: 20, social: 20, age: 80, intensity: 0, detour: 0, students: 0 },
+  },
+  {
+    key: "zachranka",
+    label: "Záchranka a nemocnice",
+    hint: "Úseky ke zdravotnictví a IZS.",
+    weights: { stav: 70, worse: 50, trida: 40, schools: 40, hospitals: 100, rescue: 100, transit: 40, industry: 20, social: 40, age: 40, intensity: 20, detour: 60, students: 0 },
+  },
+  {
+    key: "lide",
+    label: "Školy a autobusy",
+    hint: "Kudy jezdí děti, studenti a linky.",
+    weights: { stav: 70, worse: 50, trida: 40, schools: 100, hospitals: 50, rescue: 40, transit: 100, industry: 20, social: 60, age: 40, intensity: 30, detour: 30, students: 90 },
+  },
+  {
+    key: "provoz",
+    label: "Hustý provoz",
+    hint: "Hodně aut a dlouhá objížďka.",
+    weights: { stav: 70, worse: 50, trida: 90, schools: 30, hospitals: 40, rescue: 40, transit: 50, industry: 70, social: 20, age: 30, intensity: 100, detour: 90, students: 20 },
+  },
+];
