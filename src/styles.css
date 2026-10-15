@@ -962,3 +962,58 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
   .tb-left { gap: 8px; }
   .role-switch button { padding: 3px 8px; font-size: 12px; }
 }
+
+/* Úvod bez posouvání: vše na jednu obrazovku, na desktopu i na mobilu */
+.landing3 { height: 100dvh; min-height: 0; overflow: hidden; }
+.landing3-intro { padding-top: 24px; padding-bottom: 24px; }
+.landing3-auth { padding-top: 24px; padding-bottom: 24px; overflow: hidden; }
+.landing3-auth .auth-card { gap: 10px; padding: 24px; max-height: 100%; overflow: auto; scrollbar-width: none; }
+.landing3-auth .auth-card::-webkit-scrollbar { display: none; }
+.landing3-auth .auth-card h1 { font-size: 28px; }
+.landing3-foot .site-foot { padding-top: 10px; padding-bottom: 10px; }
+
+@media (max-width: 900px) {
+  .landing3 {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding: 44px 16px 0;
+  }
+  .landing3-intro { padding: 0; text-align: center; justify-self: auto; max-width: 420px; }
+  .landing3-intro .eyebrow { margin-bottom: 6px; }
+  .landing3-intro h1 { font-size: 44px; margin: 0 0 8px; }
+  .landing3-lead { font-size: 15px; margin: 0 auto; }
+  .landing3-auth { padding: 0; background: transparent; border: 0; width: 100%; display: flex; justify-content: center; min-height: 0; flex: 0 1 auto; }
+  .landing3-auth .auth-card { padding: 18px; gap: 8px; }
+  .landing3-auth .auth-card h1 { font-size: 24px; }
+  .landing3-foot { width: 100%; margin-top: auto; }
+  .landing3-foot .site-foot { justify-content: center; text-align: center; padding: 8px 0 10px; font-size: 12px; border: 0; background: transparent; }
+  .landing3-foot .site-foot > span { display: none; }
+  .landing3 .auth-offline { padding: 8px 10px; gap: 4px; }
+  .landing3 .auth-form { gap: 8px; }
+  .landing3 .auth-form input[type="email"], .landing3 .auth-form input[type="password"] { padding: 8px 11px; }
+  .landing3 .auth-or { margin: 0; }
+}
+@media (max-width: 900px) {
+  .landing3-intro { margin-top: auto; }
+}
+/* Nízký telefon: zhustit, ať se úvod vejde bez posouvání */
+@media (max-width: 900px) and (max-height: 760px) {
+  .landing3 { padding-top: 36px; gap: 10px; }
+  .landing3-intro .eyebrow { display: none; }
+  .landing3-intro h1 { font-size: 36px; margin-bottom: 4px; }
+  .landing3-lead { font-size: 14px; }
+  .landing3-auth .auth-card { padding: 14px 16px; gap: 6px; }
+  .landing3-auth .auth-card h1 { font-size: 21px; }
+  .landing3-auth .auth-card > .muted { display: none; }
+  .landing3 .auth-offline { font-size: 13px; }
+  .landing3 .auth-offline > span { display: none; }
+  .landing3 .auth-offline .btn { padding: 5px 10px; font-size: 13px; }
+  .landing3 .auth-form label { gap: 3px; }
+  .landing3 .auth-submit, .landing3 .auth-public { padding: 8px 12px; }
+  .landing3 .auth-switch { font-size: 13px; }
+  .landing3 .auth-or { display: none; }
+  .landing3-top { top: 10px; }
+}
