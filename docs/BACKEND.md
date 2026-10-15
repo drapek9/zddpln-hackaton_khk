@@ -194,3 +194,52 @@ Důvod a sady: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Sekce 1–6 platí be
 Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude T14 hotové. Návrh:
 - `DetourResult.students_per_day`, `DetourResult.cut_off_obce`.
 - Nové modely `ObecImpact` (kód, název, obyvatelé, studenti) a `FloodResult`.
+
+### Stav 15. 10., ~10:45 (Tomáš)
+- **T13 hotovo:** `scripts/fetch_khk_extra.py` → `public/data/khk_extra.json` (4,4 MB).
+  - Obsahuje: 448 obcí, 5 011 toků studentů (22 382 žáků denně, denní studium, bydliště v kraji), záplavy Q5/Q20/Q100, 23 plánovaných oprav 2022.
+  - Záplavové polygony mají ~570 tis. bodů. Skript je proto protne se silnicemi sám a uloží jen metry zaplavení na úsek. Pro mapu uloží zjednodušený polygon.
+  - Spuštění: `uv run --project backend --with shapely python scripts/fetch_khk_extra.py` (~5 min, ArcGIS je pomalý).
+- **T14 hotovo:** toky studentů po grafu. Všech 22 382 žáků má trasu. Nejvytíženější úsek (Hradec Králové) má 3 721 studentů denně.
+- **T15 hotovo:**
+  - Odříznutá obec = ztratí silniční spojení se **všemi nemocnicemi** (Data KHK: Nemocnice).
+  - Studenti odříznutí = obec bydliště a škola jsou v různých částech sítě.
+  - Povodeň zavře úsek, když v zóně leží aspoň 100 m (kratší úseky jsou většinou mosty).
+  - Q100: zavřeno 228 km silnic kraje, 67 obcí bez spojení s nemocnicí. Je to **horní odhad**: místní komunikace v grafu nejsou.
+- **Smlouva (`schemas.py`, jen přidané):** `ObecImpact`, `PeopleImpact`, `FloodResult`. `DetourResult` beze změny.
+- **Nové metody v `Engine` pro Šimona:**
+
+| Metoda | Vrací | Endpoint (návrh) |
+|---|---|---|
+| `people_impact(road_ids)` | `PeopleImpact`: studenti denně, z jakých obcí, odříznuté obce a lidé | do odpovědi S5 `POST /api/closures` |
+| `students_on(road_id)` | `int` | pole v `GET /api/useky` (volitelně) |
+| `flood("q5"\|"q20"\|"q100")` | `FloodResult` | S12 `GET /api/flood?level=q100` |
+| `flood_geojson(level)` | GeoJSON geometrie zóny | S12 `GET /api/flood/{level}.geojson` |
+
+- První volání `people_*` nebo `flood` trvá ~3 s (směrování toků). Šimon může v lifespanu zavolat `engine.people`, aby to proběhlo při startu.
+- **Pro Matouše (Zdroje dat):** itemId nových sad je v `khk_extra.json` → `sources`:
+  - Obce `70564613fe434f149655e79a85e94efc`.
+  - Dojížďka do středních škol `c62b3bf8a0dd40b4b1d70bc419d5d6e4`.
+  - Záplavová území Q5 `0445ecebd0624b588488700038715bf5`, Q20 `8a81ac1b830d42249ed3b38708e95243`, Q100 `7d93751a3221478ca39a6e1ca6578047`.
+  - Plánované opravy 2022 `1915aa2911d74672a6ab58d5b615055b`.
+- **T7 hotovo (intenzita, ŘSD 2025):** `scripts/fetch_rsd_counts.py` → `public/data/intensity.json`.
+  - Sčítací úseky ŘSD jsou spárované podle čísla silnice a polohy podél silnice: **1 343 z 3 192 km má měřenou hodnotu**.
+  - Kontrola: obec úseku je v popisu sčítacího úseku u 63 % úseků. V obráceném směru jen u 36 %, takže směr podél silnice sedí.
+  - Ostatní úseky mají **odhad** = dolní kvartil sčítaných úseků stejné třídy (II. tř. 1 493, III. tř. 1 356 voz/den).
+  - `RoadSummary` má nová pole `intensity` (vozidel/den) a `intensity_src` (`csd2025` / `odhad`). Frontend musí u `odhad` ukázat štítek „odhad“.
+  - `Engine.intensity(road_id)`. `closure_impact` při úplné uzavírce přidá varování „Objížďkou pojede ~N vozidel denně“ a kolik km denně navíc ujedou.
+  - Licence ŘSD: **CC BY‑SA 4.0**. Export s intenzitou musí mít stejnou licenci (S9).
+
+### Stav 15. 10., ~11:45 (Tomáš): T16 ukázkové uzavírky 2022
+- **Hotovo:** `Engine.demo_closures(full_only=True) -> list[DemoClosure]`. Zdroj: Data KHK, Plánované opravy silniční infrastruktury na rok 2022 (liniové), 23 záznamů, z toho 20 úplných uzavírek.
+- Každý plán se spáruje s našimi úseky podle čísla silnice a polohy čáry (vzorek po 20 m, do 40 m od úseku). Když číslo v plánu nesedí se Stavem povrchu (1 případ, III/2864 leží na 2861), páruje se jen podle polohy a v `note` to stojí.
+- Spárováno 17 z 20 úplných uzavírek. Tři čáry neleží na úsecích z dat (II/3041 Libňatov, III/32426 Nechanice – Hrádek, III/30011 Zálesí; místní komunikace nebo úsek mimo data). Mají `road_ids = []`, vysvětlení v `note` a dopad se nepočítá.
+- Pro každou úplnou uzavírku: objížďka přes všechny zavřené úseky najednou (`RoadGraph.detour_set`), středoškoláci a odříznuté obce (`PeopleImpact`), auta za den, varování (`alerts`, stejná jako `closure_impact`).
+- **Doporučené na demo** (`recommended=True`, `recommended_reason`), tři různé příběhy:
+  - Nejvíc středoškoláků: **II/303 Velké Poříčí – Hronov**, 589 studentů denně, 8 246 vozidel (ŘSD), objížďka +0,8 km.
+  - Nejvíc vozidel: **II/302 Broumov – Velká Ves**, 7 909 vozidel denně, 447 studentů, objížďka +14,6 km / +16 min.
+  - Nejdelší objížďka: **III/28526 Jizbice – Lipí – Náchod**, +31 km / +33 min.
+- Poctivě: model posílá všechny jednou nejrychlejší objížďkou a nezná místní komunikace. U průtahů obcí (např. III/29913 Lochenice) proto ukáže „odříznutou“ obec, i když místní ulice objížďku umožní.
+- **Smlouva (jen přidané):** `DemoClosure` (nový model), `DetourResult.closed_road_ids`.
+- **Pro Šimona (S13):** `GET /api/demo-closures` = `engine.demo_closures()`. První volání ~5 s, pak z cache. Výsledek je kopie, lze ho upravit.
+- **NEAKTIVNÍ:** `backtest_2022()` z tabulky T16 výše se dnes nedělá. Ověření modelu na plánech 2022 je podle `PLAN_FINAL.md`, kap. 13, přesunuté do `NAPADY.md`.

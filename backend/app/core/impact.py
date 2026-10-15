@@ -266,6 +266,19 @@ def detour_alerts(
                 detail=f"{_km(detour.class1_km)} km vede po silnicích I. třídy nebo dálnici (správce ŘSD). Objížďku projednejte s ŘSD.",
             )
         )
+    inten = road.get("intensity") or {}
+    if inten.get("sv"):
+        label = "sčítání ŘSD 2025" if inten.get("src") == "csd2025" else "odhad"
+        vehicles = int(inten["sv"])
+        alerts.append(
+            Alert(
+                level="warning" if vehicles >= 3000 else "info",
+                title=f"Objížďkou pojede ~{vehicles:,} vozidel denně".replace(",", " "),
+                detail=(
+                    f"Intenzita úseku ({label}). Navíc ujedou asi {round(vehicles * (detour.extra_km or 0)):,} km denně."
+                ).replace(",", " "),
+            )
+        )
     schools = sum((r.get("counts") or {}).get("school") or 0 for r in via_roads)
     if schools and school_time:
         alerts.append(
