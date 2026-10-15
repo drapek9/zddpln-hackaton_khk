@@ -192,6 +192,7 @@ Důvod a sady: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Sekce 1–6 platí be
 | T17 | **Rozpočtový asistent** (PLAN_FINAL kap. 17): souvislé stavby (stejná `sil`, okres), cena podle stavu (`estimate`), hladově podle skóre na Kč | `budget_plan(amount_kc, weights)` | V2 |
 | T18 | **Dojezd ZZS + HZS** při uzavírce: obce s delším dojezdem, +min, limit 20 min | pole v `PeopleImpact` / `Alert` | ★1 |
 | T19 | **Ověření modelu:** % opravených úseků 2018–2024 v horní třetině skóre | `backtest()` | pitch |
+| T20 | **Nové faktory ve skóre** (PLAN_FINAL kap. 17): intenzita, délka objížďky, středoškoláci denně. 3 nové váhy ve `Weights` (jen přidané). Frontend pak bere žebříček z API. | `Weights`, `breakdown` | ★1, ★3 |
 
 ### Šimon (API)
 | # | Úkol | Endpoint |

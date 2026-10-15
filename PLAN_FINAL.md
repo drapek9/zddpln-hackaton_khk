@@ -534,6 +534,7 @@ Tomáš prošel všech 19 nápadů z [NAPADY.md](NAPADY.md) a rozhodl. Kap. 16 (
 | **T17** | **Rozpočtový asistent:** z částky vybrat souvislé stavby. Stavba = navazující úseky na stejné silnici (`sil`) v jednom okrese, malé dobré mezery se pohltí. Cena podle stavu (2,5 / 12 / 17 mil. Kč/km, štítek `estimate`, zdroje v NAPADY č. 1). Výběr hladově podle skóre na Kč. | `Engine.budget_plan(amount_kc, weights) -> BudgetPlan` (stavby, km, Kč, kolik havarijních km zůstane) |
 | **T18** | **Dojezd ZZS + HZS:** pro uzavírku spočítat, u kterých obcí se prodlouží dojezd z nejbližší základny, o kolik minut a jestli přesáhne 20 min. | pole v `PeopleImpact` nebo `Alert` „Dojezd záchranky do X se prodlouží o N min“ |
 | **T19** | **Ověření modelu:** kolik % opravených úseků 2018–2024 mělo skóre v horní třetině. Ukázat jen když vyjde. | `Engine.backtest()` → jedno číslo + počet úseků |
+| **T20** | **Nové faktory ve skóre** (slíbené v kap. 6, zatím chybí): intenzita (auta za den, T7), délka objížďky (T4) a středoškoláci denně (T14). 3 nové váhy, výchozí hodnoty střední, rozpad skóre je ukáže. Doplněno 15. 10. po kontrole `PLAN_OD_BIDAKA.md`. | `Weights` + 3 pole (jen přidaná, Šimon souhlasí), `breakdown` ukáže nové řádky. **Frontend musí brát žebříček z API (F2)**, lokální výpočet v `src/lib/priority.ts` nové faktory nezná. |
 
 ### 17.3 Šimon (`backend/app/api|db|auth|notify|ai`)
 | Úkol | Co | Endpoint |
@@ -560,6 +561,12 @@ Tomáš prošel všech 19 nápadů z [NAPADY.md](NAPADY.md) a rozhodl. Kap. 16 (
 ### 17.5 Pitch (kdo dělá pitch, kap. 16.5)
 - Poslední slajd: QR na web, **jen když mobil v 16:00 funguje** (NAPADY č. 6).
 - Když T19 vyjde: „X % úseků, které kraj opravil, mělo u nás skóre v horní třetině.“
+- **Přesně o číslech** (z `PLAN_OD_BIDAKA.md`, Matouš M1.2, M1.3): říkat „kraj **opravuje** zhruba 90 km ročně“ (historické tempo 2015–2024, 906 km / 10 let), ne „má peníze na 90 km“. A „jen havarijní úseky **aspoň** 15 let“, protože část oprav jde jinam a síť se mezitím zhoršuje.
+- **Poctivě o objížďce:** model pošle všechna auta jednou nejkratší objížďkou. Ve skutečnosti se rozdělí.
+- **Záložní web (Přemek, po 15:00):** build frontendu na GitHub Pages. Frontend umí počítat lokálně a má snímek objížděk, takže porota otevře odkaz i když tunel spadne. Na odkazu štítek „offline ukázka bez serveru“.
+
+### 17.7 Kontrola `PLAN_OD_BIDAKA.md` před smazáním (15. 10.)
+Prošel jsem celý starý plán (je v historii gitu, `git show 5ee1fa1:PLAN_OD_BIDAKA.md`). Skoro vše už je v kap. 0–17 nebo v NAPADY. Nově z něj: T20 (faktory ve skóre, které plán slíbil a chyběly), přesné formulace čísel a objížďky v pitchi, záložní web. Nehody zůstávají zamítnuté pro dnešek, i když podle rešerše data mají GPS a příčinu „stav vozovky“: soubor je `.rar` za celou ČR, to je riziko na poslední chvíli. V pitchi jako rozvoj.
 
 ### 17.6 Aktualizace
 Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `docs/BACKEND.md` upraví a pushnou na `main`. Hotové úkoly se tu označí ✅.
