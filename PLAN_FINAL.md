@@ -414,3 +414,54 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 4. Demo: proklikat 2–3 ukázkové uzavírky předem, aby byly v `cache.py`.
 
 Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho, jaký klíč máme.
+
+---
+
+## 15. Přihlášení: landing, login, role a token (15. 10., Tomáš)
+
+**Proč:** v kap. 3 a 4 jsou role i „Registrace a přihlášení“, ale chybí, jak to uživatel projde krok za krokem. Backend už to umí (Šimon, větev `simon`). Chybí frontend (Matouš) a dohoda, jak se to propojí.
+
+### 15.1 Co uživatel uvidí
+1. **Landing page** (`Landing.tsx`). Dvě hlavní volby:
+   - **„Pokračovat bez přihlášení“** → veřejná mapa (role Veřejnost). Nic se neukládá na server.
+   - **„Přihlásit se“** → login formulář.
+   - Dnešní dvě karty „Správa silnic“ a „Veřejný přehled“ zůstanou, jen „Správa silnic“ nejdřív vyžádá přihlášení.
+2. **Login formulář:** e‑mail, heslo, tlačítko „Přihlásit“. Pod ním odkaz „Nemám účet → registrace“ (jen pro občany). Chybová hláška z backendu se ukáže pod formulářem („Špatný e‑mail nebo heslo.“, „Účet je zablokovaný.“).
+3. **Po přihlášení** frontend podle role otevře správnou obrazovku:
+   | Role v DB | Česky | Kam ho pošleme | Co může |
+   |---|---|---|---|
+   | `citizen` | Občan | veřejná mapa + „Moje místa“, „Moje trasa“, upozornění | hlášení, hlas, odběr push |
+   | `official` | Úředník | Správa silnic | žebříček, piny, simulátor uzavírky, váhy jen pro sebe |
+   | `admin` | Admin | Správa silnic + záložka Admin | vše, uživatelé, trvalé váhy, audit, AI |
+4. V hlavičce je pak e‑mail a role uživatele a tlačítko „Odhlásit“.
+
+### 15.2 Odkud se berou role
+- **Dnes role přidělujeme ručně v databázi.** Nikdo si roli nevybírá sám.
+- Při prvním startu backend založí testovací účty (`backend/app/db/seed.py`, funkce `seed_if_empty`): 1 admin, 1 úředník, 2 občané s doménou `@cesty-khk.test`. Hesla jsou jen pro demo; na pitchi je neukazujeme.
+- **Registrace** (`POST /api/auth/register`) vždy vytvoří roli `citizen`. Úředníka nebo admina z ní udělat nejde.
+- Změna role: admin přes `PATCH /api/admin/users/{id}` (obrazovka Uživatelé, kap. 4 D). Do té doby ručně v SQLite: `UPDATE user SET role='official' WHERE email='…';`.
+
+### 15.3 Jak funguje token (krok za krokem)
+1. Frontend pošle `POST /api/auth/login` s `{email, password}`.
+2. Backend najde uživatele a ověří heslo. Hesla jsou v DB jen jako hash (PBKDF2‑SHA256, 120 000 kol, sůl). Heslo samo se nikde neukládá.
+3. Backend vytvoří **JWT token** (HS256, podepsaný `CESTY_SECRET_KEY` z `.env`). Uvnitř je: id uživatele (`sub`), role (`role`), verze tokenu (`ver`) a platnost 7 dní (`exp`).
+4. Backend token uloží do **httpOnly cookie** `cesty_session` (`SameSite=Lax`, na HTTPS i `Secure`) a zároveň vrátí `{token, user: {id, email, role}}`.
+5. Frontend si z odpovědi vezme jen `user` (role, e‑mail) a přepne obrazovku. **Token neukládá do localStorage.** Prohlížeč posílá cookie sám ke každému `/api/...` volání (stejný původ přes Vite proxy nebo tunel).
+6. Při načtení stránky frontend zavolá `GET /api/auth/me`. Když vrátí uživatele, je přihlášený (přežije to obnovení stránky). Když vrátí 401, ukáže landing.
+7. Backend u každého chráněného endpointu token ověří (`auth/deps.py`: `require_user`, `require_official`, `require_admin`, `require_citizen`). Špatná role = 403, bez tokenu = 401.
+8. **Odhlášení** `POST /api/auth/logout` smaže cookie a zvýší `token_version`. Tím přestanou platit i staré kopie tokenu.
+
+### 15.4 Kdo co udělá
+| Kdo | Co | Stav |
+|---|---|---|
+| Šimon | `api/auth.py`, `auth/security.py`, `auth/deps.py`, `db/seed.py` | ✅ hotovo na větvi `simon`, čeká na sloučení do `main` |
+| Šimon | Sloučit `simon` do `main` a poslat Matoušovi tvar odpovědí (`/auth/login`, `/auth/me`) | ❌ |
+| Matouš | Landing se dvěma volbami, login a registrace, `src/lib/auth.ts` (`login`, `logout`, `me`), přepnutí obrazovky podle role, „Odhlásit“ v hlavičce | ❌ |
+| Matouš | Volání `/api/...` s `credentials: "same-origin"`, při 401 zpět na login | ❌ |
+| Tomáš | Nic v jádru; role ani token se `Engine` netýkají | — |
+
+### 15.5 Na co pozor
+- **Úředník bez přihlášení:** dokud login ve frontendu není, `POST /api/closures` vrací 401. Simulátor proto dál používá snímek `public/demo/detours.json`. Po loginu přepnout na API.
+- **Demo:** pro pitch mít 2 záložky: úředník přihlášený v počítači, občan v telefonu (Web Push). Přihlásit předem, ne před porotou.
+- **Bezpečnost (repo je veřejné):** `CESTY_SECRET_KEY` jen v `.env`, na sdíleném serveru jiný než `change-me-dev-only`. Demo hesla v `seed.py` jsou jen pro doménu `.test`; před ostrým nasazením změnit.
+- Ostrá varianta po hackathonu (NAPADY): přihlášení přes NIA / identitu občana, role z AD kraje.
