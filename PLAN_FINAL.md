@@ -323,3 +323,35 @@ Kód funkcí vzniká na soutěži (rozhodnutí 13. 10.). Před soutěží jen p�
 - Matoušovo review M1–M4: `PLAN_OD_BIDAKA.md`, kap. 13.
 - Rešerše dopravních dat: `PLAN_OD_BIDAKA.md`, kap. 6, „Zdroje dopravních dat a pravidla“.
 - Pravidla, porota a minulí vítězové: `docs/ROZBOR.md`.
+
+---
+
+## 13. Doplněk 15. 10.: víc dat z Data KHK (další kroky)
+
+**Nové pravidlo:** smíme použít jakákoli otevřená data, ale aspoň jedna sada musí být z kraje. To už splňujeme: bereme 18 sad z Data KHK. Kapitoly 0–12 platí beze změny. Tohle jsou **další kroky po MVP**.
+
+**Proč:** Data KHK má 244 služeb a my používáme 18. Porota je z velké části z Data KHK. Čím víc stavíme na datech kraje, tím líp. Externí data (ŘSD, SRTI, OSM) zůstávají jako doplněk.
+
+### Nepoužité sady Data KHK, které se vyplatí (ověřeno dotazem 15. 10.)
+| Sada | Záznamů | Co obsahuje | K čemu |
+|---|---|---|---|
+| `Dojížďka_do_středních_škol` | 12 013 | obec bydliště studenta → škola (souřadnice), počet žáků | Toky pustíme po grafu silnic. Ke každému úseku dostaneme **počet středoškoláků, kteří po něm denně jedou**. Měřená data, ne odhad. |
+| `Obce` | 448 | kód obce, počet obyvatel, věkové skupiny | Které obce uzavírka **odřízne** a kolik v nich žije lidí. Napojení toků studentů na obce. „Moje obec“. |
+| `Záplavové_území_{pětileté,dvacetileté,stoleté}_vody` | 78 / 77 / 65 | polygony Q5, Q20, Q100 | **Povodňový scénář:** zavřít všechny zatopené úseky a ukázat odříznuté obce, lidi, studenty a dostupnost IZS. |
+| `Plánované_opravy_silniční_infrastruktury_na_rok_2022_liniové` | 23 | typ uzavírky (úplná/částečná), termín omezení, číslo silnice | **Skutečné uzavírky** jako ukázky pro demo. Malé ověření modelu: měly plány 2022 vysoké skóre? |
+
+Vynecháváme `Omezení_v_autobusové_dopravě` (4 záznamy) a `Výluky_v_železniční_dopravě` (1 záznam). Jsou staré (2022–23) a je jich málo.
+
+### Co to přidá
+- **★1 karta uzavírky:** navíc „zasaženo N středoškoláků denně“ a „odříznuté obce: X obyvatel“.
+- **Nové: „Povodeň Q100“** (tlačítko u úředníka). Mapa zatopených silnic, odříznuté obce, lidé, studenti. Sedí to porotě z veřejné správy a krizového řízení.
+- **Demo:** 2–3 ukázkové uzavírky vybrat ze skutečných úplných uzavírek 2022.
+- **Pitch:** „22 sad z Data KHK a 3 externí. Z dat kraje víme, kolik středoškoláků denně jede přes každý úsek.“
+
+### Poctivě (říct na dotaz)
+- Toky jsou jen středoškoláci, ne všichni lidé.
+- Start je střed obce bydliště, cesta je nejkratší po grafu, ne skutečná trasa autobusu.
+- Povodeň zavře úsek, jakmile část úseku leží v záplavovém území.
+
+### Priorita
+Až po MVP (kap. 8). Pořadí: toky studentů → odříznuté obce → povodeň → ukázky 2022 → ověření modelu. Když nestíháme, škrtá se **před** V2. Úkoly: Tomáš T13–T16, Šimon S12–S13 v `docs/BACKEND.md`, kap. 7.

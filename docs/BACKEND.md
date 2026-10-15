@@ -160,3 +160,29 @@ Before writing code in Šimon's area, **ask Šimon these questions and wait for 
 5. How do we test it (`pytest` + `TestClient`, or a manual check in the browser or on the phone)?
 
 Follow `AGENTS.md`. Never add AI co-author lines to commits.
+
+---
+
+## 7. Další kroky (15. 10., po MVP): víc dat z Data KHK
+
+Důvod a sady: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Sekce 1–6 platí beze změny, tohle přijde **až po MVP**.
+
+### Tomáš (`core/`, `scripts/`, `public/data/`)
+| # | Úkol | Funkce v `Engine` | Pro |
+|---|---|---|---|
+| T13 | Snímek nových sad: `Obce` (střed + obyvatelé), `Dojížďka_do_středních_škol`, záplavová území Q5/Q20/Q100, plánované opravy 2022. Do `public/data/obce.json`, `students.json`, `flood.json`, `planned2022.json`. | v načtení dat | vše níže |
+| T14 | **Toky studentů:** dvojice (obec → škola) pustit po grafu, sečíst žáky na úsecích | `students_on(road_id)`, pole v `detour` | ★1 |
+| T15 | **Odříznuté obce** při uzavírce + **povodňový scénář** | `flood(level)`, pole v `detour` | ★1 |
+| T16 | Ukázkové uzavírky ze skutečných plánů 2022 + ověření modelu | `demo_closures()`, `backtest_2022()` | demo, V2 |
+
+### Šimon (API)
+| # | Úkol | Endpoint |
+|---|---|---|
+| S12 | Povodňový scénář | `GET /api/flood?level=q5\|q20\|q100` |
+| S13 | Obce (hranice nebo střed, obyvatelé) a ukázkové uzavírky | `GET /api/obce`, `GET /api/demo-closures` |
+| — | Odpověď S5 (uzavírka) dostane nová pole od T14/T15. Nic se nepřejmenuje. | `POST /api/closures` |
+
+### Smlouva
+Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude T14 hotové. Návrh:
+- `DetourResult.students_per_day`, `DetourResult.cut_off_obce`.
+- Nové modely `ObecImpact` (kód, název, obyvatelé, studenti) a `FloodResult`.

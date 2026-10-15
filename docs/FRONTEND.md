@@ -38,3 +38,11 @@ Rules for the agent:
 - If the backend needs a change, write down the request for Šimon (API) or Tomáš (logic) instead of editing `backend/`.
 - Follow `AGENTS.md`.
 - Never add AI co-author lines to commits.
+
+## Další kroky (15. 10., po v2): víc dat z Data KHK
+
+Důvod: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Až po MVP, nic výše se nemění.
+- **Karta uzavírky:** řádek „zasaženo N středoškoláků denně“ a seznam odříznutých obcí s počtem obyvatel.
+- **Povodeň Q100:** tlačítko u úředníka. Mapa zatopených silnic, odříznuté obce, lidé, studenti. Úroveň Q5/Q20/Q100.
+- **Ukázkové uzavírky** ze skutečných plánů 2022 (výběr v simulátoru).
+- **Zdroje dat:** doplnit 4 sady Data KHK: Dojížďka do středních škol, Obce, Záplavová území (Q5/Q20/Q100), Plánované opravy 2022.
