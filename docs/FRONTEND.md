@@ -63,3 +63,17 @@ Důvod: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Až po MVP, nic výše se ne
 - **Tomáš, T16:** až budou ukázkové uzavírky z plánů 2022, nahradím jimi `DEMO_CLOSURES` v `src/lib/closure.ts`.
 
 Další na řadě (podle kap. 4 `STAV_A_DOPORUCENI.md`): přepnout na API, jakmile pojedou S4 a S5. Pak řádek studentů a odříznutých obcí na kartě uzavírky (T14/T15).
+
+## Úprava rozhraní 15. 10. odpoledne (Matouš, větev `matous`, commit `4ce3552`)
+
+Podle připomínek Matouše k designu. Přemek, prosím, projdi (review designu).
+
+| Oblast | Co se změnilo |
+|---|---|
+| Mapa | Otáčení a náklon (3D) jde zapnout a vypnout (ve výchozím stavu vypnuto). Tlačítko „⌂ Celý kraj“ vrátí výchozí pohled. Legenda je nahoře vlevo. |
+| Správa silnic | Váhy jsou v panelu „Parametry priority“ vpravo nahoře nad mapou, odděleně od ostatního. Vlevo zůstalo hledání a filtry, pod nimi rozbalovací sekce: Žebříček priority (15 úseků, pak „Dalších 50“ / „Rozbalit vše“), Ukázkové uzavírky, Vrstvy mapy. |
+| Detail úseku (úředník) | Záložky **Přehled / Uzavírka / Priorita**. Simulace uzavírky je zvlášť od přehledu a od připíchnutí priority. Seznamy (linky, školy, IZS…) jsou rozbalovací. |
+| Veřejnost | Menší vyhledávání nahoře. Seznam oprav, odběr upozornění a moje hlášení jsou rozbalovací. |
+| Všude | Bez viditelných posuvníků v bočních panelech (scrollovat jde dál), větší písmo (základ 16 px). |
+
+Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i veřejnost, čára objížďky se na mapě vykreslí. Neověřeno: mobilní šířka 375 px.
