@@ -464,4 +464,4 @@ Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho,
 - **Úředník bez přihlášení:** dokud login ve frontendu není, `POST /api/closures` vrací 401. Simulátor proto dál používá snímek `public/demo/detours.json`. Po loginu přepnout na API.
 - **Demo:** pro pitch mít 2 záložky: úředník přihlášený v počítači, občan v telefonu (Web Push). Přihlásit předem, ne před porotou.
 - **Bezpečnost (repo je veřejné):** `CESTY_SECRET_KEY` jen v `.env`, na sdíleném serveru jiný než `change-me-dev-only`. Demo hesla v `seed.py` jsou jen pro doménu `.test`; před ostrým nasazením změnit.
-- Ostrá varianta po hackathonu (NAPADY): přihlášení přes NIA / identitu občana, role z AD kraje.
+- Ostrá varianta po hackathonu (zatím jen nápad): přihlášení přes NIA / identitu občana, role z adresáře kraje.
