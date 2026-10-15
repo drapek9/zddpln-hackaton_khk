@@ -1017,3 +1017,7 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
   .landing3 .auth-or { display: none; }
   .landing3-top { top: 10px; }
 }
+
+/* Upozornění občana (MyTrip). Nepřečtené tučně. */
+.notice { padding: 6px 0; border-bottom: 1px solid var(--line, #ddd); cursor: pointer; }
+.notice.unread { font-weight: 600; }

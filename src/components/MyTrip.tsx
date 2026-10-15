@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Fold from "./Fold";
 import type { Place, TripImpact } from "../lib/commute";
 import { roundPlace } from "../lib/commute";
 import { STATUS_LABEL, formatPeriod, formatSil } from "../lib/geo";
+import { enablePush, fetchNotices, markNoticeRead, pushSupported, type Notice } from "../lib/notifications";
+import type { User } from "../lib/auth";
 
 type Props = {
   places: Place[];
@@ -11,14 +13,33 @@ type Props = {
   onPicking: (kind: Place["kind"] | null) => void;
   impact: TripImpact | null;
   onSelectRoad: (id: number) => void;
+  user: User | null;
 };
 
 const NAME = { home: "Domov", work: "Práce" } as const;
 
 // Veřejnost: „Moje cesty“. Ráno si zkontroluju, jestli mě cestou do práce něco nečeká.
-export default function MyTrip({ places, onPlaces, picking, onPicking, impact, onSelectRoad }: Props) {
+export default function MyTrip({ places, onPlaces, picking, onPicking, impact, onSelectRoad, user }: Props) {
   const [geoError, setGeoError] = useState("");
   const [locating, setLocating] = useState(false);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [pushState, setPushState] = useState<"idle" | "on" | "off">("idle");
+  const citizen = user?.role === "citizen";
+
+  useEffect(() => {
+    if (!citizen) return;
+    fetchNotices().then(setNotices).catch(() => setNotices([]));
+  }, [citizen]);
+
+  const enable = async () => {
+    const ok = await enablePush().catch(() => false);
+    setPushState(ok ? "on" : "off");
+  };
+
+  const read = async (id: number) => {
+    await markNoticeRead(id).catch(() => undefined);
+    setNotices((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
 
   const setPlace = (p: Place) => onPlaces([...places.filter((x) => x.kind !== p.kind), roundPlace(p)]);
 
@@ -120,12 +141,25 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
         </Fold>
       )}
 
-      <Fold title="Upozornění">
-        <label className="check toggle-row">
-          <input type="checkbox" disabled />
-          Poslat upozornění, když se na mé cestě objeví nová uzavírka
-        </label>
-        <p className="fine">Připravujeme: Web Push v prohlížeči po přihlášení (milník v3).</p>
+      <Fold title="Upozornění" meta={notices.filter((n) => !n.read).length || undefined}>
+        {!citizen && <p className="fine">Upozornění uvidí občan po přihlášení.</p>}
+        {citizen && notices.length === 0 && <p className="fine">Zatím žádná upozornění.</p>}
+        {citizen &&
+          notices.map((n) => (
+            <div key={n.id} className={n.read ? "notice" : "notice unread"} onClick={() => read(n.id)}>
+              <b>{n.title}</b>
+              <p className="fine">{n.body}</p>
+            </div>
+          ))}
+        {citizen && pushSupported() && pushState !== "on" && (
+          <button className="link" onClick={enable}>
+            Zapnout upozornění v prohlížeči
+          </button>
+        )}
+        {citizen && pushState === "on" && <p className="fine">Upozornění v prohlížeči zapnuta.</p>}
+        {citizen && pushState === "off" && (
+          <p className="fine">Upozornění v prohlížeči nejdou zapnout (chybí souhlas nebo klíč serveru). Seznam výše platí dál.</p>
+        )}
       </Fold>
 
       <p className="fine">
