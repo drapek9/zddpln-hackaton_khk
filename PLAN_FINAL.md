@@ -9,6 +9,8 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
+> **15. 10., 13:15: nejvyšší priorita je kap. 19** (propojit frontend s backendem, chyby D1–D10). Až potom rozšiřování.
+>
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
 
 > **15. 10., 10:20:** co se **hned nedělá** (schválené nápady, V3, nehody, povodeň, Moje obec), je v [NAPADY.md](NAPADY.md). Tento soubor obsahuje jen to, co se dnes dělá. Když se nápad začne dělat, přesune se sem.
@@ -592,6 +594,8 @@ Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `do
 | **Matouš** | Sloučit `matous` do `main` až po Šimonovi. | Konflikty nejsou, build projde. |
 
 ### Co nesedí mezi frontendem a API (F2, hned po sloučení)
+**NEAKTIVNÍ (13:15):** nahrazeno kap. 19 a [docs/FRONTEND.md](docs/FRONTEND.md), sekce „NEJVYŠŠÍ PRIORITA“. Backend už váhy v query bere.
+
 | Frontend (`src/lib/api.ts`) | API (Šimon) | Kdo upraví |
 |---|---|---|
 | `ranking` čeká pole `RankedRoad[]` a váhy v query (`?stav=30`) | vrací `{weights_source, count, items}`, váhy bere z účtu | Matouš čte `items`; váhy v query buď Šimon přidá, nebo frontend při změně posuvníků počítá lokálně (štítek) |
@@ -603,3 +607,47 @@ Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `do
 - Šimon: S14 cache AI a `/api/ai/budget`, S15 rate limit na login, S18 kolize uzavírek.
 - Matouš: F2–F6.
 - Pitch a PDF: pořád **bez vlastníka** (kap. 16.5).
+
+## 19. Priorita po 13:00: propojit frontend s backendem (15. 10., ~13:15, Tomáš)
+
+Kontrola z 13:00 ([NAPADY.md](NAPADY.md), část D) ukázala, že frontend bere z backendu jen přihlášení a stránku admina. Žebříček, simulátor uzavírky, rozpočet, povodeň ani trasy z API nečte. Backend je hotový a rychlý, ale v ukázce pro porotu není vidět.
+
+### 19.1 Pravidlo
+- **Nejdřív opravy propojení (D1–D10), až pak rozšiřování.** Nové obrazovky a funkce (F3–F6, nápady) se dělají až po nich.
+- Výjimka: rozpracovanou práci nikdo nezahazuje. Dokončit commit, pak přepnout na D.
+- Tabulka „Co nesedí mezi frontendem a API“ v kap. 18 je nahrazená touto kapitolou.
+
+### 19.2 Matouš (frontend)
+Celý seznam s pořadím je v [docs/FRONTEND.md](docs/FRONTEND.md), sekce „NEJVYŠŠÍ PRIORITA“. Ve zkratce:
+1. **D1 + D3 + D4 najednou:** žebříček z `items`, piny přes `/api/pins`, váhy posílat vždy celé.
+2. **D2:** simulátor přes `POST /api/closures/preview`, karta uzavírky s daty z backendu.
+3. **D7** (debounce, `AbortController`), **D5**, **D8**, **D6** (posuvníky T20 až po T21 a S24).
+
+### 19.3 Šimon (`backend/app/api|db|auth|main.py`)
+| Úkol | Co | Proč (z NAPADY, část D) | Čas |
+|---|---|---|---|
+| **S21** | **Hesla demo účtů z `.env`** (`CESTY_SEED_ADMIN_PASSWORD`, `CESTY_SEED_OFFICIAL_PASSWORD`, …). Když chybí, vygenerovat náhodná a vypsat jen do konzole serveru. Doplnit `.env.example`. | D9: hesla v `seed.py` jsou ve veřejném repu a server je přes tunel veřejný. **Před ukázkou porotě.** | 20 min |
+| **S22** | **`GZipMiddleware`** v `main.py` (`minimum_size=1000`). | D7: `/api/ranking` má 1,7 MB, po kompresi asi desetinu. | 5 min |
+| **S23** | **Malý žebříček:** `GET /api/ranking?compact=1` vrací jen `id`, `score`, `priority`, `model_class`, `rank`, `pinned`, `votes`. | D7: posuvníky přes tunel a na mobilu. Frontend má zbytek v `roads.json`. | 20 min |
+| **S24** | **Zavolat `Engine.warmup()` v lifespanu** místo `people` a `demo_closures()`, až T21 přistane na `main`. | D6: první posuvník T20 teď čeká 5 s. | 5 min |
+| **S25** | **`GET /api/stability?top=100`** nad `Engine.stability(weights)` (T10, hotové). Váhy jako u `/api/ranking` (query, jinak účet). | Nápad F‑g: odznak „jisté / citlivé na váhy“. | 15 min |
+| **S26** | **Typy pro frontend z OpenAPI:** `npx openapi-typescript http://localhost:8000/openapi.json -o src/lib/api-types.ts`, s Matoušem. Odpovědi mít jako Pydantic modely (`response_model`), aby OpenAPI znalo tvar. | Chyby D1 a D2 by našel překladač TypeScriptu. | 45 min |
+
+Pořadí: **S21 → S22 → S23 → S24** (jakmile je T21) → S25 → S26. Pak S14, S15, S18 z kap. 17.3.
+
+### 19.4 Tomáš (`backend/app/core/`, `scripts/`, `public/data/`)
+| Úkol | Co | Proč | Čas |
+|---|---|---|---|
+| **T21** | **`Engine.warmup()`:** předpočítat `people`, `demo_closures()`, faktory T20, `stavby()` a `rescue`. Jedno volání pro lifespan (S24). | D6, nápad B3. Start serveru se prodlouží asi o 10 s, první požadavky nečekají. | 20 min |
+| **T22** | **Duplicitní obce:** 22 úseků má stejnou obec dvakrát s jinou velikostí písmen („Hradec Králové“ a „Hradec králové“). Sjednotit podle číselníku 448 obcí (Data KHK) ve `scripts/`, přegenerovat `public/data/roads.json`. | D10. | 20 min |
+| **T23** | **`scripts/smoke_api.sh`:** přihlásí demo úředníka (heslo z `.env`, ne z kódu) a zavolá všechny GET a náhledové endpointy přes Vite proxy. Vypíše kód, čas a velikost. | Nápad B6: kontrola před ukázkou a po každém sloučení. | 30 min |
+| **T24** | **Výchozí váhy T20 na 50**, až frontend čte žebříček z API (D1) a má posuvníky (D6). Do té doby zůstávají 0. | Dokončení T20. | 10 min |
+
+Pořadí: **T21 → T22 → T23**, T24 až po D1 a D6.
+
+### 19.5 Kdy je hotovo
+- Úředník v prohlížeči vidí žebříček z API (štítek „živá data“), piny přežijí obnovení stránky.
+- Simulátor ukáže objížďku, auta za den, studenty, odříznuté obce a dojezd ZZS z `POST /api/closures/preview`.
+- Posuvník přes tunel reaguje do 1 s.
+- Demo hesla nejsou v repu.
+- `scripts/smoke_api.sh` projde bez chyby.

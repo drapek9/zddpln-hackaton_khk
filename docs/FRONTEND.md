@@ -5,6 +5,8 @@
 - Backend dělají Tomáš a Šimon, viz [BACKEND.md](BACKEND.md).
 - Co a proč stavíme: [PLAN_FINAL.md](../PLAN_FINAL.md), hlavně kap. 2 (pitch) a kap. 4 (obrazovky).
 
+> **15. 10., 13:15: nejvyšší priorita je sekce „NEJVYŠŠÍ PRIORITA“ na konci souboru** (opravy propojení s backendem D1–D8). Až potom M-c až M-f a nové obrazovky.
+
 ## Co dělat (podle milníků)
 
 | Milník | Úkol | Hotovo když |
@@ -121,3 +123,29 @@ Platí pro všechny další obrazovky. Hotové je v commitu `c3fc242` na větvi 
 | M-e | **F3:** Moje cesty přes `GET /api/route` místo pásu 1,5 km, ranní souhrn nahoře. | ❌ |
 | M-f | **F4** povodeň Q5/Q20/Q100, **F6** Moje obec. | ❌ |
 | M-g | Sloučit `matous` do `main` až po Šimonovi (kap. 18). | ❌ |
+
+## NEJVYŠŠÍ PRIORITA (15. 10., ~13:15, Tomáš): opravy propojení s backendem (D1–D8)
+
+**Dělá se před vším ostatním**, i před M-c až M-f a před novými obrazovkami. Rozpracovanou věc dokonči a commitni, pak přepni sem. Proč: frontend dnes bere z backendu jen přihlášení a admina, všechno ostatní počítá sám z `public/data`. Rozbor s měřením je v [NAPADY.md](../NAPADY.md), část D. Úkoly backendu k tomu jsou v [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 19.
+
+Ověřeno na `main` (`7ea72fc`) přes `curl`. Pořadí v tabulce = pořadí práce.
+
+| # | Úkol | Co přesně | Soubory | Stav |
+|---|---|---|---|---|
+| **1** | **D1 žebříček z API** | `/api/ranking` vrací `{weights_source, count, vypocteno, items}`, ne pole. `api.ranking` musí vrátit `res.items`. Teď `ranked.map` spadne s TypeError a vždy se počítá lokálně. Typ `RoadSummary` doplnit o `intensity` a `intensity_src`. | `src/lib/api.ts`, `src/lib/ranking.ts` | ❌ |
+| **1** | **D3 piny na server** (stejný commit jako D1) | Piny jsou jen v `localStorage` (`src/lib/store.ts`). Žebříček z API je nezná, po D1 by zmizely. Připnout přes `POST /api/pins` `{road_id, priority, reason}`, odepnout přes `DELETE /api/pins/{road_id}`. `localStorage` nechat jen pro režim bez serveru. | `src/lib/store.ts`, `src/components/AdminApp.tsx` | ❌ |
+| **1** | **D4 váhy vždy celé** (stejný commit) | `weightsQuery` posílá jen váhy změněné proti výchozím. Když se nezmění nic, backend řadí podle uložených vah admina a posuvníky ukazují jiné hodnoty. Posílat vždy všechny klíče `Weights`, nebo posuvníky naplnit z `GET /api/me/weights`. | `src/lib/ranking.ts` | ❌ |
+| **2** | **D2 simulátor přes náhled** | `POST /api/closures` vrací nepřihlášenému 401, občanovi 403 a úředníkovi 422 (chybí `title`). S `title` by každé kliknutí uložilo uzavírku do DB. Náhled: `POST /api/closures/preview` `{road_id, date_from, date_to, restriction}`. Odpověď má `detour` a `alerts` jako dřív, navíc `vehicles_per_day`, `vehicles_quality`, `students_per_day`, `cut_off_obce`, `rescue` (`{items, label, note}`, položka `{nazev, sluzba: zzs|hzs, obyvatel, pred_min, po_min, extra_min, nad_20_min}`). Kolize s jinými uzavírkami jsou mezi `alerts`. Uložit přes `POST /api/closures` (s `title`) až tlačítkem „Potvrdit uzavírku“. Občan a nepřihlášený zůstanou u snímku `detours.json` se štítkem „uložený výpočet“. | `src/lib/api.ts`, `src/lib/closure.ts`, `src/components/ClosureCard.tsx` | ❌ |
+| **2** | **Karta uzavírky z náhledu** (= M-b) | Ukázat auta za den s kvalitou (`csd2025` = sčítání ŘSD, `odhad`), studenty denně, odříznuté obce a dojezd ZZS a HZS (`rescue.items`, červeně když `nad_20_min`), štítek „odhad“. | `src/components/ClosureCard.tsx` | ❌ |
+| **3** | **D7 posuvníky přes tunel** | Žebříček má 1,7 MB a stahuje se při každém pohybu posuvníku. Debounce asi 300 ms, starý požadavek zrušit přes `AbortController`. Až Šimon dodá S23, volat `?compact=1`. | `src/components/AdminApp.tsx`, `src/lib/api.ts` | ❌ |
+| **4** | **D5 strop hlasů** | `adminApi.saveWeights` posílá vždy `vote_cap = 10` a přepíše nastavení admina. Poslat hodnotu z `GET /api/admin/weights`. | `src/lib/adminApi.ts`, `src/components/AdminApp.tsx` | ❌ |
+| **4** | **D8 skutečné 404** | `api.ts` bere každou 404 jako „endpoint zatím není“ a tiše přepne na lokální data. 404 s JSON `detail` (třeba neexistující úsek) ukázat jako chybu. „Nedostupné“ jen při chybě sítě a 502/503/504. | `src/lib/api.ts` | ❌ |
+| **5** | **D6 posuvníky T20** | Do `Weights` přidat `intensity`, `detour`, `students` (výchozí 0, backend je má od T20). Tři posuvníky: „Auta za den“, „Délka objížďky“, „Studenti“. Lokální výpočet je nezná, takže při režimu bez serveru je skrýt. Až po D1 a po T21 a S24 (předpočet, jinak první pohyb čeká 5 s). | `src/lib/types.ts`, `src/components/AdminApp.tsx` | ❌ |
+
+**Hned po D (malé, patří k propojení):**
+- **Štítek zdroje dat** v hlavičce: „živá data ze serveru“ nebo „offline snímek“ podle `GET /api/health` a podle toho, odkud přišel žebříček (`source: "api" | "local"`). Nápad F‑a.
+- **Načítání a chyby:** spinner při čekání a krátká hláška při chybě 5xx místo tichého `console.warn`. Nápad F‑e.
+
+**Až potom rozšiřování:** M-c (uzavírky 2022), M-d (rozpočet přes API), M-e (Moje cesty), M-f (povodeň, Moje obec) a nápady F‑c, F‑d, F‑f, F‑g z `NAPADY.md`.
+
+**Hotovo, když:** úředník vidí štítek „živá data“, pin přežije obnovení stránky, simulátor ukáže dojezd ZZS z backendu a posuvník přes `start-server.command` (tunel) reaguje do 1 s.
