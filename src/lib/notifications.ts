@@ -50,3 +50,10 @@ export async function enablePush(): Promise<boolean> {
   await json<{ ok: boolean }>("/me/push-subscription", { method: "POST", body: JSON.stringify(data) });
   return true;
 }
+
+// Domov a práce přihlášeného občana jdou na server, jinak by uzavírka nikoho neupozornila.
+export const savePlacesToServer = (home: { x: number; y: number }, work: { x: number; y: number }) =>
+  json<unknown>("/me/places", {
+    method: "PUT",
+    body: JSON.stringify({ home: { lon: home.x, lat: home.y }, work: { lon: work.x, lat: work.y } }),
+  });

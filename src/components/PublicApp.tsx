@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { savePlacesToServer } from "../lib/notifications";
+import { toast } from "./Toaster";
 import MyTrip from "./MyTrip";
 import { loadPlaces, savePlaces, tripImpact, type Place } from "../lib/commute";
 import MapView from "./MapView";
@@ -43,6 +45,17 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
     setPlacesState(next);
     savePlaces(next);
   };
+  // Přihlášený občan: obě místa uložíme i na serveru, aby ho uzavírka na trase upozornila.
+  useEffect(() => {
+    if (user?.role !== "citizen") return;
+    const home = places.find((p) => p.kind === "home");
+    const work = places.find((p) => p.kind === "work");
+    if (!home || !work) return;
+    savePlacesToServer(home, work).then(
+      () => toast("Trasa uložena, upozorníme vás na uzavírky"),
+      () => toast("Trasu se nepodařilo uložit na server", "warn"),
+    );
+  }, [places, user]);
   const impact = useMemo(() => tripImpact(places, data.roads, repairs), [places, data.roads, repairs]);
   const highlight = useMemo(() => (impact ? impact.repairs.map((r) => r.road.id) : []), [impact]);
   const [status, setStatus] = useState<"all" | Repair["status"]>("all");
@@ -314,6 +327,9 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             </span>
             <span>
               <i style={{ background: STAV_COLOR.havarijní }} /> havarijní stav
+            </span>
+            <span>
+              <i style={{ background: "#ffffff", border: "2px solid #0b1220" }} /> uzavírka ŘSD (SRTI)
             </span>
             {highlight.length > 0 && (
               <span>

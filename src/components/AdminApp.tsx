@@ -124,6 +124,26 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [detour, setDetour] = useState<[number, number][] | null>(null);
   // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
   const [demoId, setDemoId] = useState<number | null>(null);
+  // Ukázkové uzavírky ze serveru (skutečný plán 2022), doporučené první; bez serveru lokální seznam.
+  const [demos, setDemos] = useState(DEMO_CLOSURES);
+  useEffect(() => {
+    fetch("/api/demo-closures")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        const ids = new Set(data.roads.map((r) => r.id));
+        const items: { nazev: string; okres: string; termin: string; road_ids: number[]; recommended?: boolean }[] = res?.items || [];
+        const mapped = items
+          .filter((d) => d.road_ids.some((id) => ids.has(id)))
+          .sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended))
+          .map((d) => ({
+            roadId: d.road_ids.find((id) => ids.has(id))!,
+            label: d.nazev,
+            story: `${d.recommended ? "doporučená · " : ""}${d.okres} · ${d.termin} · skutečný plán 2022`,
+          }));
+        if (mapped.length) setDemos(mapped.slice(0, 8));
+      })
+      .catch(() => undefined);
+  }, [data.roads]);
   const [paramsOpen, setParamsOpen] = useState(false);
   const [listLimit, setListLimit] = useState(LIST_STEP);
   const weightsChanged = WEIGHT_LABELS.some((w) => weights[w.key] !== regionWeights[w.key]);
@@ -430,10 +450,10 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               </div>
             )}
           </Fold>
-          <Fold title="Ukázkové uzavírky" meta={DEMO_CLOSURES.length}>
+          <Fold title="Ukázkové uzavírky" meta={demos.length}>
             <p className="muted">Vyberte ukázku nebo úsek v mapě. Vpravo v záložce Uzavírka uvidíte objížďku a dopady.</p>
             <div className="demo-closures">
-              {DEMO_CLOSURES.map((d) => (
+              {demos.map((d) => (
                 <button
                   key={d.roadId}
                   className={d.roadId === selectedId ? "active" : ""}
@@ -537,6 +557,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 <span title={STAV_HINT[s]}>{stavLabel(s)}</span>
               </span>
             ))}
+            <span>
+              <i style={{ background: "#ffffff", border: "2px solid #0b1220" }} /> uzavírka ŘSD (SRTI)
+            </span>
           </div>
           {selected ? (
             <DetailSheet id={`${selected.id}-${demoId === selected.id}`} onClose={() => setSelectedId(null)}>

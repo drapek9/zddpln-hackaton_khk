@@ -40,8 +40,8 @@ export default function Sources({ stats, onHome, onNavigate }: Props) {
           {stats.km} km silnic II. a III. třídy.
         </p>
         <p className="hint">
-          Plánované a probíhající opravy kraj jako otevřená data nezveřejňuje. Takové opravy jsou v aplikaci
-          označené jako <b>simulace</b>.
+          Aktuální stav oprav kraj v otevřených datech nezveřejňuje. Používáme skutečný plán oprav na rok 2022 z
+          Data KHK jako ukázky, vlastní plánované opravy jsou v aplikaci označené jako <b>simulace</b>.
         </p>
         <table>
           <thead>
