@@ -27,6 +27,7 @@ export const SOURCES: Source[] = [
   { name: "Poskytovatelé sociálních služeb", itemId: "0a65793445574552b78e7f1f0761ba13", layer: 0, use: "Faktor zdravotnictví a sociální péče" },
   { name: "Průmyslové zóny", itemId: "10547be46d01470186fe5d8d1a8ca758", layer: 0, use: "Faktor nákladní dopravy" },
   { name: "Hospodářsky a sociálně ohrožené oblasti", itemId: "2b8f4c0b14934ab5ad6f9d88af314808", layer: 0, use: "Faktor ohrožených oblastí (HSOO)" },
+  { name: "Hranice Královéhradeckého kraje", itemId: "f8a73250419c48f6a8118cfed2720566", layer: 0, use: "Obrys kraje na mapě, okolí kraje je šedé (CC0)" },
 ];
 
 export function sourceUrl(s: Source) {

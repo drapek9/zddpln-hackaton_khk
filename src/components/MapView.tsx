@@ -8,7 +8,7 @@ type Props = {
   repairs: Repair[];
   selectedId: number | null;
   onSelect: (id: number | null, lngLat?: { lng: number; lat: number }) => void;
-  /** Podklad mapy: světlý režim (positron), tmavý režim (dark matter). */
+  /** Podklad mapy: světlý režim (barevný Voyager), tmavý režim (dark matter). */
   theme: MapTheme;
   showCondition: boolean;
   pois?: Poi[];
@@ -26,6 +26,71 @@ type Props = {
 
 // Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
 const HOME_VIEW = { center: [15.83, 50.35] as [number, number], zoom: 8.4, bearing: 0, pitch: 0 };
+
+// Hranice kraje (Data KHK, „Hranice Královéhradeckého kraje“, CC0). Okolí kraje je šedé, kraj zůstane barevný.
+type Ring = [number, number][];
+let krajPromise: Promise<Ring[] | null> | null = null;
+function loadKraj() {
+  krajPromise ??= fetch("/geo/kraj.json")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((fc) => {
+      const g = fc?.features?.[0]?.geometry;
+      if (!g) return null;
+      return (g.type === "Polygon" ? [g.coordinates[0]] : g.coordinates.map((p: Ring[]) => p[0])) as Ring[];
+    })
+    .catch(() => null);
+  return krajPromise;
+}
+
+const WORLD: Ring = [
+  [-180, -85],
+  [180, -85],
+  [180, 85],
+  [-180, 85],
+  [-180, -85],
+];
+
+function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
+  if (map.getSource("kraj")) return;
+  const before = map.getLayer("roads-glow") ? "roads-glow" : undefined;
+  map.addSource("kraj-mask", {
+    type: "geojson",
+    data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [WORLD, ...rings] } },
+  });
+  map.addSource("kraj", {
+    type: "geojson",
+    data: { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: rings } },
+  });
+  map.addLayer(
+    {
+      id: "kraj-mask",
+      type: "fill",
+      source: "kraj-mask",
+      paint: { "fill-color": dark ? "#05080c" : "#8a8f96", "fill-opacity": dark ? 0.55 : 0.42 },
+    },
+    before,
+  );
+  map.addLayer(
+    {
+      id: "kraj-casing",
+      type: "line",
+      source: "kraj",
+      layout: { "line-join": "round" },
+      paint: { "line-color": dark ? "#0b0f14" : "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4, 12, 7], "line-opacity": 0.8 },
+    },
+    before,
+  );
+  map.addLayer(
+    {
+      id: "kraj-line",
+      type: "line",
+      source: "kraj",
+      layout: { "line-join": "round" },
+      paint: { "line-color": dark ? "#cbd5e1" : "#334155", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.6, 12, 3] },
+    },
+    before,
+  );
+}
 
 const EMPTY: number[] = [];
 const EMPTY_PLACES: NonNullable<Props["places"]> = [];
@@ -47,8 +112,8 @@ export type MapTheme = "dark" | "light" | "office";
 
 const STYLES: Record<MapTheme, string> = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-  office: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  light: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+  office: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
 };
 
 /** Barva zvýrazněných úseků podle podkladu (stejná v legendě). */
@@ -161,6 +226,7 @@ function MapInner({
 
     map.on("load", () => {
       map.addSource("roads", { type: "geojson", data: roadsToGeo(roads, repairs), promoteId: "id" });
+      loadKraj().then((rings) => rings && mapRef.current === map && addKraj(map, rings, theme === "dark"));
       map.addSource("pois", { type: "geojson", data: pointsToGeo(pois) });
       map.addSource("stops", { type: "geojson", data: pointsToGeo(stops.map((s) => ({ ...s, kind: "stop" }))) });
 

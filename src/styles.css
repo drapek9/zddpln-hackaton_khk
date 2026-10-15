@@ -1038,3 +1038,9 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
 .kbd-hint { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 kbd { font-family: var(--font); font-size: 11px; font-weight: 600; padding: 1px 5px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--text-2); }
 @media (max-width: 900px) { .kbd-hint { display: none; } }
+/* Mobil: schovaný vysouvací panel nesmí natahovat stránku (jinak jde celá posunout) */
+@media (max-width: 900px) {
+  .workspace { overflow: hidden; }
+  html, body { overflow: hidden; }
+  .landing3, .sources, .system { overscroll-behavior: contain; }
+}
