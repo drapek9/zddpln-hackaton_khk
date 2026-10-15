@@ -65,6 +65,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   }, [role]);
   const live = !!user && user.role === "admin";
   const [systemDirty, setSystemDirty] = useState(false);
+  // Strop hlasů ze serveru, ať ho uložení vah nepřepíše (NAPADY D5).
+  const voteCap = useRef<number | undefined>(undefined);
   const goView = (next: View) => {
     if (view === "system" && next !== "system" && systemDirty && !window.confirm("Máte neuložené váhy kraje. Odejít bez uložení?")) return;
     setView(next);
@@ -81,7 +83,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     if (!live) return;
     adminApi
       .weights()
-      .then(({ weights: w }) => {
+      .then(({ weights: w, vote_cap }) => {
+        voteCap.current = vote_cap;
         const next = { ...DEFAULT_WEIGHTS, ...w };
         setRegionWeights(next);
         setWeights(next);
@@ -90,7 +93,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   }, [live]);
 
   const saveRegion = async (next: Weights) => {
-    if (live) await adminApi.saveWeights(next);
+    if (live) await adminApi.saveWeights(next, voteCap.current);
     else saveRegionWeights(next);
     setRegionWeights(next);
     setWeights(next);
