@@ -227,11 +227,12 @@ function MapInner({
         id: "srti-points",
         type: "circle",
         source: "srti",
+        // Bílý bod s tmavým okrajem, aby se nesplýval s barvami silnic.
         paint: {
-          "circle-radius": 6,
-          "circle-color": ["case", ["get", "full"], "#dc2626", "#f59e0b"],
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 1.5,
+          "circle-radius": 7,
+          "circle-color": "#ffffff",
+          "circle-stroke-color": "#0b1220",
+          "circle-stroke-width": 2.5,
         },
       });
       fetch("/api/closures", { credentials: "same-origin" })

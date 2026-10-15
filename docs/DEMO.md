@@ -30,3 +30,9 @@ Pokud krok nejde, značka „✗“ a poznámka. Neskrývat.
 ## Výsledek
 Datum a čas: ____  Prohlížeč: ____  Zařízení: ____
 Chyby: ____
+
+## Záznam průchodu (15. 10., 13:50, desktop, Chrome přes náhled)
+- Veřejná mapa: SRTI body (bílé, tmavý okraj) se načtou z `/api/closures`, 45 bodů v kraji. OK.
+- Občan `obcan1` (localhost, seed účet): „Upozornění“ v Moje cesty ukáže prázdný stav a tlačítko „Zapnout upozornění v prohlížeči“. OK.
+- Neověřeno: ★1 simulace II/303 (účty úředníka a objížďka v UI nebyly proklikány), potvrzení uzavírky, doručení upozornění, Web Push (klik na tlačítko nezkoušen, vyžaduje VAPID klíč a souhlas), mobil 375 px, ★3 export a Zdroje dat.
+- Legenda na mapě zatím neukazuje SRTI body (chybí položka).
