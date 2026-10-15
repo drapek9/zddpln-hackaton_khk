@@ -1,27 +1,51 @@
 import type { Repair, Road } from "./types";
 
-// Moje cesty (v3 ★2): domov a práce jako body. Ukládá se jen v tomto prohlížeči, zaokrouhleno na ~100 m.
-export type Place = { kind: "home" | "work"; x: number; y: number };
+// Moje cesty (v3 ★2): vlastní pojmenovaná místa (domov, práce, nemocnice, lékař…), aspoň dvě.
+// Ukládá se jen v tomto prohlížeči, zaokrouhleno na ~100 m. Místo bez souřadnic = ještě nevybrané.
+export type Place = { id: string; name: string; x: number | null; y: number | null };
+export type SetPlace = Place & { x: number; y: number };
 
+export const MIN_PLACES = 2;
 const KEY = "cesty-khk-places";
 
+export const isSet = (p: Place): p is SetPlace => p.x != null && p.y != null;
+export const setPlaces = (places: Place[]) => places.filter(isSet);
+
+export const newPlace = (name = ""): Place => ({ id: Math.random().toString(36).slice(2, 9), name, x: null, y: null });
+
 /** Zaokrouhlení na 3 desetinná místa (~100 m), žádná adresa (NAPADY.md, č. 5). */
-export const roundPlace = (p: Place): Place => ({ ...p, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 });
+export const roundCoord = (v: number) => Math.round(v * 1000) / 1000;
+
+const defaults = () => [newPlace("Domov"), newPlace("Práce")];
+
+/** Doplní seznam na minimum dvou míst. */
+export const ensureMin = (places: Place[]) =>
+  places.length >= MIN_PLACES ? places : [...places, ...Array.from({ length: MIN_PLACES - places.length }, () => newPlace())];
 
 export function loadPlaces(): Place[] {
   try {
     const raw = localStorage.getItem(KEY);
-    const list = raw ? (JSON.parse(raw) as Place[]) : [];
-    return Array.isArray(list) ? list.filter((p) => p && (p.kind === "home" || p.kind === "work")) : [];
+    const list = raw ? (JSON.parse(raw) as unknown[]) : [];
+    if (!Array.isArray(list) || !list.length) return defaults();
+    const parsed = list
+      .map((item): Place | null => {
+        const p = item as Partial<Place> & { kind?: string };
+        if (!p || typeof p !== "object") return null;
+        // Starý formát {kind: "home" | "work", x, y}.
+        const name = typeof p.name === "string" ? p.name : p.kind === "home" ? "Domov" : p.kind === "work" ? "Práce" : "";
+        const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+        return { id: typeof p.id === "string" ? p.id : newPlace().id, name, x: num(p.x), y: num(p.y) };
+      })
+      .filter((p): p is Place => p != null);
+    return ensureMin(parsed);
   } catch {
-    return [];
+    return defaults();
   }
 }
 
 export function savePlaces(places: Place[]) {
   try {
-    if (places.length) localStorage.setItem(KEY, JSON.stringify(places));
-    else localStorage.removeItem(KEY);
+    localStorage.setItem(KEY, JSON.stringify(places));
   } catch {
     // úložiště není dostupné, místa platí jen do zavření stránky
   }
@@ -47,17 +71,18 @@ export type TripImpact = {
 };
 
 /**
- * Úseky v pásu kolem spojnice domov–práce (odhad, dokud backend nevrátí trasu po silnicích).
- * U samotného domova bere okruh 3 km.
+ * Úseky v pásu kolem spojnic mezi místy v pořadí seznamu (odhad, dokud backend nevrátí trasu po silnicích).
+ * U jediného místa bere okruh 3 km.
  */
 export function tripImpact(places: Place[], roads: Road[], repairs: Repair[], corridorKm = 1.5): TripImpact | null {
-  const home = places.find((p) => p.kind === "home");
-  const work = places.find((p) => p.kind === "work");
-  if (!home) return null;
-  const a: [number, number] = [home.x, home.y];
-  const b: [number, number] = work ? [work.x, work.y] : a;
-  const width = work ? corridorKm : 3;
-  const hits = roads.filter((r) => r.g.some((pt, i) => i % 3 === 0 && distToSegmentKm(pt, a, b) <= width));
+  const pts = setPlaces(places).map((p): [number, number] => [p.x, p.y]);
+  if (!pts.length) return null;
+  const segs: [[number, number], [number, number]][] =
+    pts.length === 1 ? [[pts[0], pts[0]]] : pts.slice(1).map((b, i) => [pts[i], b]);
+  const width = pts.length > 1 ? corridorKm : 3;
+  const hits = roads.filter((r) =>
+    r.g.some((pt, i) => i % 3 === 0 && segs.some(([a, b]) => distToSegmentKm(pt, a, b) <= width)),
+  );
   const ids = new Set(hits.map((r) => r.id));
   const byId = new Map(hits.map((r) => [r.id, r]));
   return {
@@ -67,6 +92,6 @@ export function tripImpact(places: Place[], roads: Road[], repairs: Repair[], co
       .map((repair) => ({ repair, road: byId.get(repair.roadId)! })),
     badKm: hits.filter((r) => r.stav === "havarijní" || r.stav === "SUPERhavarijní").reduce((s, r) => s + r.delka, 0) / 1000,
     lines: Array.from(new Set(hits.flatMap((r) => r.lines.map((l) => l.linka)))).slice(0, 12),
-    directKm: distToSegmentKm(a, b, b),
+    directKm: segs.reduce((s, [a, b]) => s + distToSegmentKm(a, b, b), 0),
   };
 }

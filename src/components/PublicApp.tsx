@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { savePlacesToServer } from "../lib/notifications";
 import { toast } from "./Toaster";
 import MyTrip from "./MyTrip";
-import { loadPlaces, savePlaces, tripImpact, type Place } from "../lib/commute";
+import { loadPlaces, roundCoord, savePlaces, setPlaces as onlySet, tripImpact, type Place } from "../lib/commute";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import Fold from "./Fold";
@@ -40,22 +40,27 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
   const { theme } = useTheme();
   const mapTheme = theme === "dark" ? "dark" : "light";
   const [places, setPlacesState] = useState<Place[]>(loadPlaces);
-  const [picking, setPicking] = useState<Place["kind"] | null>(null);
+  const [picking, setPicking] = useState<string | null>(null);
   const setPlaces = (next: Place[]) => {
     setPlacesState(next);
     savePlaces(next);
   };
-  // Přihlášený občan: obě místa uložíme i na serveru, aby ho uzavírka na trase upozornila.
+  // Přihlášený občan: první dvě vybraná místa uložíme i na serveru (API zná jen dvojici míst),
+  // aby ho uzavírka na trase upozornila. Posíláme jen při změně souřadnic, ne při psaní názvu.
+  const serverKey = onlySet(places)
+    .slice(0, 2)
+    .map((p) => `${p.x},${p.y}`)
+    .join(";");
   useEffect(() => {
     if (user?.role !== "citizen") return;
-    const home = places.find((p) => p.kind === "home");
-    const work = places.find((p) => p.kind === "work");
+    const [home, work] = onlySet(places);
     if (!home || !work) return;
     savePlacesToServer(home, work).then(
       () => toast("Trasa uložena, upozorníme vás na uzavírky"),
       () => toast("Trasu se nepodařilo uložit na server", "warn"),
     );
-  }, [places, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey, user]);
   const impact = useMemo(() => tripImpact(places, data.roads, repairs), [places, data.roads, repairs]);
   const highlight = useMemo(() => (impact ? impact.repairs.map((r) => r.road.id) : []), [impact]);
   const [status, setStatus] = useState<"all" | Repair["status"]>("all");
@@ -299,7 +304,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             selectedId={selectedId}
             onSelect={(id, lngLat) => {
               if (picking && lngLat) {
-                setPlaces([...places.filter((p) => p.kind !== picking), { kind: picking, x: Math.round(lngLat.lng * 1000) / 1000, y: Math.round(lngLat.lat * 1000) / 1000 }]);
+                setPlaces(places.map((p) => (p.id === picking ? { ...p, x: roundCoord(lngLat.lng), y: roundCoord(lngLat.lat) } : p)));
                 setPicking(null);
                 return;
               }
@@ -310,10 +315,14 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             showCondition
             pois={data.pois}
             showPois={false}
-            places={places}
+            places={onlySet(places)}
             highlight={highlight}
           />
-          {picking && <div className="pick-banner">Klikněte do mapy: {picking === "home" ? "kde bydlíte" : "kam jezdíte"}</div>}
+          {picking && (
+            <div className="pick-banner">
+              Klikněte do mapy: {places.find((p) => p.id === picking)?.name.trim() || "vybrané místo"}
+            </div>
+          )}
           <SheetBar value={sheet} onChange={setSheet} left="Přehled" />
           <div className="legend">
             <span>

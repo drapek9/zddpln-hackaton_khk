@@ -3,7 +3,7 @@ import { AuthError, login, register, type User } from "../lib/auth";
 import type { View } from "../App";
 
 type Props = {
-  /** Server s přihlášením neběží: ukážeme demo vstup bez hesla. */
+  /** Server s přihlášením neběží: demo vstup je jediná cesta do správy. */
   offline: boolean;
   note?: string;
   onUser: (user: User) => void;
@@ -54,18 +54,9 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
           {note && <p className="auth-note">{note}</p>}
 
           {offline && (
-            <div className="auth-offline">
-              <b>Server s přihlášením teď neběží.</b>
-              <span>Pro ukázku můžete vstoupit bez hesla:</span>
-              <div className="row-actions">
-                <button className="btn" onClick={() => onDemo("official")}>
-                  Jako úředník (demo)
-                </button>
-                <button className="btn" onClick={() => onDemo("admin")}>
-                  Jako admin (demo)
-                </button>
-              </div>
-            </div>
+            <p className="auth-offline">
+              <b>Server s přihlášením teď neběží.</b> Správu si můžete prohlédnout v ukázce níže.
+            </p>
           )}
 
           <form className="auth-form" onSubmit={submit} noValidate>
@@ -137,6 +128,20 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
           <button className="btn auth-public" onClick={onPublic}>
             Pokračovat bez přihlášení →
           </button>
+
+          {/* Ukázka správy bez účtu (rozhodnutí Matouše 15. 10.): nic nezapisuje na server, jen do prohlížeče. */}
+          <div className="auth-demo">
+            <span>Ukázka správy bez účtu</span>
+            <div className="auth-demo-btns">
+              <button className="btn small" onClick={() => onDemo("official")}>
+                Demo úředník
+              </button>
+              <button className="btn small" onClick={() => onDemo("admin")}>
+                Demo admin
+              </button>
+            </div>
+            <small>Změny se ukládají jen v tomto prohlížeči.</small>
+          </div>
         </section>
   );
 }

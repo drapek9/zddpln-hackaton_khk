@@ -299,7 +299,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             Cesty KHK
           </button>
           {onRole ? (
-            <div className="role-switch" role="group" aria-label="Pohled (demo bez serveru)" title="Demo bez serveru: přepnutí role">
+            <div className="role-switch" role="group" aria-label="Pohled (ukázka bez přihlášení)" title="Ukázka bez přihlášení: přepnutí role">
               <button className={role === "official" ? "on" : ""} onClick={() => onRole("official")}>
                 Úředník
               </button>
@@ -341,7 +341,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             {rankingLoading ? "načítám…" : source === "api" ? "● živá data" : "○ offline režim"}
           </span>
           <ThemeToggle />
-          {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Server s přihlášením neběží">demo</span>}
+          {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Ukázka bez přihlášení: změny se ukládají jen v tomto prohlížeči">demo</span>}
         </div>
       </header>
       {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
