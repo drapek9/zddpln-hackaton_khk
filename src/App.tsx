@@ -21,7 +21,7 @@ export default function App() {
   // Přihlášení (kap. 15): při načtení se zeptáme serveru, kdo jsem.
   const [session, setSession] = useState<Session | null>(null);
   const [loginNote, setLoginNote] = useState("");
-  // Demo bez backendu: roli úřadu jde zvolit ručně, jen když server s přihlášením neběží.
+  // Ukázka správy bez účtu: roli úřadu jde zvolit ručně (tlačítka Demo na přihlášení). Na server nic nezapisuje.
   const [demoRole, setDemoRole] = useState<OfficeRole | null>(null);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function App() {
   }
 
   const officeRole: OfficeRole | null =
-    user && (user.role === "official" || user.role === "admin") ? user.role : offline ? demoRole : null;
+    user && (user.role === "official" || user.role === "admin") ? user.role : !user ? demoRole : null;
 
   const go = (next: View) => setView(next);
 
@@ -98,7 +98,7 @@ export default function App() {
         data={data}
         role={officeRole}
         user={user}
-        onRole={offline && !user ? setDemoRole : undefined}
+        onRole={!user ? setDemoRole : undefined}
         onLogout={signOut}
         repairs={repairs}
         onRepairs={(next) => {

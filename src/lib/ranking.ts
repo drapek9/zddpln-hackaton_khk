@@ -2,7 +2,6 @@
 // Stejný algoritmus jako backend/app/core/scoring.py (ranking, classify), aby pořadí sedělo,
 // i když /api/ranking ještě neběží.
 import type { Road, Weights } from "./types";
-import { DEFAULT_WEIGHTS } from "./types";
 import { roadScore } from "./priority";
 import { api, ApiUnavailable, type Pin, type PriorityClass } from "./api";
 
@@ -87,8 +86,10 @@ export function localRanking(roads: Road[], weights: Weights, pins: Pin[]): Rank
 }
 
 function weightsQuery(weights: Weights) {
-  const changed = (Object.keys(weights) as (keyof Weights)[]).filter((k) => weights[k] !== DEFAULT_WEIGHTS[k]);
-  return new URLSearchParams(changed.map((k) => [k, String(weights[k])])).toString();
+  // Posílat vždy všechny váhy (D4), aby se nerozcházely s výchozími na backendu.
+  return new URLSearchParams(
+    (Object.keys(weights) as (keyof Weights)[]).map((k) => [k, String(weights[k])]),
+  ).toString();
 }
 
 /**
@@ -99,12 +100,17 @@ export async function fetchRanking(
   roads: Road[],
   weights: Weights,
   localPins: Pin[],
-): Promise<{ rows: RankRow[]; source: RankingSource }> {
+  signal?: AbortSignal,
+): Promise<{ rows: RankRow[]; source: RankingSource; apiPins?: Pin[] }> {
   try {
-    const ranked = await api.ranking(weightsQuery(weights));
-    return {
-      source: "api",
-      rows: ranked.map((r) => ({
+    const query = weightsQuery(weights);
+    const ranked = await api.ranking(query, signal);
+    const apiPins: Pin[] = [];
+    const rows = ranked.map((r) => {
+      if (r.pinned) {
+        apiPins.push({ road_id: r.road.id, priority: r.priority, reason: r.pin_reason });
+      }
+      return {
         id: r.road.id,
         score: r.score,
         modelClass: r.model_class,
@@ -112,9 +118,17 @@ export async function fetchRanking(
         pinned: r.pinned,
         pinReason: r.pin_reason,
         rank: r.rank,
-      })),
+      };
+    });
+    return {
+      source: "api",
+      rows,
+      apiPins,
     };
-  } catch (err) {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw err;
+    }
     if (!(err instanceof ApiUnavailable)) console.warn(err);
     return { source: "local", rows: localRanking(roads, weights, localPins) };
   }

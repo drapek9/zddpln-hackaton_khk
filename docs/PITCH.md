@@ -79,7 +79,7 @@ Termíny: feature freeze **16:00**, odevzdání **17:00–17:15** (kód + `.pptx
 | Prompt injection přes hlášení? | Výstup AI je pevná struktura, nic se z něj nespouští. |
 | Proč ne RoadMapper? | Mapa stavu je jen náš základ. Nové je pořadí, uzavírky, objížďky a občan. |
 
-## 9. Co bylo připravené a co vzniklo dnes — doplnit (Tomáš, Šimon, Matouš)
+## 9. Co bylo připravené a co vzniklo dnes — NEAKTIVNÍ (15. 10., 13:20: rozhodnuto nepsat, nepoužíváme)
 - Před soutěží: _doplnit podle odpovědi organizátorů._
 - Dnes: _doplnit_ (např. propojení frontend–backend, skutečné uzavírky 2022, studenti, IZS, povodně, přihlášení a role, export DCAT).
 

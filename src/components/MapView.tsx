@@ -19,7 +19,7 @@ type Props = {
   /** Zvýrazněné úseky (rozpočtový plán, komplikace na mé cestě). */
   highlight?: number[];
   /** Moje místa a spojnice mezi nimi (veřejnost, Moje cesty). */
-  places?: { kind: "home" | "work"; x: number; y: number }[];
+  places?: { id: string; name: string; x: number; y: number }[];
   /** Úsek pod myší v seznamu (náhled před kliknutím). */
   hoverId?: number | null;
 };
@@ -66,17 +66,7 @@ function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
       id: "kraj-mask",
       type: "fill",
       source: "kraj-mask",
-      paint: { "fill-color": dark ? "#05080c" : "#8a8f96", "fill-opacity": dark ? 0.55 : 0.42 },
-    },
-    before,
-  );
-  map.addLayer(
-    {
-      id: "kraj-casing",
-      type: "line",
-      source: "kraj",
-      layout: { "line-join": "round" },
-      paint: { "line-color": dark ? "#0b0f14" : "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4, 12, 7], "line-opacity": 0.8 },
+      paint: { "fill-color": dark ? "#05080c" : "#8a8f96", "fill-opacity": dark ? 0.4 : 0.26 },
     },
     before,
   );
@@ -86,7 +76,7 @@ function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
       type: "line",
       source: "kraj",
       layout: { "line-join": "round" },
-      paint: { "line-color": dark ? "#cbd5e1" : "#334155", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.6, 12, 3] },
+      paint: { "line-color": dark ? "#94a3b8" : "#475569", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.4, 12, 2.4], "line-opacity": 0.9 },
     },
     before,
   );
@@ -96,13 +86,13 @@ const EMPTY: number[] = [];
 const EMPTY_PLACES: NonNullable<Props["places"]> = [];
 
 function placesToGeo(places: NonNullable<Props["places"]>) {
-  const pts = places.map((p) => ({
+  const pts = places.map((p, i) => ({
     type: "Feature" as const,
-    properties: { kind: p.kind, label: p.kind === "home" ? "Domov" : "Práce" },
+    properties: { kind: i === 0 ? "first" : "place", label: p.name },
     geometry: { type: "Point" as const, coordinates: [p.x, p.y] },
   }));
   const line =
-    places.length === 2
+    places.length >= 2
       ? [{ type: "Feature" as const, properties: { kind: "link", label: "" }, geometry: { type: "LineString" as const, coordinates: places.map((p) => [p.x, p.y]) } }]
       : [];
   return { type: "FeatureCollection" as const, features: [...line, ...pts] };
@@ -183,6 +173,8 @@ function MapInner({
   onSelectRef.current = onSelect;
   const showConditionRef = useRef(showCondition);
   showConditionRef.current = showCondition;
+  const showPoisRef = useRef(showPois);
+  showPoisRef.current = showPois;
   const highlightRef = useRef(highlight);
   highlightRef.current = highlight;
   const placesRef = useRef(places);
@@ -225,6 +217,7 @@ function MapInner({
     ro.observe(ref.current);
 
     map.on("load", () => {
+      const labels = map.getStyle().layers.find((l) => l.type === "symbol")?.id;
       map.addSource("roads", { type: "geojson", data: roadsToGeo(roads, repairs), promoteId: "id" });
       loadKraj().then((rings) => rings && mapRef.current === map && addKraj(map, rings, theme === "dark"));
       map.addSource("pois", { type: "geojson", data: pointsToGeo(pois) });
@@ -249,7 +242,7 @@ function MapInner({
           "line-width": 6,
           "line-opacity": ["case", ["==", ["get", "repair"], ""], 0, 0.45],
         },
-      });
+      }, labels);
       map.addLayer({
         id: "roads-line",
         type: "line",
@@ -277,13 +270,25 @@ function MapInner({
             ["linear"],
             ["zoom"],
             7,
-            ["case", ["boolean", ["feature-state", "selected"], false], 3.5, ["boolean", ["feature-state", "hover"], false], 3, 1.2],
+            ["case", ["boolean", ["feature-state", "selected"], false], 3.5, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 3, 1.2],
             12,
-            ["case", ["boolean", ["feature-state", "selected"], false], 8, ["boolean", ["feature-state", "hover"], false], 7, 3.2],
+            ["case", ["boolean", ["feature-state", "selected"], false], 8, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 7, 3.2],
           ],
           "line-opacity": showConditionRef.current ? 0.95 : 0.18,
         },
-      });
+      }, labels);
+      // Neviditelná široká čára jen pro klik a najetí: trefit tenkou silnici prstem je jinak těžké.
+      map.addLayer({
+        id: "roads-hit",
+        type: "line",
+        source: "roads",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#000",
+          "line-opacity": 0,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 14, 12, 22],
+        },
+      }, labels);
       map.addLayer(
         {
           id: "roads-highlight",
@@ -299,6 +304,35 @@ function MapInner({
         },
         "roads-line",
       );
+      // Právě probíhající uzavírky ŘSD (SRTI, CC BY 4.0). Při chybě backendu se vrstva nezobrazí.
+      map.addSource("srti", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({
+        id: "srti-points",
+        type: "circle",
+        source: "srti",
+        // Bílý bod s tmavým okrajem, aby se nesplýval s barvami silnic.
+        paint: {
+          "circle-radius": 7,
+          "circle-color": "#ffffff",
+          "circle-stroke-color": "#0b1220",
+          "circle-stroke-width": 2.5,
+        },
+      });
+      fetch("/api/closures", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((body: { srti?: { id: string; label: string; full_closure: boolean; lon: number; lat: number }[] } | null) => {
+          const items = body?.srti ?? [];
+          const src = map.getSource("srti") as GeoJSONSource | undefined;
+          src?.setData({
+            type: "FeatureCollection",
+            features: items.map((s) => ({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+              properties: { id: s.id, label: s.label, full: s.full_closure },
+            })),
+          });
+        })
+        .catch(() => undefined);
       map.addSource("places", { type: "geojson", data: placesToGeo(placesRef.current) });
       map.addSource("detour", { type: "geojson", data: detourToGeo(detourRef.current) });
       map.addLayer({
@@ -307,19 +341,20 @@ function MapInner({
         source: "detour",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": "#0b1220", "line-width": 8, "line-opacity": 0.6 },
-      });
+      }, labels);
       map.addLayer({
         id: "detour-line",
         type: "line",
         source: "detour",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": "#a78bfa", "line-width": 4, "line-dasharray": [1.5, 1] },
-      });
+      }, labels);
       map.addLayer({
         id: "poi-circles",
         type: "circle",
         source: "pois",
         minzoom: 9,
+        layout: { visibility: showPoisRef.current ? "visible" : "none" },
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 3, 13, 6],
           "circle-color": [
@@ -374,7 +409,7 @@ function MapInner({
         filter: ["!=", ["get", "kind"], "link"],
         paint: {
           "circle-radius": 9,
-          "circle-color": ["match", ["get", "kind"], "home", "#0f6b5c", theme === "dark" ? "#3b82f6" : "#1e3a5f"],
+          "circle-color": ["match", ["get", "kind"], "first", "#0f6b5c", theme === "dark" ? "#3b82f6" : "#1e3a5f"],
           "circle-stroke-width": 3,
           "circle-stroke-color": "#fff",
         },
@@ -385,19 +420,45 @@ function MapInner({
         prevSelectedRef.current = selectedRef.current;
       }
 
-      map.on("click", "roads-line", (e) => {
-        const id = e.features?.[0]?.properties?.id;
-        if (id != null) onSelectRef.current(Number(id), e.lngLat);
-      });
+      const nearestRoad = (point: maplibregl.PointLike) => {
+        const hits = map.queryRenderedFeatures(point, { layers: ["roads-hit"] });
+        if (hits.length < 2) return hits[0]?.properties?.id as number | undefined;
+        const at = map.unproject(point);
+        let best: number | undefined;
+        let bestD = Infinity;
+        for (const f of hits) {
+          const g = f.geometry;
+          const lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+          for (const line of lines)
+            for (const [x, y] of line) {
+              const d = (x - at.lng) ** 2 + (y - at.lat) ** 2;
+              if (d < bestD) {
+                bestD = d;
+                best = f.properties?.id;
+              }
+            }
+        }
+        return best;
+      };
       map.on("click", (e) => {
-        const hits = map.queryRenderedFeatures(e.point, { layers: ["roads-line"] });
-        if (!hits.length) onSelectRef.current(null, e.lngLat);
+        const id = nearestRoad(e.point);
+        onSelectRef.current(id != null ? Number(id) : null, e.lngLat);
       });
-      map.on("mouseenter", "roads-line", () => {
+      let pointerId: number | null = null;
+      const setPointer = (id: number | null) => {
+        if (id === pointerId) return;
+        if (pointerId != null) map.setFeatureState({ source: "roads", id: pointerId }, { pointer: false });
+        if (id != null) map.setFeatureState({ source: "roads", id }, { pointer: true });
+        pointerId = id;
+      };
+      map.on("mousemove", "roads-hit", (e) => {
         map.getCanvas().style.cursor = "pointer";
+        const id = nearestRoad(e.point);
+        setPointer(id != null ? Number(id) : null);
       });
-      map.on("mouseleave", "roads-line", () => {
+      map.on("mouseleave", "roads-hit", () => {
         map.getCanvas().style.cursor = "";
+        setPointer(null);
       });
     });
 

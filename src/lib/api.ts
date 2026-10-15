@@ -21,6 +21,8 @@ export type RoadSummary = {
   last_repair: number | null;
   obce: string[];
   lines: string[];
+  intensity?: number | null;
+  intensity_src?: "csd2025" | "odhad" | null;
 };
 
 export type RankedRoad = {
@@ -32,6 +34,13 @@ export type RankedRoad = {
   pin_reason: string | null;
   rank: number;
   votes: number;
+};
+
+export type RankingResponse = {
+  weights_source: string;
+  count: number;
+  vypocteno: string;
+  items: RankedRoad[];
 };
 
 export type DetourResult = {
@@ -48,6 +57,83 @@ export type DetourResult = {
   note: string;
 };
 
+export type RescueObec = {
+  kod: string;
+  nazev: string;
+  obyvatel: number;
+  service: "zzs" | "hzs";
+  before_min: number;
+  after_min: number | null;
+  extra_min: number | null;
+  over_limit: boolean;
+};
+
+export type RescueImpact = {
+  closed_road_ids: number[];
+  obce: RescueObec[];
+  people_slower: number;
+  zzs_over_limit: number;
+  limit_min: number;
+  alerts: ApiAlert[];
+  src: string;
+  note: string;
+};
+
+export type CutOffObec = {
+  kod: string;
+  nazev: string;
+  obyvatel: number;
+  studenti: number;
+};
+
+export type ClosurePreviewResponse = {
+  closure: {
+    id?: number;
+    road_id: number;
+    title: string;
+    date_from: string;
+    date_to: string;
+    restriction: string;
+    note?: string | null;
+    status: string;
+    confirmed: boolean;
+    simulated: boolean;
+    label: string;
+  };
+  detour: DetourResult;
+  alerts: ApiAlert[];
+  announcement: string;
+  vehicles_per_day: number | null;
+  vehicles_quality: "csd2025" | "odhad" | "chybi";
+  citizens_on_route: number;
+  students_per_day: number;
+  cut_off_obce: CutOffObec[];
+  rescue: RescueImpact | null;
+  saved: boolean;
+};
+
+// GET /api/budget (services/budget.py normalize_plan). Cena je vždy předpoklad.
+export type ServerProject = {
+  sil: string | null;
+  okres: string | null;
+  km: number | null;
+  cost_kc: number | null;
+  score: number | null;
+  extra_km: number | null;
+  road_ids: number[];
+};
+export type ServerPlan = {
+  amount: number;
+  repaired_km: number | null;
+  cost_kc: number | null;
+  remaining_emergency_km: number | null;
+  projects: ServerProject[];
+};
+export type BudgetResponse = { ready: boolean; plans: ServerPlan[]; note: string; weights_source?: string };
+
+// Odpovědi /api/ai/*: text je vždy označený, „šablona“ když je AI vypnutá.
+export type AiText = { text: string; source: "ai" | "sablona"; label: string; ready?: boolean };
+
 export class ApiUnavailable extends Error {}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -63,17 +149,73 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiUnavailable("Backend neběží.");
   }
   if (res.status === 401) notifyUnauthorized();
-  // Vite bez backendu vrací 404/502/504, chybějící endpoint 404/405.
-  if ([404, 405, 501, 502, 503, 504].includes(res.status)) {
-    throw new ApiUnavailable(`Endpoint ${path} zatím není (${res.status}).`);
+  // D8: Skutečné 404 s JSON obsahem je chyba dotazu/dat (např. neznámý úsek), ne nedostupnost celého API.
+  // 502/503/504 a 405 nebo 501 značí nepřítomnost endpointu či proxy chybu.
+  if ([501, 502, 503, 504].includes(res.status)) {
+    throw new ApiUnavailable(`Backend nedostupný (${res.status}).`);
   }
-  if (!res.ok) throw new Error(`API ${path}: ${res.status}`);
+  if (!res.ok) {
+    let detail = `API ${path}: ${res.status}`;
+    try {
+      const data = await res.json();
+      if (data?.detail) detail = String(data.detail);
+    } catch {
+      if (res.status === 404) {
+        throw new ApiUnavailable(`Endpoint ${path} zatím není (404).`);
+      }
+    }
+    throw new Error(detail);
+  }
   return res.json() as Promise<T>;
 }
 
 export const api = {
   health: () => request<{ ok: boolean; roads: number; graph_nodes: number }>("/health"),
-  ranking: (query: string) => request<RankedRoad[]>(`/ranking${query ? `?${query}` : ""}`),
+  ranking: (query: string, signal?: AbortSignal) =>
+    request<RankingResponse | RankedRoad[]>(`/ranking${query ? `?${query}` : ""}`, { signal }).then((res) =>
+      Array.isArray(res) ? res : res.items,
+    ),
+  setPin: (body: { road_id: number; priority: PriorityClass; reason?: string | null }) =>
+    request<{ road_id: number; priority: PriorityClass; reason: string | null }>("/pins", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deletePin: (roadId: number) =>
+    request<{ ok: boolean }>(`/pins/${roadId}`, {
+      method: "DELETE",
+    }),
+  closurePreview: (body: { road_id: number; date_from: string; date_to: string; restriction: string; note?: string | null }) =>
+    request<ClosurePreviewResponse>("/closures/preview", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  // Uzavírka se nejdřív založí (návrh), pak potvrdí. Až potvrzení rozešle upozornění občanům na trase.
+  confirmClosure: async (body: {
+    road_id: number;
+    title: string;
+    date_from: string;
+    date_to: string;
+    restriction: string;
+    note?: string | null;
+    simulated?: boolean;
+  }) => {
+    const created = await request<{ closure: { id?: number } }>("/closures", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const id = created.closure?.id;
+    if (id == null) throw new Error("Server nevrátil číslo uzavírky.");
+    return request<{ closure: { id: number; status: string; confirmed: boolean }; notified: number }>(
+      `/closures/${id}/confirm`,
+      { method: "POST" },
+    );
+  },
+  budget: (amountKc: number, signal?: AbortSignal) => request<BudgetResponse>(`/budget?amount=${Math.round(amountKc)}`, { signal }),
+  aiBudget: (amountKc: number) =>
+    request<AiText>("/ai/budget", { method: "POST", body: JSON.stringify({ amount: Math.round(amountKc) }) }),
+  aiExplain: (roadId: number) => request<AiText>("/ai/explain", { method: "POST", body: JSON.stringify({ road_id: roadId }) }),
+  aiAnnouncement: (closureId: number) =>
+    request<AiText>("/ai/announcement", { method: "POST", body: JSON.stringify({ closure_id: closureId }) }),
   closure: (body: { road_id: number; date_from: string; date_to: string; restriction: string }) =>
     request<{ detour: DetourResult; alerts: ApiAlert[] }>("/closures", {
       method: "POST",
