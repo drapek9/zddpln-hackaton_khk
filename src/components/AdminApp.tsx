@@ -18,7 +18,7 @@ import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type
 import { DEMO_CLOSURES } from "../lib/closure";
 import { loadOfficePrefs, loadPins, loadRegionWeights, saveOfficePrefs, savePins, saveRegionWeights } from "../lib/store";
 import { toast } from "./Toaster";
-import type { Pin, PriorityClass } from "../lib/api";
+import { api, type Pin, type PriorityClass } from "../lib/api";
 
 type Props = {
   data: Dataset;
@@ -144,7 +144,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
           setRankingLoading(false);
           // Pokud API vrátilo serverové piny, sesynchronizujeme stav
           if (res.source === "api" && res.apiPins) {
-            setPins(res.apiPins);
+            const server = res.apiPins;
+            setPins((cur) => (JSON.stringify(cur) === JSON.stringify(server) ? cur : server));
           }
         })
         .catch((err) => {
@@ -158,7 +159,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
       if (timer) clearTimeout(timer);
       controller.abort();
     };
-  }, [data.roads, weights]);
+  }, [data.roads, weights, pins]);
 
   const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
@@ -169,7 +170,12 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     savePins(next);
 
     // 2. Odeslání na server přes API (D3)
-    if (source === "api" || live || user) {
+    const official = user?.role === "official" || user?.role === "admin";
+    if (!official) {
+      toast(pin ? "Priorita připíchnuta jen v tomto prohlížeči (nejste přihlášen jako úředník)" : "Připíchnutí zrušeno");
+      return;
+    }
+    {
       try {
         if (pin) {
           await api.setPin({ road_id: pin.road_id, priority: pin.priority, reason: pin.reason });
@@ -183,6 +189,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         if (res.apiPins) setPins(res.apiPins);
       } catch (e) {
         console.warn("Chyba při ukládání pinu na server:", e);
+        toast("Server pin nepřijal, platí jen v tomto prohlížeči", "warn");
+        return;
       }
     }
     toast(pin ? "Priorita připíchnuta" : "Připíchnutí zrušeno");
@@ -549,10 +557,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                   const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
                   onRepairs(next);
 
-                  // Pokud je přihlášen úředník a je to uzavírka, potvrdíme ji i na backendu (D2)
-                  if ((user?.role === "official" || user?.role === "admin" || live) && repair.restriction.includes("uzavírka")) {
+                  // Přihlášený úředník: uzavírku potvrdíme na serveru, ten upozorní občany na trase (F1).
+                  const closing = repair.restriction.includes("uzavírka");
+                  if (closing && (user?.role === "official" || user?.role === "admin")) {
                     try {
-                      await api.confirmClosure({
+                      const done = await api.confirmClosure({
                         road_id: repair.roadId,
                         title: repair.title || `Uzavírka ${repair.sil}`,
                         date_from: repair.from,
@@ -561,11 +570,15 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                         note: repair.note,
                         simulated: false,
                       });
+                      toast(`Uzavírka potvrzena, upozorněno občanů: ${done.notified}`);
+                      return;
                     } catch (e) {
-                      console.warn("Chyba při potvrzení uzavírky na serveru:", e);
+                      toast("Uzavírku se nepodařilo potvrdit na serveru, je jen v tomto prohlížeči", "warn");
+                      console.warn(e);
+                      return;
                     }
                   }
-                  toast(repair.restriction.includes("uzavírka") ? "Uzavírka potvrzena a je v mapě" : "Oprava zveřejněna v mapě");
+                  toast(closing ? "Uzavírka je v mapě jen v tomto prohlížeči (nepřihlášen)" : "Oprava zveřejněna v mapě");
                 }}
               />
             </DetailSheet>

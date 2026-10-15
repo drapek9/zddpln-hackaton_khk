@@ -2,7 +2,6 @@
 // Stejný algoritmus jako backend/app/core/scoring.py (ranking, classify), aby pořadí sedělo,
 // i když /api/ranking ještě neběží.
 import type { Road, Weights } from "./types";
-import { DEFAULT_WEIGHTS } from "./types";
 import { roadScore } from "./priority";
 import { api, ApiUnavailable, type Pin, type PriorityClass } from "./api";
 

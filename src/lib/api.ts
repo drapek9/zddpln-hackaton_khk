@@ -167,7 +167,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  confirmClosure: (body: {
+  // Uzavírka se nejdřív založí (návrh), pak potvrdí. Až potvrzení rozešle upozornění občanům na trase.
+  confirmClosure: async (body: {
     road_id: number;
     title: string;
     date_from: string;
@@ -175,11 +176,18 @@ export const api = {
     restriction: string;
     note?: string | null;
     simulated?: boolean;
-  }) =>
-    request<{ id: number; road_id: number; title: string; status: string; confirmed: boolean }>("/closures", {
+  }) => {
+    const created = await request<{ closure: { id?: number } }>("/closures", {
       method: "POST",
       body: JSON.stringify(body),
-    }),
+    });
+    const id = created.closure?.id;
+    if (id == null) throw new Error("Server nevrátil číslo uzavírky.");
+    return request<{ closure: { id: number; status: string; confirmed: boolean }; notified: number }>(
+      `/closures/${id}/confirm`,
+      { method: "POST" },
+    );
+  },
   closure: (body: { road_id: number; date_from: string; date_to: string; restriction: string }) =>
     request<{ detour: DetourResult; alerts: ApiAlert[] }>("/closures", {
       method: "POST",
