@@ -16,11 +16,11 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 - `uv run pytest` dá 7/7 zelených. `npm run build` projde.
 - Frontend v1 funguje, ale bere statický JSON z `public/data` a ukládá do localStorage.
 
-**Stav větví:** `simon`, `matous` a `premek` jsou totožné s `main`. Od 13. 10. nikdo kromě Tomáše nepushnul.
+**Tým:** pracují všichni. Matouš a Přemek dělají spolu na jednom počítači. Šimon a Matouš zatím nic nepushnuli, takže jejich práce na GitHubu ještě není vidět.
 
-**Na 0 %:**
-- Celá platforma (Šimon): DB, přihlášení, role, endpointy (existuje jen `/api/health`), notifikace, AI, export.
-- Frontend nevolá API vůbec.
+**Na GitHubu zatím chybí** (lokálně může být rozpracováno):
+- Platforma (Šimon): DB, přihlášení, role, endpointy (na `main` je jen `/api/health`), notifikace, AI, export.
+- Napojení frontendu na API.
 
 **Chybí v `core/` (Tomáš):**
 - T6 `closure_impact`: rozpracováno lokálně, zatím nepushnuto.
@@ -33,7 +33,7 @@ Audit ke commitu `dfe88b3` na `origin/main`. Doplňuje [PLAN_FINAL.md](../PLAN_F
 
 ## 2. Co nás drží zpátky
 
-1. **Kritická cesta vede přes Šimona.** Matouš nemá na co napojit simulátor ★1, dokud nepojede `/api/ranking` a endpoint objížďky.
+1. **Kritická cesta vede přes Šimona.** Matouš napojí simulátor ★1 na API, až pojede `/api/ranking` a endpoint objížďky. Do té doby pracuje nad mockem.
 2. **Rozsah MVP neodpovídá 7,5 h.** Plán chce 4 role, registraci, místa, trasu, push, admina, audit, export, piny i stavy práce. `docs/ROZBOR.md` sám říká: jeden flow hotový na 100 %, ne pět na 60 %.
 3. **★1 nemá data pro „aut za den“.** Hlavní unikátní tvrzení pitche dnes nic nepodkládá.
 4. **Push je nejdelší řetěz:** přihlášení → místa → trasa → potvrzení → notifikace → push → tunel → telefon. Stačí, aby selhal jeden článek.
@@ -88,3 +88,40 @@ Před každým blokem práce: `git fetch`, přečíst změny v `PLAN_FINAL.md` a
 ## 5. Průběžné poznámky
 
 - **15. 10., ~9:45 (Tomáš):** T6 `closure_impact` je hotové a pushnuté na větev `tomas` (`990270c`), 10/10 testů. Šimon ho může volat z S5 hned, viz `docs/BACKEND.md`, „Stav 15. 10.“. Další podle kap. 4: T13 data → T14 toky studentů → T7 → T16.
+- **15. 10., 9:45 (Tomáš):** Upřesnění: pracují všichni, jen jejich práce ještě není pushnutá. Matouš a Přemek dělají spolu na jednom počítači. Šimonova HTML stránka pro záznam práce zatím na `main` není. Do té doby se stav zapisuje sem.
+
+---
+
+## 6. Sdílený server: jeden počítač jako server a databáze (návrh, 15. 10.)
+
+**Cíl:** jeden z nás spustí FastAPI + SQLite na svém počítači. Ostatní se k němu bezpečně připojí a všichni pracují nad stejnými daty (účty, uzavírky, upozornění).
+
+### Doporučení: Tailscale (soukromá síť přes WireGuard)
+- Každý si nainstaluje Tailscale (Mac i Windows, zdarma) a přihlásí se do stejné sítě (tailnet). Na Tomášově PC už Tailscale je.
+- Server dostane pevnou adresu `100.x.y.z` a jméno, např. `http://tomas-pc:8000`. Funguje i za NAT a na Wi‑Fi pořadatele, kde zařízení na stejné síti často nevidí jedno druhé (izolace klientů).
+- Provoz je šifrovaný a dovnitř se dostane jen člen tailnetu. Na internet nic nevystavujeme.
+- Když Wi‑Fi blokuje UDP, Tailscale jede přes relé na portu 443. Je to pomalejší, ale funguje. Záloha: hotspot z mobilu.
+
+**Pro porotu a telefony** (Web Push potřebuje HTTPS): `tailscale funnel 5173` dá veřejnou HTTPS adresu. Alternativa je `cloudflared tunnel --url http://localhost:5173`. Funnel je veřejný, proto **admin a úředník jen po přihlášení**.
+
+### Jak to zapojit
+1. **Server** (jeden počítač, ideálně ten, ze kterého se bude dělat demo):
+   - `cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`, **bez `--reload`**.
+   - Na Windows povolit port 8000 ve firewallu jen pro rozhraní Tailscale.
+   - Vypnout uspávání a připojit nabíječku.
+2. **Ostatní** pustí svůj frontend (`npm run dev`) a Vite proxy pošle `/api` na server. Dnes je cíl natvrdo `http://localhost:8000` (`vite.config.ts`). Návrh: cíl z proměnné `CESTY_API_TARGET`, výchozí localhost. Soubor patří k frontendu, změnu dělá Matouš.
+3. **Backend se vyvíjí lokálně.** Šimon a Tomáš mají každý vlastní `cesty.db`. Na sdíleném serveru běží jen to, co je na `main`. Nasazení = `git pull` a restart serveru.
+
+### Rizika a jak jim předejít
+| Riziko | Co udělat |
+|---|---|
+| **SQLite ve složce OneDrive.** Repo je u Tomáše v OneDrive. Synchronizace souboru za běhu může databázi poškodit. | Cestu k DB brát z `CESTY_DB_URL` a dát ji mimo OneDrive (např. `C:/cesty/cesty.db`). Zapnout `PRAGMA journal_mode=WAL`. |
+| Nikdy neotevírat `.db` přes sdílenou složku nebo síťový disk. | Do DB smí jen proces serveru. Ostatní jdou přes API. |
+| **Jeden bod selhání.** Když server spí nebo ztratí Wi‑Fi, ostatní stojí. | Každý umí spustit lokální backend se seedem (S2/S3). Kopie `cesty.db` každou hodinu. |
+| `--reload` na serveru a rozdělaná práce | Server běží jen z `main`, žádné úpravy kódu přímo na serveru. |
+| Veřejný Funnel nebo tunel | Přihlášení, role na každém endpointu, CORS jen na naše adresy, tajné hodnoty jen v `.env`. |
+| Demo závisí na síti | Demo běží přímo na serveru (localhost). Síť potřebují jen telefony poroty. Záložní video. |
+
+**V pitchi:** „Běží u nás na notebooku jako server, nasazení u kraje je další krok“ (kap. 1, bod 12 plánu). SQLite a FastAPI se dají později přesunout na server kraje beze změny kódu.
+
+**Kdo:** Šimon (vlastní `main.py`, `db/`, `.env`) rozhodne, na čí počítač server půjde, a připraví `CESTY_DB_URL` a seed. Tomáš pomůže s Tailscale.
