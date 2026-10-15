@@ -51,6 +51,14 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
   - [Liberecký kraj, III/28711](https://liberecka.drbna.cz/zpravy/doprava/42668-kraj-opravi-tri-silnice-za-88-milionu-docka-se-bily-kostel-i-rychnov.html)
 - Na místě se zeptat mentorů nebo lidí z kraje na skutečnou cenu. Když ji řeknou, dosadit ji a citovat.
 
+**Doplnění 15. 10. (Šimon).** Body 1–6 a tabulka cen za km zůstávají. Tohle je k nim navíc.
+
+**Odhad ceny jedné opravy.** Úředník vybere jednu silnici nebo několik silnic a může zadat vlastní cenu za metr čtvereční. Výchozí odhad pořád vychází z tabulky za kilometr podle stavu a nese štítek „předpoklad“. Když to datové sady dovolí, do odhadu vstupují další údaje, každý se stejným štítkem, nebo s textem „v datech není“: šířka vozovky (plocha = šířka × délka, pak plocha × Kč/m²), hloubka nebo tloušťka konstrukce, třída silnice, roky od poslední opravy a typ povrchu. Úředník výslednou částku dál upraví. Pořád se říká „odhad“, ne „cena zakázky“. Sada oprav od roku 2016 náklady neobsahuje, to platí i tady.
+
+**Napojené silnice vhodné k opravě.** Kromě stavby z úseků stejného čísla silnice (bod 2) jde sestavit řetěz, který pokračuje na navazující silnici jiného čísla. Podmínka je spojení v grafu a stav, ve kterém se oprava vyplatí: nevyhovující, havarijní nebo SUPERhavarijní. Krátký lepší kus mezi nimi se může přibrat stejně jako v bodu 2, ať se trasa nezavírá dvakrát. Výsledek je víc na sebe napojených silnic, ne jeden úsek. S celým řetězem se pak pracuje jako se samostatnou silnicí: skóre, rozpad, objížďka, varování, dopady a odhad ceny.
+
+**Víc nabídek do jednoho stropu.** Úředník zadá maximální rozpočet. Kromě jednoho výběru, který rozpočet naplní (bod 4), se ukáže několik samostatných nabídek, třeba pět až deset. Každá nabídka je jedna napojená trasa z odstavce výše a celá se vejde do stropu. Pořadí nabídek je podle skóre na korunu a je deterministické. U každé je délka, odhad ceny, objížďka a kolik havarijních kilometrů by po ní ještě zůstalo.
+
 **Kdo:** Tomáš `core/` (`Engine.budget`, sestavení staveb), Šimon endpoint `POST /api/budget` a AI text, Matouš obrazovka.
 **Odhad:** core 1,5 h, API 30 min, obrazovka 1 h.
 **Rizika:** cena je hrubá. Říkat „pořadí a poměry“, ne „přesný rozpočet“. Stavba přes hranici okresu se rozdělí na dvě.
@@ -128,7 +136,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 - Hesla jen jako hash (`argon2` nebo `bcrypt`).
 - Role kontrolovat na **každém** endpointu, nejen ve frontendu.
 - Limit pokusů o přihlášení (např. 5 za minutu).
-- Domov a práce jen jako **bod**, žádná adresa. Bod zaokrouhlit na ~100 m.
+- Domov a práce jen jako **bod**, žádná adresa. Bod zaokrouhlit na ~100 m. Další uložené body (nápad 17) jsou totéž: jen bod, žádná adresa.
 - Text od občana do AI jen k roztřídění, výstup jen v pevné struktuře.
 - Tajné hodnoty jen v `.env`, CORS jen na naše adresy.
 - **Souhlas** při registraci a při uložení míst (zaškrtávací pole s jednou větou, k čemu data slouží a jak je smazat).
@@ -249,10 +257,13 @@ Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho
 - Navazuje na Web Push (v3). Bez přihlášení jen v prohlížeči.
 - **Kdo:** Matouš (frontend), Šimon (push), Tomáš (trasa po silnicích místo pásu kolem spojnice).
 
+**Doplnění 15. 10. (Šimon).** V nastavení si přihlášený občan uloží víc bodů: bydliště, práci a další místa, která si sám označí na mapě. Uloží se jen bod, ne adresa (nápad 5). Mezi těmi body se spočítá trasa (nápad 18). Aplikace ukáže, jestli ji něco omezuje teď, a jestli ji omezení čeká do budoucna, tedy plánovaná oprava nebo uzavírka s termínem. Když se takový plán týká jeho trasy, může mu přijít oznámení. Jedno oznámení na jednu událost. Ranní věta nahoře bere text z toho samého.
+
 ### 18. Trasa po silnicích místo pásu kolem spojnice
 **→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S20, F3.
 
 - „Moje cesty“ teď berou silnice v pásu 1,5 km kolem přímky domov–práce (odhad). Lepší je skutečná trasa z grafu (`Engine.route`), stejně jako objížďka.
+- Trasa se počítá mezi všemi body, které si občan uloží, ne jen mezi domovem a prací (nápad 17).
 - **Kdo:** Tomáš (`core/`), Šimon endpoint `GET /api/route`.
 
 ### 19. Srozumitelné názvy stavů v exportu
