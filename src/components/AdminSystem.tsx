@@ -5,6 +5,7 @@ import type { Pin } from "../lib/api";
 import { CLASS_LABEL } from "../lib/ranking";
 import { ROLE_LABEL, type Role } from "../lib/auth";
 import { DEMO_USERS, adminApi, type AdminUser, type AuditItem } from "../lib/adminApi";
+import { toast } from "./Toaster";
 
 type Props = {
   /** Trvalé váhy kraje (výchozí pro všechny úředníky). */
@@ -13,6 +14,8 @@ type Props = {
   pins: Pin[];
   /** Přihlášený admin: data ze serveru. Jinak demo. */
   live: boolean;
+  /** Hlásí neuložené změny vah (AdminApp se před odchodem zeptá). */
+  onDirty?: (dirty: boolean) => void;
 };
 
 const WEIGHT_NAME: Record<keyof Weights, string> = {
@@ -32,13 +35,14 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 
 // Admin (v4 ★3): hlavní je nastavení, ne mapa. Trvalé váhy, uživatelé a role, záznam změn, export.
-export default function AdminSystem({ weights, onSaveWeights, pins, live }: Props) {
+export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirty }: Props) {
   const [draft, setDraft] = useState<Weights>(weights);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [users, setUsers] = useState<AdminUser[]>(live ? [] : DEMO_USERS);
   const [audit, setAudit] = useState<AuditItem[]>([]);
   const [filter, setFilter] = useState<Role | "all">("official");
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => setDraft(weights), [weights]);
 
@@ -57,17 +61,21 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live }: Prop
     });
     return out;
   }, [users]);
-  const shown = users.filter((u) => filter === "all" || u.role === filter);
+  useEffect(() => onDirty?.(changed), [changed, onDirty]);
+  const q = search.trim().toLowerCase();
+  const shown = users.filter((u) => (filter === "all" || u.role === filter) && (!q || u.email.toLowerCase().includes(q)));
 
   const save = async () => {
     setSaving("saving");
     try {
       await onSaveWeights(draft);
       setSaving("saved");
+      toast("Váhy kraje uloženy pro všechny úředníky");
       if (live) adminApi.audit().then(setAudit).catch(() => {});
       setTimeout(() => setSaving("idle"), 1800);
     } catch {
       setSaving("error");
+      toast("Uložení se nepovedlo", "warn");
     }
   };
 
@@ -75,11 +83,13 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live }: Prop
     setError("");
     if (!live) {
       setUsers(users.map((x) => (x.id === u.id ? { ...x, ...patch } : x)));
+      toast("Změněno (demo, jen v tomto prohlížeči)");
       return;
     }
     try {
       const next = await adminApi.updateUser(u.id, patch);
       setUsers(users.map((x) => (x.id === u.id ? next : x)));
+      toast(patch.blocked != null ? (patch.blocked ? "Účet zablokován" : "Účet odblokován") : "Role změněna");
       adminApi.audit().then(setAudit).catch(() => {});
     } catch (e) {
       setError((e as Error).message);
@@ -166,6 +176,9 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live }: Prop
               ))}
             </div>
           </div>
+          <label className="search">
+            <input placeholder="Hledat podle e-mailu" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </label>
           {error && <p className="hint">{error}</p>}
           <table className="sys-table">
             <thead>
