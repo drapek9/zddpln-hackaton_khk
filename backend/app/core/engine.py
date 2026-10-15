@@ -18,7 +18,8 @@ from . import budget, demo, impact, scoring
 from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph, to_xy
 from .people import People
-from .schemas import Alert, BudgetPlan, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .rescue import Rescue
+from .schemas import Alert, BudgetPlan, RescueImpact, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -32,6 +33,8 @@ class Engine:
         self._road_grid: dict[tuple[int, int], list[tuple[float, float, int]]] | None = None
         self._stavby: list[Stavba] | None = None
         self._stavby_lock = threading.Lock()
+        self._rescue: Rescue | None = None
+        self._rescue_lock = threading.Lock()
 
     @property
     def people(self) -> People:
@@ -219,6 +222,23 @@ class Engine:
             self._require(rid)
         return self.people.impact(ids)
 
+    @property
+    def rescue(self) -> Rescue:
+        """ZZS and HZS drive times (T18). Built on first use after `people`."""
+        if self._rescue is None:
+            people = self.people
+            with self._rescue_lock:
+                if self._rescue is None:
+                    self._rescue = Rescue(people, self.data.pois)
+        return self._rescue
+
+    def rescue_impact(self, road_ids: Iterable[int]) -> RescueImpact:
+        """Obce where the ambulance or fire brigade drives longer when these roads close (T18)."""
+        ids = list(road_ids)
+        for rid in ids:
+            self._require(rid)
+        return self.rescue.impact(ids)
+
     def obce(self) -> list[dict[str, Any]]:
         """Obce of the kraj (Data KHK: Obce): kod, nazev, obyvatel, deti, senioru, lon, lat, bbox."""
         return [
@@ -327,6 +347,8 @@ class Engine:
                     item.alerts += impact.detour_alerts(
                         main, item.detour, via, impact.in_school_year(date_from, date_to)
                     )
+                    item.rescue = self.rescue.impact(ids)
+                    item.alerts += item.rescue.alerts
             out.append(item)
 
         # Three different stories for the demo: most students, most vehicles, longest detour.
