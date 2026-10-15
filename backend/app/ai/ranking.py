@@ -1,8 +1,8 @@
 """City ranking assist. The formula order stays in core. This only shifts it.
 
-The model sees the first 40 roads and returns points, not a new order.
+The model sees the first 25 roads and returns points, not a new order.
 A road may move at most 5 places. Pinned roads stay where the official put them.
-Outside that window nothing moves, so the top 10 only draws from those 40.
+Outside that window nothing moves, so the top 10 only draws from those 25.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from app.ai.service import _extract_json, complete
 from app.core.engine import Engine
 from app.core.schemas import RankedRoad
 
-CITY_WINDOW = 40
+CITY_WINDOW = 25
 MAX_SHIFT = 5
 
 _SYSTEM = (

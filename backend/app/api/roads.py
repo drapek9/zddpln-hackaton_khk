@@ -73,12 +73,10 @@ def _ai_fields(row, extras: dict[int, dict]) -> dict:
 
 
 def _city_view(engine: Engine, session: Session, rows, source: str, ai: bool, cache_key: str = ""):
-    """AI shift only for the city's stored weights. Official sliders stay on the formula.
+    """AI shift on top of whatever weights are in use, including an official's own sliders.
 
     The model call is cached by weights and by the formula head, so repeat clicks do not call it again.
     """
-    if source not in {"admin", "default"}:
-        return rows, {}, "vzorec", "Tento pohled je podle vzorce. Návrh AI je jen u vah města."
     if not ai:
         return rows, {}, "vzorec", "Jen vzorec, bez návrhu AI."
     if not get_settings().ai_configured or not get_settings_row(session).ai_enabled:

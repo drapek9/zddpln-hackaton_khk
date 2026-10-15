@@ -28,7 +28,8 @@ def test_score_matches_frontend(engine: Engine):
     mismatches = []
     for road_id, default_ts, alt_ts in fx["scores"]:
         road = engine.road(road_id)
-        py_default = scoring.score(road, Weights(), this_year=fx["year"])
+        # Fixture was made with the old school weight 80; the formula itself did not change.
+        py_default = scoring.score(road, Weights(schools=80), this_year=fx["year"])
         py_alt = scoring.score(road, alt, this_year=fx["year"])
         if (py_default, py_alt) != (default_ts, alt_ts):
             mismatches.append((road_id, default_ts, py_default, alt_ts, py_alt))

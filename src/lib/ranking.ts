@@ -104,11 +104,11 @@ export async function fetchRanking(
   weights: Weights,
   localPins: Pin[],
   signal?: AbortSignal,
-  /** "Parametry + AI" (F‑2): bez vah v dotazu, server vezme váhy kraje a přidá návrh AI. */
+  /** "Parametry + AI" (F‑2): s aktuálními váhami správce, server k nim přidá návrh AI. */
   withAi = false,
 ): Promise<{ rows: RankRow[]; source: RankingSource; apiPins?: Pin[]; ai?: string; aiNote?: string }> {
   try {
-    const query = withAi ? "ai=1" : `ai=0&${weightsQuery(weights)}`;
+    const query = `ai=${withAi ? 1 : 0}&${weightsQuery(weights)}`;
     const res = await api.rankingFull(query, signal);
     const ranked = res.items;
     const apiPins: Pin[] = [];

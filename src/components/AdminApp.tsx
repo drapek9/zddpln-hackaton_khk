@@ -179,7 +179,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     setRankingLoading(true);
 
     timer = window.setTimeout(() => {
-      fetchRanking(data.roads, weights, pins, controller.signal, aiOn && !weightsChanged)
+      fetchRanking(data.roads, weights, pins, controller.signal, aiOn)
         .then((res) => {
           setRows(res.rows);
           setSource(res.source);
@@ -196,7 +196,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             setRankingLoading(false);
           }
         });
-    }, 300);
+    }, aiOn ? 700 : 300);
 
     return () => {
       if (timer) clearTimeout(timer);
@@ -515,13 +515,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             </button>
             <button
               className={aiOn ? "on" : ""}
-              disabled={source !== "api" || weightsChanged}
+              disabled={source !== "api"}
               title={
                 source !== "api"
                   ? "AI teď není dostupná (server neběží)"
-                  : weightsChanged
-                    ? "Návrh AI je jen u vah kraje. Vraťte váhy kraje."
-                    : "Pořadí podle parametrů, AI může úsek posunout nejvýš o 5 míst"
+                  : "Pořadí podle vašich parametrů, AI může úsek posunout nejvýš o 5 míst"
               }
               onClick={() => setAiOn(true)}
             >

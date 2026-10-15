@@ -157,7 +157,7 @@ export const DEFAULT_WEIGHTS: Weights = {
   stav: 100,
   worse: 70,
   trida: 55,
-  schools: 80,
+  schools: 50,
   hospitals: 95,
   rescue: 90,
   transit: 75,

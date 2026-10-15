@@ -22,7 +22,7 @@ class Weights(BaseModel):
     stav: float = 100
     worse: float = 70
     trida: float = 55
-    schools: float = 80
+    schools: float = 50
     hospitals: float = 95
     rescue: float = 90
     transit: float = 75
