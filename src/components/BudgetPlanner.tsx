@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MapView, { HIGHLIGHT_COLOR } from "./MapView";
 import { useTheme } from "../lib/theme";
 import Fold from "./Fold";
@@ -6,17 +6,28 @@ import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import type { Dataset, Weights } from "../lib/types";
 import { STAV_COLOR, formatSil, stavLabel } from "../lib/geo";
+import AiSuggest from "./AiSuggest";
+import { api, ApiUnavailable, type ServerPlan } from "../lib/api";
 import { BAD_STAVY, DEFAULT_PRICES, FOCUS_LABEL, STRATEGY_LABEL, buildStavby, formatMil, planBudget, type Focus, type Strategy } from "../lib/budget";
 
 type Props = {
   data: Dataset;
   weights: Weights;
+  /** Přihlášený úředník nebo admin: /api/budget a /api/ai/budget vyžadují účet. */
+  online: boolean;
 };
+
+type ServerState =
+  | { status: "off" }
+  | { status: "loading" }
+  | { status: "ok"; plan: ServerPlan; source?: string }
+  | { status: "waiting"; note: string }
+  | { status: "down" };
 
 const PRESETS = [50, 100, 250, 500, 1000];
 
 // Rozpočtový asistent: úředník zadá částku, dostane souvislé stavby, které se vejdou.
-export default function BudgetPlanner({ data, weights }: Props) {
+export default function BudgetPlanner({ data, weights, online }: Props) {
   const { theme } = useTheme();
   const mapTheme = theme === "dark" ? "dark" : "office";
   const [budget, setBudget] = useState(250);
@@ -26,13 +37,44 @@ export default function BudgetPlanner({ data, weights }: Props) {
   const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [selected, setSelected] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>("map");
+  // Výpočet jádra na serveru (F8). Bere jen částku a váhy účtu, okres a ceny z panelu nezná.
+  const [server, setServer] = useState<ServerState>({ status: online ? "loading" : "off" });
+  const [showServer, setShowServer] = useState(false);
+  useEffect(() => {
+    if (!online) return;
+    const ctrl = new AbortController();
+    setServer({ status: "loading" });
+    const t = setTimeout(() => {
+      api
+        .budget(budget * 1_000_000, ctrl.signal)
+        .then((res) => {
+          if (ctrl.signal.aborted) return;
+          const plan = res.ready ? res.plans[0] : undefined;
+          setServer(plan ? { status: "ok", plan, source: res.weights_source } : { status: "waiting", note: res.note });
+        })
+        .catch((err) => {
+          if (ctrl.signal.aborted) return;
+          if (!(err instanceof ApiUnavailable)) console.warn(err);
+          setServer({ status: "down" });
+        });
+    }, 350);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [budget, online]);
+  const serverPlan = server.status === "ok" ? server.plan : null;
+  const weightsSrc = server.status === "ok" ? server.source : undefined;
   const panels = usePanelSizes();
 
   const okresy = useMemo(() => ["vše", ...Array.from(new Set(data.roads.map((r) => r.okres))).sort()], [data.roads]);
   const stavby = useMemo(() => buildStavby(data.roads, weights, focus, prices, okres), [data.roads, weights, focus, prices, okres]);
   const plan = useMemo(() => planBudget(stavby, budget, data.roads, strategy), [stavby, budget, data.roads, strategy]);
 
-  const highlight = useMemo(() => plan.chosen.flatMap((s) => s.roadIds), [plan]);
+  const highlight = useMemo(
+    () => (showServer && serverPlan ? serverPlan.projects.flatMap((p) => p.road_ids) : plan.chosen.flatMap((s) => s.roadIds)),
+    [plan, showServer, serverPlan],
+  );
   const active = plan.chosen.find((s) => s.key === selected) || null;
   const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
   const usedPct = Math.min(100, (plan.spent / Math.max(budget, 1)) * 100);
@@ -189,12 +231,66 @@ export default function BudgetPlanner({ data, weights }: Props) {
           <small>opraví se {badFixedPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} % havarijních a rozpadlých km</small>
         </div>
 
-        <div className="ai-note">
-          <span className="ai-tag">návrh AI · připravujeme</span>
-          <p>
-            Tady bude 3–5 vět, proč právě tyto stavby. AI dostane jen čísla z výpočtu, rozhoduje úředník.
-          </p>
-        </div>
+        <Fold
+          title="Výpočet serveru (jádro)"
+          meta={
+            <span className={`mode-tag ${serverPlan ? "live" : "local"}`}>
+              {server.status === "ok" ? "živá data" : server.status === "loading" ? "načítám…" : "nedostupné"}
+            </span>
+          }
+          open={online}
+        >
+          {server.status === "off" && <p className="fine">Výpočet serveru je pro přihlášeného úředníka. Vlevo je náhled v prohlížeči.</p>}
+          {server.status === "down" && <p className="fine">Server teď neodpovídá. Platí náhled v prohlížeči.</p>}
+          {server.status === "waiting" && <p className="fine">{server.note}</p>}
+          {serverPlan && (
+            <>
+              <div className="budget-kpis server">
+                <div>
+                  <span>Opraví</span>
+                  <b>{(serverPlan.repaired_km ?? 0).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km</b>
+                  <small>{serverPlan.projects.length} staveb</small>
+                </div>
+                <div>
+                  <span>Stojí</span>
+                  <b>{formatMil((serverPlan.cost_kc ?? 0) / 1_000_000)}</b>
+                  <small>předpoklad</small>
+                </div>
+              </div>
+              {serverPlan.remaining_emergency_km != null && (
+                <p className="fine">
+                  Havarijních km zůstane {serverPlan.remaining_emergency_km.toLocaleString("cs-CZ", { maximumFractionDigits: 0 })}.
+                  Váhy: {weightsSrc === "official" ? "moje" : weightsSrc === "admin" ? "krajské" : "výchozí"}. Jen částka, bez okresu a cen z
+                  panelu.
+                </p>
+              )}
+              <label className="check toggle-row">
+                <input type="checkbox" checked={showServer} onChange={(e) => setShowServer(e.target.checked)} />
+                Ukázat stavby serveru na mapě
+              </label>
+              <ol className="stavby server">
+                {serverPlan.projects.slice(0, 12).map((p, i) => {
+                  const road = roadsById.get(p.road_ids[0]);
+                  return (
+                    <li key={`${p.road_ids[0]}-${i}`}>
+                      <span className="stavba-head">
+                        <em>{i + 1}</em>
+                        <strong>{road ? formatSil(road.sil, road.trida) : p.sil || "silnice"}</strong>
+                        <span className="stavba-cost">{formatMil((p.cost_kc ?? 0) / 1_000_000)}</span>
+                      </span>
+                      <span className="rank-meta">
+                        {p.okres || road?.okres} · {(p.km ?? 0).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km
+                        {p.extra_km != null && ` · objížďka +${p.extra_km.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km`}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </>
+          )}
+        </Fold>
+
+        <AiSuggest label="Zdůvodnit výběr" enabled={online} load={() => api.aiBudget(budget * 1_000_000)} />
 
         <Fold title="Vybrané stavby" meta={plan.chosen.length} open>
           <ol className="stavby">

@@ -344,7 +344,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
           {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Ukázka bez přihlášení: změny se ukládají jen v tomto prohlížeči">demo</span>}
         </div>
       </header>
-      {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
+      {view === "budget" && (
+        <BudgetPlanner key="budget" data={data} weights={weights} online={user?.role === "official" || user?.role === "admin"} />
+      )}
       {view === "system" && (
         <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} onDirty={setSystemDirty} />
       )}
@@ -576,6 +578,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 onPin={(pin) => updatePin(selected.id, pin)}
                 roadsById={roadsById}
                 onDetour={setDetour}
+                aiEnabled={user?.role === "official" || user?.role === "admin"}
                 onPlan={async (repair) => {
                   const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
                   onRepairs(next);

@@ -542,6 +542,11 @@ i.done { background: #22c55e; }
 .ai-note { border: 1px dashed var(--line-strong); border-radius: var(--r); padding: 12px; margin: 14px 0 4px; }
 .ai-note p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
 .ai-tag { font-size: 12px; font-weight: 600; color: var(--accent); }
+.ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ai-note .ai-text { color: var(--text); font-size: 14px; line-height: 1.5; white-space: pre-line; }
+.budget-kpis.server b { font-size: 20px; }
+.stavby.server li { display: grid; gap: 2px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.stavby.server li:last-child { border-bottom: 0; }
 .stavba-head { display: flex; align-items: center; gap: 8px; }
 .stavba-head em { font-style: normal; font-size: 12px; color: var(--muted); width: 18px; font-variant-numeric: tabular-nums; }
 .stavba-cost { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }

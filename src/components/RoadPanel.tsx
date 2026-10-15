@@ -1,4 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react";
+import AiSuggest from "./AiSuggest";
+import { api } from "../lib/api";
 import type { Connection, Repair, Road, Weights } from "../lib/types";
 import { KIND_LABEL, STAV_COLOR, STAV_HINT, STATUS_LABEL, stavLabel, formatKm, formatPeriod, formatSil, inSchoolYear, isoInDays } from "../lib/geo";
 import { impactAlerts, roadScore, scoreBreakdown } from "../lib/priority";
@@ -24,6 +26,8 @@ type Props = {
   onDetour?: (geometry: [number, number][] | null) => void;
   /** Ukázková uzavírka: začít úplnou uzavírkou bez ohledu na uloženou opravu. */
   simulate?: boolean;
+  /** Přihlášený úředník: smí volat /api/ai/explain. */
+  aiEnabled?: boolean;
 };
 
 function uniqueSamples(rows?: Road["samples"][string]) {
@@ -49,6 +53,7 @@ export default function RoadPanel({
   roadsById,
   onDetour,
   simulate = false,
+  aiEnabled = false,
 }: Props) {
   const score = roadScore(road, weights);
   const alerts = useMemo(
@@ -251,6 +256,7 @@ export default function RoadPanel({
           <p className="fine">Ukládá se na server do správy kraje (při offline režimu v tomto prohlížeči).</p>
           <h3>Proč právě tento úsek</h3>
           <Breakdown road={road} weights={weights} />
+          <AiSuggest label="Vysvětlit pořadí" enabled={!!aiEnabled} load={() => api.aiExplain(road.id)} />
         </section>
       )}
 

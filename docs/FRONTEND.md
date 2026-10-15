@@ -149,3 +149,12 @@ Ověřeno na `main` (`7ea72fc`) přes `curl`. Pořadí v tabulce = pořadí prá
 **Až potom rozšiřování:** M-c (uzavírky 2022), M-d (rozpočet přes API), M-e (Moje cesty), M-f (povodeň, Moje obec) a nápady F‑c, F‑d, F‑f, F‑g z `NAPADY.md`.
 
 **Hotovo, když:** úředník vidí štítek „živá data“, pin přežije obnovení stránky, simulátor ukáže dojezd ZZS z backendu a posuvník přes `start-server.command` (tunel) reaguje do 1 s.
+
+## Stav 15. 10. ~15:30 (Matouš, větev `matous`)
+Navazuje na kap. 21 v `PLAN_FINAL.md`. Priorita je veřejnost (rozhodnutí týmu).
+- **D1–D5, D7, D8:** hotové (commit 04527a8 a opravy F0–F13 od Tomáše). **D6** (posuvníky T20) zbývá.
+- **Moje cesty:** místa s vlastním názvem (domov, práce, lékař, nemocnice…), aspoň dvě, přidat a odebrat. Trasa přes všechna místa v pořadí. `PUT /me/places` zná jen dvojici, proto jdou na server první dvě vybraná.
+- **Mapa:** kraj jen obrysem bez záře, čáry silnic pod popisky podkladu (čitelné názvy měst), široká neviditelná vrstva pro klik (bere nejbližší silnici).
+- **Přihlášení:** tlačítka „Demo úředník“ a „Demo admin“ jsou **vždy** (rozhodnutí Matouše, mění F3). Ukázka bez účtu nic nezapisuje na server, zápisy jen do prohlížeče, v hlavičce štítek „demo“.
+- **F8:** rozpočet volá `GET /api/budget` (sekce „Výpočet serveru (jádro)“ se štítkem a objížďkou staveb), lokální náhled zůstává se svými filtry.
+- **F7:** komponenta `AiSuggest`, zatím v rozpočtu (`/ai/budget`) a v detailu silnice (`/ai/explain`). Vždy štítek „návrh AI“ nebo „šablona“, pořadí nemění. Zbývá oznámení uzavírky (`/ai/announcement` po potvrzení) a váhy z textu u admina.

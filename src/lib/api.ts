@@ -112,6 +112,28 @@ export type ClosurePreviewResponse = {
   saved: boolean;
 };
 
+// GET /api/budget (services/budget.py normalize_plan). Cena je vždy předpoklad.
+export type ServerProject = {
+  sil: string | null;
+  okres: string | null;
+  km: number | null;
+  cost_kc: number | null;
+  score: number | null;
+  extra_km: number | null;
+  road_ids: number[];
+};
+export type ServerPlan = {
+  amount: number;
+  repaired_km: number | null;
+  cost_kc: number | null;
+  remaining_emergency_km: number | null;
+  projects: ServerProject[];
+};
+export type BudgetResponse = { ready: boolean; plans: ServerPlan[]; note: string; weights_source?: string };
+
+// Odpovědi /api/ai/*: text je vždy označený, „šablona“ když je AI vypnutá.
+export type AiText = { text: string; source: "ai" | "sablona"; label: string; ready?: boolean };
+
 export class ApiUnavailable extends Error {}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -188,6 +210,12 @@ export const api = {
       { method: "POST" },
     );
   },
+  budget: (amountKc: number, signal?: AbortSignal) => request<BudgetResponse>(`/budget?amount=${Math.round(amountKc)}`, { signal }),
+  aiBudget: (amountKc: number) =>
+    request<AiText>("/ai/budget", { method: "POST", body: JSON.stringify({ amount: Math.round(amountKc) }) }),
+  aiExplain: (roadId: number) => request<AiText>("/ai/explain", { method: "POST", body: JSON.stringify({ road_id: roadId }) }),
+  aiAnnouncement: (closureId: number) =>
+    request<AiText>("/ai/announcement", { method: "POST", body: JSON.stringify({ closure_id: closureId }) }),
   closure: (body: { road_id: number; date_from: string; date_to: string; restriction: string }) =>
     request<{ detour: DetourResult; alerts: ApiAlert[] }>("/closures", {
       method: "POST",
