@@ -804,7 +804,7 @@ Pravidla: nová pole jen přidávat (`schemas.py` aditivně), test na každý no
 | `/admin` admin | Jen přihlášení. Nadpis „Cesty KHK – administrace“. | Neutrální šedá, malý formulář uprostřed, štítek „zabezpečená část“. | Registrace, demo vstup, odkaz na veřejnou mapu. |
 
 Pravidla:
-- **Admin a úředník se nikdy neregistrují.** Účet jim založí admin (nebo seed). Registrace na `/` vždy vytvoří občana.
+- **Admin se nikdy neregistruje.** Úředník se sám nezaregistruje: na `/sprava` jen **požádá o přístup** a admin žádost schválí (25.10). Registrace na `/` vždy vytvoří občana.
 - Když se na `/admin` přihlásí úředník nebo občan, uvidí „Nemáte oprávnění pro administraci“ a odkaz na svou adresu (B‑5 `home`). Totéž občan na `/sprava`.
 - Chyby pod formulářem česky: „Špatné jméno nebo heslo“, „Účet je zablokovaný“, „Server je nedostupný, zkuste to za chvíli“. Heslo s ikonou „ukázat“. Tlačítko během odesílání zamčené.
 
@@ -838,3 +838,34 @@ Pořadí = priorita. Do freeze aspoň body 1–5.
 13. **Žádné ladicí výpisy** v konzoli, žádné „undefined“, „NaN“, „null“ v UI, žádné anglické hlášky.
 
 Backend k tomu: jednotné chyby `{detail, code}` (B‑12), `GET /api/health` vrací verzi a datum dat (pro patičku), `home` podle role (B‑5), přihlášení krátkým jménem (S34).
+
+### 25.10 Žádost úředníka o přístup a ověření účtu (15. 10., ~15:10, Tomáš)
+Úředník si účet nezaloží sám. **Požádá, admin schválí, účet se ověří.** Ověření je formalita (pro demo stačí odkaz v e‑mailu nebo v konzoli serveru), ale tok musí být vidět.
+
+**Tok:**
+1. **Žádost (`/sprava`):** pod přihlášením odkaz „Nemáte účet? Požádat o přístup“. Formulář: jméno, pracovní e‑mail, úřad (kraj / obec / ORP, výběr ze seznamu), funkce, heslo, souhlas se zpracováním údajů. Po odeslání: „Žádost odeslána. Po schválení administrátorem vám přijde e‑mail.“
+2. **Ověření e‑mailu (formalita):** backend pošle odkaz s jednorázovým tokenem (`/sprava/overeni?token=…`, platnost 24 h). Bez SMTP se odkaz vypíše do logu serveru a v demu ho admin vidí u žádosti. Dokud není e‑mail ověřený, žádost má štítek „e‑mail neověřen“.
+3. **Schválení (`/admin` → Uživatelé → Žádosti):** seznam čekajících žádostí s počtem v menu. Admin vidí jméno, úřad, e‑mail a stav ověření. Tlačítka **„Schválit jako úředník“** a **„Zamítnout“** (s důvodem). Volitelně omezit úředníka na obec nebo ORP (fáze 2).
+4. **Po schválení:** účet dostane roli `official`, uživatel e‑mail (nebo upozornění) „Přístup schválen“ a přihlásí se na `/sprava`. Po zamítnutí e‑mail s důvodem.
+5. **Audit:** žádost, ověření, schválení i zamítnutí se zapisují (kdo, kdy, proč).
+
+**Pravidla:**
+- Dokud žádost není schválená, přihlášení na `/sprava` vrací „Žádost čeká na schválení administrátorem“ (ne „špatné heslo“).
+- Žádost nikdy nedá roli `admin`. Admina může jmenovat jen jiný admin v Uživatelích.
+- Doména e‑mailu je jen nápověda pro admina (např. `@kr-kralovehradecky.cz` nebo obecní úřad označit „úřední doména“), schválení je vždy ruční.
+- Ochrana: rate limit na žádosti (jako u loginu), žádné prozrazení, jestli e‑mail už existuje.
+
+**Backend (Šimon, S35):**
+| Endpoint | Co |
+|---|---|
+| `POST /api/auth/request-access` | vytvoří uživatele se `status="pending"` a `role="citizen"` (žádná práva navíc), uloží úřad a funkci, pošle ověřovací odkaz |
+| `GET /api/auth/verify?token=` | označí e‑mail jako ověřený (`email_verified_at`) |
+| `GET /api/admin/access-requests` | seznam čekajících žádostí (admin) |
+| `POST /api/admin/access-requests/{id}/approve` | `role="official"`, `status="active"`, e‑mail nebo upozornění, audit |
+| `POST /api/admin/access-requests/{id}/reject` | `status="rejected"`, důvod, e‑mail, audit |
+
+Do `User` jen přidat sloupce (`status`, `email_verified_at`, `organization`, `job_title`), nic nepřejmenovat. Login vrací pro `pending` srozumitelnou chybu s `code="pending_approval"` (B‑12). Testy: žádost, ověření, schválení, zamítnutí, pending se nepřihlásí do správy.
+
+**Frontend (Matouš):** formulář žádosti na `/sprava`, stránka ověření, v `/admin` záložka „Žádosti“ s počtem. Vzhled podle 25.8 (formulář správy, ne občana).
+
+**Priorita:** fáze 2 (po freeze). Do 16:00 jen když budou hotové body 1–6 z TODO TEĎ. Pro pitch stačí věta: „Úředník o přístup požádá, admin ho schválí a účet se ověří e‑mailem.“
