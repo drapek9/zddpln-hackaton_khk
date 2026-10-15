@@ -244,3 +244,15 @@ def test_obce_and_cut_off_for_api(engine: Engine):
     assert len(obce) == len(engine.data.extra["obce"]) and obce[0]["lon"] and obce[0]["kod"]
     road = next(r["id"] for r in engine.data.roads if engine.detour(r["id"]).found)
     assert engine.cut_off_obce(road) == []
+
+
+def test_srti_closures(engine: Engine):
+    if not engine.data.srti.get("items"):
+        pytest.skip("public/data/srti.json missing (scripts/fetch_srti.py)")
+    items = engine.srti_closures(on="2026-10-15")
+    assert len(items) == len(engine.data.srti["items"])
+    assert any(i.full_closure for i in items)
+    snapped = [i for i in items if i.road_id is not None]
+    assert snapped and all(engine.road(i.road_id) for i in snapped) and snapped[0].road_label
+    active = engine.srti_closures(on="2026-10-15", active_only=True)
+    assert all(i.active for i in active) and len(active) <= len(items)

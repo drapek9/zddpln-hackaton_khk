@@ -243,3 +243,12 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
 - **Smlouva (jen přidané):** `DemoClosure` (nový model), `DetourResult.closed_road_ids`.
 - **Pro Šimona (S13):** `GET /api/demo-closures` = `engine.demo_closures()`. První volání ~5 s, pak z cache. Výsledek je kopie, lze ho upravit.
 - **NEAKTIVNÍ:** `backtest_2022()` z tabulky T16 výše se dnes nedělá. Ověření modelu na plánech 2022 je podle `PLAN_FINAL.md`, kap. 13, přesunuté do `NAPADY.md`.
+
+### Stav 15. 10., ~11:30 (Tomáš): T8 SRTI, metody pro API
+- **T8 hotovo:** `scripts/fetch_srti.py` → `public/data/srti.json`. Zdroj: ŘSD / NDIC, SRTI jako linked open data (snímek `https://lod.tamtamresearch.com/srti/snapshot/`), **CC BY 4.0**.
+  - Snímek 15. 10.: 2 324 záznamů v ČR, **45 situací v kraji**, 31 z nich leží do 100 m od úseku kraje, **22 úplných uzavírek na silnicích kraje**.
+  - SRTI dává jen bod, termín a typ (údržba, stavební práce, uzavřená silnice, kyvadlový provoz…). Číslo silnice jen u I. tříd a dálnic, popis ani délku ne.
+- `Engine.srti_closures(on=None, active_only=False) -> list[SrtiClosure]` (`road_id`, `road_label`, `active`, `full_closure`). Šimonovo `api/closures.py` (`_srti`) ho už volá.
+- `Engine.obce()` (448 obcí: kód, název, obyvatelé, střed, bbox) a `Engine.cut_off_obce(road_id)`. Tvar sedí na Šimonovo `services/scenarios.py`.
+- **Smlouva (jen přidané):** `SrtiClosure`.
+- Zdroje dat (Matouš): SRTI, CC BY 4.0, odkaz na NKOD je v `srti.json` → `url`.

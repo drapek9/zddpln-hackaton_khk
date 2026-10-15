@@ -28,6 +28,8 @@ class Dataset:
     """I. class roads and motorways from OSM (may be empty)."""
     extra: dict[str, Any] = field(default_factory=dict)
     """Extra Data KHK layers from scripts/fetch_khk_extra.py (may be empty)."""
+    srti: dict[str, Any] = field(default_factory=dict)
+    """ŘSD / NDIC SRTI snapshot from scripts/fetch_srti.py (may be empty)."""
 
     def __post_init__(self) -> None:
         self.by_id: dict[int, dict[str, Any]] = {r["id"]: r for r in self.roads}
@@ -47,6 +49,8 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
     osm_roads = _read(osm_path)["roads"] if osm_path.exists() else []
     extra_path = d / "khk_extra.json"
     extra = _read(extra_path) if extra_path.exists() else {}
+    srti_path = d / "srti.json"
+    srti = _read(srti_path) if srti_path.exists() else {}
     intensity_path = d / "intensity.json"
     if intensity_path.exists():
         # ŘSD census 2025 per road piece (scripts/fetch_rsd_counts.py), attached to the road record.
@@ -66,6 +70,7 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
         repairs=repairs["repairs"],
         osm_roads=osm_roads,
         extra=extra,
+        srti=srti,
     )
 
 

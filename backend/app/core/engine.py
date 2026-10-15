@@ -6,15 +6,17 @@ weights and closures; the engine computes. Load it once at startup.
 
 from __future__ import annotations
 
+import math
 import threading
+from datetime import date
 from pathlib import Path
 from typing import Any, Iterable
 
 from . import demo, impact, scoring
 from .data import Dataset, load_dataset, summary
-from .graph import RoadGraph
+from .graph import RoadGraph, to_xy
 from .people import People
-from .schemas import Alert, DemoClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .schemas import Alert, DemoClosure, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -25,6 +27,7 @@ class Engine:
         self._people_lock = threading.Lock()
         self._demo: list[DemoClosure] | None = None
         self._demo_lock = threading.Lock()
+        self._road_grid: dict[tuple[int, int], list[tuple[float, float, int]]] | None = None
 
     @property
     def people(self) -> People:
@@ -225,6 +228,59 @@ class Engine:
                 best.recommended, best.recommended_reason = True, reason
         return out
 
+    def srti_closures(self, on: str | None = None, active_only: bool = False) -> list[SrtiClosure]:
+        """Current road works and closures in the kraj from ŘSD / NDIC SRTI (T8).
+
+        `on` = ISO day for the `active` flag (default today). Each item is snapped
+        to the nearest kraj úsek within 100 m (`road_id`), if there is one.
+        """
+        day = on or date.today().isoformat()
+        out: list[SrtiClosure] = []
+        for it in self.data.srti.get("items", []):
+            start, end = (it.get("start") or "")[:10], (it.get("end") or "")[:10]
+            active = (not start or start <= day) and (not end or day <= end)
+            if active_only and not active:
+                continue
+            road_id = self._nearest_road((it["lon"], it["lat"]), 100.0)
+            road = self.data.by_id.get(road_id) if road_id is not None else None
+            out.append(
+                SrtiClosure(
+                    id=it["id"],
+                    label=it.get("label", ""),
+                    full_closure=bool(it.get("full_closure")),
+                    lon=it["lon"],
+                    lat=it["lat"],
+                    start=it.get("start"),
+                    end=it.get("end"),
+                    active=active,
+                    road=it.get("road"),
+                    road_id=road_id,
+                    road_label=_road_label(road) if road else None,
+                    snapshot=self.data.srti.get("snapshot", ""),
+                )
+            )
+        return out
+
+    def _nearest_road(self, p: LonLat, max_m: float) -> int | None:
+        """Nearest kraj road (id > 0) by vertex distance, within max_m metres."""
+        if self._road_grid is None:
+            grid: dict[tuple[int, int], list[tuple[float, float, int]]] = {}
+            for r in self.data.roads:
+                for lon, lat in r["g"]:
+                    x, y = to_xy((lon, lat))
+                    grid.setdefault((int(x // 200), int(y // 200)), []).append((x, y, r["id"]))
+            self._road_grid = grid
+        x, y = to_xy(p)
+        cx, cy = int(x // 200), int(y // 200)
+        best, best_d = None, max_m
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for vx, vy, rid in self._road_grid.get((cx + dx, cy + dy), ()):
+                    d = math.hypot(vx - x, vy - y)
+                    if d <= best_d:
+                        best, best_d = rid, d
+        return best
+
     def route(self, home: LonLat, work: LonLat, closed: Iterable[int] = ()) -> RouteResult:
         """Fastest route between two points. `closed` = road ids to avoid."""
         return self.graph.route(home, work, closed)
@@ -234,3 +290,10 @@ class Engine:
         if road is None:
             raise KeyError(f"Unknown road id {road_id}")
         return road
+
+
+def _road_label(road: dict[str, Any]) -> str:
+    trida = {"2": "II", "3": "III"}.get(str(road.get("trida", ""))[:1], "")
+    num = str(road.get("sil", "")).lstrip("0")
+    obce = road.get("obce") or []
+    return f"{trida}/{num}" + (f" ({obce[0]})" if obce else "") if trida else num

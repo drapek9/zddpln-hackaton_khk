@@ -185,3 +185,30 @@ class DemoClosure(BaseModel):
     note: str = ""
     """Honest caveats about the match, e.g. the plan has a different road number than Stav povrchu."""
     source: str = "Data KHK: Plánované opravy silniční infrastruktury na rok 2022 (liniové)"
+
+
+# ---- added 15 Oct (T8): current closures from ŘSD / NDIC SRTI ------------------
+
+
+class SrtiClosure(BaseModel):
+    """A current road work or closure from SRTI (CC BY 4.0), one point per situation."""
+
+    id: str
+    label: str
+    """Czech description of the kinds, e.g. "údržba, uzavřená silnice"."""
+    full_closure: bool
+    lon: float
+    lat: float
+    start: str | None = None
+    end: str | None = None
+    """ISO date-times from SRTI."""
+    active: bool = False
+    """The given day lies between start and end."""
+    road: str | None = None
+    """Road number from SRTI ("I-16"), mostly only for I. class roads and motorways."""
+    road_id: int | None = None
+    """Nearest kraj úsek (Data KHK) within 100 m, else None."""
+    road_label: str | None = None
+    """Our úsek, e.g. "III/29920 (Kuks)"."""
+    snapshot: str = ""
+    source: str = "ŘSD / NDIC, SRTI, CC BY 4.0"
