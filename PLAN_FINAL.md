@@ -688,11 +688,51 @@ Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, 
 - **Rozhodnuto:** pitch, PDF/PPTX a záložní video dělá **Přemek** (řádek 1 tabulky výše je vyřešený). Společně ho doladíme kolem 15:00.
 - Do té doby se pitch jen rozepisuje v [docs/PITCH.md](docs/PITCH.md): osnova 5 min, demo klik po kliku, čísla se zdroji, věty pro porotu, odpovědi na výtky, slajdy, záloha a kontrola v 16:00. Kdo něco rozhodne, připíše to tam.
 
-## 21. Rozhodnutí o nápadech a kdo co dělá do freeze (15. 10., ~14:20, Tomáš)
+## 21. Kontrola frontendu a rozhraní (15. 10., ~14:30, Tomáš)
+
+Zkontrolováno na větvi `matous` (commity od AI nástroje 04527a8 a f4f32e0). Opravy jsou už **na `origin/matous`** (a `produkce`), Matouš: `git pull` před další prací. Backend se nezměnil.
+
+### 21.1 Nálezy a opravy
+| # | Kde | Chyba | Stav / oprava |
+|---|---|---|---|
+| F0 | `AdminApp.tsx`, `ranking.ts` | Build padal: chybějící import `api`, nepoužitý import. | **Opraveno.** `npm run build` projde. |
+| F1 | `api.confirmClosure` | Zakládal jen návrh (`POST /closures`), `/confirm` nevolal, špatný typ odpovědi. Nikdo nebyl upozorněn. | **Opraveno:** create + `/closures/{id}/confirm`, toast „upozorněno N občanů“, chyba je vidět. |
+| F2 | `AdminApp.tsx` | `pins` chyběly v závislostech žebříčku, bez přihlášení pin tiše padal na 401. | **Opraveno:** pin na server jen úředník/admin, jinak lokálně s poctivou hláškou. |
+| F3 | `LoginCard.tsx` f4f32e0 | Vstup „Demo bez hesla“ vždy, vypadá jako obejití přihlášení, zápisy pak dávají 401. | **Vráceno (revert).** Jen když server neběží. |
+| F5 | Občan ★2 | Místa jen v `localStorage`, `PUT /me/places` se nevolal, takže nikdo nemohl být upozorněn. | **Opraveno:** přihlášený občan s oběma místy je uloží na server. |
+| F6 | Ukázkové uzavírky | Lokální seznam místo `GET /api/demo-closures`. | **Opraveno:** z API (doporučené první, štítek „skutečný plán 2022“), bez serveru lokální seznam. |
+| F9 | Zdroje dat | Text tvrdil, že kraj plán oprav nezveřejňuje (plán 2022 používáme). | **Opraveno.** |
+| F10 | Legenda | Chyběla SRTI. | **Opraveno** (admin i veřejná mapa). |
+| F13 | `ClosureCard` | **Pád celé stránky** po výběru ukázky: API vrací dojezd IZS jako `{items,label,note}` s českými poli (`sluzba`, `pred_min`, `po_min`, `nad_20_min`), frontend čekal `obce` z `schemas.py`. | **Opraveno** normalizací v `closure.ts`. **Šimon:** buď sjednoť `services/collisions.py` se `schemas.RescueImpact`, nebo to uveď v kontraktu. |
+| F7 | AI ve frontendu | Endpointy `/ai/*` nikdo nevolá. | **Zbývá** (Matouš): tlačítka „návrh AI“ (vysvětlení, oznámení, váhy, rozpočet), vždy popsaná, nikdy nemění pořadí, plynulá hláška při vypnuté AI. |
+| F8 | Rozpočet | Jen lokální odhad, ne `/api/budget`. | **Zbývá** (Matouš): volat API, lokální záloha, štítek zdroje. |
+| F11 | Bezpečnost | Výchozí `CESTY_SECRET_KEY` má 18 bajtů a přes tunel jde padělat token. Hesla demo účtů jsou stále v `seed.py` (S21). | **Šimon:** S21. **Tomáš:** nastavit klíč ≥ 32 bajtů v `.env`. |
+| F12 | Web Push | Kód je (`sw.js`, `notifications.ts`), chybí VAPID klíče, nikdy neproklikáno. | **Tomáš:** `cd backend && uv run python -m app.notify.vapid`, klíče do `.env`, zkusit v jednom prohlížeči. |
+
+Ověřeno v prohlížeči (backend :8010, frontend :5180, dočasná DB): přihlášení úředníka, ranking z API, ukázky z API, legenda SRTI, výběr ukázky už nepadá. Neověřeno v UI: potvrzení uzavírky tlačítkem a notifikace občanovi z uložených míst (API cesta ověřena ručně, `notified: 1`).
+
+### 21.2 Deset otázek k frontendu a backendu
+1. **Kdo potvrzuje uzavírku a co UI ukáže?** Úředník tlačítkem „Potvrdit“: create, pak confirm, toast „upozorněno N občanů“ (F1).
+2. **Jak se místa občana dostanou na server?** `PUT /me/places` (`{home:{lon,lat}, work:{lon,lat}}`) po nastavení obou, `GET /me/route` vrací trasu a zásahy. `localStorage` jen pro nepřihlášené (F5).
+3. **Co ukazují ukázkové uzavírky?** `GET /api/demo-closures`, doporučené první, skutečný plán 2022 (F6). Plné předpočtené dopady z API zatím nezobrazujeme, simulace se spouští přes `/closures/preview` nad hlavním úsekem.
+4. **Kdy je povolen offline demo vstup?** Jen když server neběží, s označením offline režimu (F3).
+5. **Jediný zdroj pravdy pro piny?** Server pro úředníka/admina, lokálně jinak. Po změně se žebříček načte znovu, `pins` jsou v závislostech (F2).
+6. **Kde je AI vidět a jak je označená?** Čtyři místa (RoadPanel, ClosureCard, AdminSystem, BudgetPlanner), vždy „návrh AI“, nikdy nemění skóre, potvrzuje člověk (F7, zbývá).
+7. **Rozpočet?** `GET /api/budget?amount=&amount2=` s lokální zálohou a štítkem zdroje (F8, zbývá).
+8. **Web Push?** Hotové na větvi, potřebuje VAPID v `.env`. Záloha: seznam upozornění v „Moje cesty“ (F12).
+9. **Bezpečnost kontraktu?** Typy odpovědí se rozcházely dvakrát (F1, F13). Jedna smoke zkouška na endpoint (`scripts/smoke_api.sh`, T23) po každém sloučení, později typy z OpenAPI (S26).
+10. **Spolehlivost před porotou?** gzip, malý žebříček a předpočet (S22–S24, T21), silný `SECRET_KEY`, smoke po každém sloučení, žádná session přihlášená ve špatné roli, záložní build s offline štítkem.
+
+### 21.3 Co zbývá
+- Matouš: F7, F8, proklik potvrzení uzavírky a upozornění v UI, mobil 375 px.
+- Šimon: S21, sjednotit tvar `rescue` (F13).
+- Tomáš: `SECRET_KEY`, VAPID, smoke po sloučení.
+
+## 22. Rozhodnutí o nápadech a kdo co dělá do freeze (15. 10., ~14:20, Tomáš)
 
 Tomáš rozhodl o všech nápadech, které ještě byly otevřené ([NAPADY.md](NAPADY.md)). Kap. 19 a 20 platí dál. Tahle kapitola k nim přidává dvě nové věci do plánu a jednu tabulku: kdo co dělá a v jakém pořadí. Pořadí v každém řádku = priorita, škrtá se odspodu (kap. 20, „Škrty“).
 
-### 21.1 Rozhodnutí
+### 22.1 Rozhodnutí
 | Nápad | Rozhodnutí | Proč |
 |---|---|---|
 | **F‑c** Rozpad skóre z API (`/api/useky/{id}`, pole `breakdown`) | **do plánu**, Matouš | Detail ukáže stejná čísla jako žebříček a export, včetně nových faktorů T20. |
@@ -703,7 +743,7 @@ Tomáš rozhodl o všech nápadech, které ještě byly otevřené ([NAPADY.md](
 | č. 9 A vs B, č. 12 widget, č. 13 e‑maily | v nápadech | V pitchi jako rozvoj po hackathonu. |
 | E1–E8 | uzavřeno v nápadech | Vlastníci a pořadí jsou v kap. 20. |
 
-### 21.2 Kdo co dělá (do zkušebních sloučení 15:00, 15:30, 16:00)
+### 22.2 Kdo co dělá (do zkušebních sloučení 15:00, 15:30, 16:00)
 | Kdo | Pořadí úkolů | Kde je zadání |
 |---|---|---|
 | **Matouš** | 1. D1 + D3 + D4 → 2. D2 + karta uzavírky (F‑b) a 3 doporučené uzavírky 2022 (E4) → 3. D7 → 4. ★2 seznam upozornění (E1) → 5. rozpočet z API (E3) a tlačítko „Zdůvodnit“ (E5) → 6. D5, D8, štítek „živá data“ (F‑a), chyby (F‑e) → 7. **F‑c** → 8. **F‑d** → 9. D6 posuvníky nových vah | [docs/FRONTEND.md](docs/FRONTEND.md), „NEJVYŠŠÍ PRIORITA“, kap. 20 |
