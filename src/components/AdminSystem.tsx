@@ -4,7 +4,15 @@ import { DEFAULT_WEIGHTS } from "../lib/types";
 import type { Pin } from "../lib/api";
 import { CLASS_LABEL } from "../lib/ranking";
 import { ROLE_LABEL, type Role } from "../lib/auth";
-import { DEMO_USERS, adminApi, type AdminUser, type AuditItem } from "../lib/adminApi";
+import {
+  DEMO_USERS,
+  adminApi,
+  type AccessRequest,
+  type AdminOverview,
+  type AdminUser,
+  type AiStatus,
+  type AuditItem,
+} from "../lib/adminApi";
 import { toast } from "./Toaster";
 import WeightSliders from "./WeightSliders";
 import { WEIGHT_NAME } from "../lib/weights";
@@ -44,6 +52,10 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
   const [filter, setFilter] = useState<Role | "all">("official");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [ai, setAi] = useState<AiStatus | null>(null);
+  const [rejecting, setRejecting] = useState<{ id: number; reason: string } | null>(null);
 
   useEffect(() => setDraft(weights), [weights]);
 
@@ -51,7 +63,49 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
     if (!live) return;
     adminApi.users().then(setUsers).catch((e: Error) => setError(e.message));
     adminApi.audit().then(setAudit).catch(() => {});
+    adminApi.overview().then(setOverview).catch(() => {});
+    adminApi.accessRequests().then(setRequests).catch(() => {});
+    adminApi.ai().then(setAi).catch(() => {});
   }, [live]);
+
+  // Žádosti správců o přístup (S27–S32): schválit dá roli správce, zamítnout chce důvod.
+  const refreshAfterChange = () => {
+    adminApi.accessRequests().then(setRequests).catch(() => {});
+    adminApi.overview().then(setOverview).catch(() => {});
+    adminApi.users().then(setUsers).catch(() => {});
+    adminApi.audit().then(setAudit).catch(() => {});
+  };
+  const approve = async (r: AccessRequest) => {
+    try {
+      await adminApi.approve(r.id);
+      toast(`Přístup schválen: ${r.email}`);
+      refreshAfterChange();
+    } catch (e) {
+      toast((e as Error).message, "warn");
+    }
+  };
+  const reject = async () => {
+    if (!rejecting) return;
+    try {
+      await adminApi.reject(rejecting.id, rejecting.reason.trim());
+      toast("Žádost zamítnuta");
+      setRejecting(null);
+      refreshAfterChange();
+    } catch (e) {
+      toast((e as Error).message, "warn");
+    }
+  };
+  const toggleAi = async () => {
+    if (!ai) return;
+    try {
+      const next = await adminApi.setAi(!ai.enabled);
+      setAi(next);
+      toast(next.enabled ? "AI zapnuta" : "AI vypnuta");
+      adminApi.audit().then(setAudit).catch(() => {});
+    } catch (e) {
+      toast((e as Error).message, "warn");
+    }
+  };
 
   const changed = (Object.keys(WEIGHT_NAME) as (keyof Weights)[]).some((k) => draft[k] !== weights[k]);
   const counts = useMemo(() => {
@@ -125,6 +179,26 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
           <b>{pins.length}</b>
           <span>připíchnutých priorit</span>
         </div>
+        {overview && (
+          <>
+            <div>
+              <b>{overview.pending_requests}</b>
+              <span>žádostí o přístup</span>
+            </div>
+            <div>
+              <b>{Object.values(overview.closures_by_status).reduce((a, b) => a + b, 0)}</b>
+              <span>uzavírek v systému</span>
+            </div>
+            <div>
+              <b>{overview.notifications}</b>
+              <span>odeslaných upozornění</span>
+            </div>
+            <div>
+              <b>{overview.snapshot.roads.toLocaleString("cs-CZ")}</b>
+              <span>úseků v datech</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="system-grid">
@@ -214,6 +288,81 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
           <p className="fine">Účty správců zakládá kraj. Registrace dává vždy roli občan, roli mění jen admin.</p>
         </section>
 
+        {live && (
+          <section className="sys-card">
+            <div className="sys-card-head">
+              <h3>Žádosti o přístup</h3>
+              {requests.length > 0 && <span className="chip">{requests.length}</span>}
+            </div>
+            <p className="muted">Správci žádají o účet na /sprava. Schválením dostanou roli správce a e-mail s odkazem.</p>
+            <ul className="access-list">
+              {requests.map((r) => (
+                <li key={r.id}>
+                  <div>
+                    <b>{r.name || r.email}</b>
+                    <small>
+                      {r.email}
+                      {r.organization && ` · ${r.organization}`}
+                      {r.job_title && ` · ${r.job_title}`}
+                    </small>
+                    <small>
+                      {r.email_verified ? "e-mail ověřen" : "e-mail neověřen"}
+                      {r.official_domain ? " · úřední doména" : " · jiná doména, ověřte"} · {fmtTime(r.created_at)}
+                    </small>
+                  </div>
+                  {rejecting?.id === r.id ? (
+                    <div className="row-actions">
+                      <input
+                        autoFocus
+                        placeholder="Důvod zamítnutí"
+                        value={rejecting.reason}
+                        onChange={(e) => setRejecting({ id: r.id, reason: e.target.value })}
+                        onKeyDown={(e) => e.key === "Enter" && rejecting.reason.trim().length >= 3 && reject()}
+                      />
+                      <button className="btn small" disabled={rejecting.reason.trim().length < 3} onClick={reject}>
+                        Zamítnout
+                      </button>
+                      <button className="btn small" onClick={() => setRejecting(null)}>
+                        Zpět
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="row-actions">
+                      <button className="btn small primary" onClick={() => approve(r)}>
+                        Schválit
+                      </button>
+                      <button className="btn small" onClick={() => setRejecting({ id: r.id, reason: "" })}>
+                        Zamítnout
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+              {!requests.length && <li className="muted">Žádné čekající žádosti.</li>}
+            </ul>
+          </section>
+        )}
+
+        {live && ai && (
+          <section className="sys-card">
+            <div className="sys-card-head">
+              <h3>Asistent AI</h3>
+              <span className="chip">{!ai.enabled ? "vypnuto" : ai.configured ? "zapnuto" : "zapnuto, bez klíče"}</span>
+            </div>
+            <p className="muted">AI jen vysvětluje a navrhuje, skóre je vždy podle vzorce. Vypnutím zmizí návrhy AI všem správcům.</p>
+            <p className="fine">
+              {ai.configured
+                ? `Poskytovatel ${ai.provider}${ai.model ? `, model ${ai.model}` : ""}.`
+                : "Na serveru není nastavený klíč AI, funkce AI nepoběží."}
+            </p>
+            <div className="row-actions">
+              <button className={`btn ${ai.enabled ? "" : "primary"}`} onClick={toggleAi}>
+                {ai.enabled ? "Vypnout AI" : "Zapnout AI"}
+              </button>
+            </div>
+          </section>
+        )}
+
         <section className="sys-card">
           <h3>Záznam změn</h3>
           <ul className="audit">
@@ -248,6 +397,9 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
             </a>
             <a className="btn" href="/api/export.geojson">
               GeoJSON
+            </a>
+            <a className="btn" href="/api/export/metadata.jsonld" target="_blank" rel="noreferrer">
+              Metadata DCAT
             </a>
             <a className="btn" href="/api/docs" target="_blank" rel="noreferrer">
               Dokumentace API

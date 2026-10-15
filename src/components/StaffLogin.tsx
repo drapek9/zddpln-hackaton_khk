@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { AuthError, login, ROLE_LABEL, type User } from "../lib/auth";
 import { homeOf, navigate } from "../lib/route";
+import AccessRequestForm from "./AccessRequestForm";
 
 type Props = {
   area: "sprava" | "admin";
@@ -32,6 +33,7 @@ export default function StaffLogin({ area, denied, offline, note, onUser, onLogo
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [requesting, setRequesting] = useState(false);
   const t = TEXT[area];
 
   const submit = async (e: FormEvent) => {
@@ -69,6 +71,8 @@ export default function StaffLogin({ area, denied, offline, note, onUser, onLogo
               Odhlásit a přihlásit jiným účtem
             </button>
           </>
+        ) : requesting ? (
+          <AccessRequestForm onBack={() => setRequesting(false)} />
         ) : (
           <form className="auth-form" onSubmit={submit} noValidate>
             {note && <p className="auth-note">{note}</p>}
@@ -123,7 +127,16 @@ export default function StaffLogin({ area, denied, offline, note, onUser, onLogo
             <button className="btn primary auth-submit" type="submit" disabled={busy || !name || !password}>
               {busy ? "Přihlašuji…" : "Přihlásit"}
             </button>
-            <p className="fine">Účet vydává kraj. Registrace tu není.</p>
+            {area === "sprava" ? (
+              <p className="fine">
+                Nemáte účet?{" "}
+                <button type="button" className="link" onClick={() => setRequesting(true)}>
+                  Požádat o přístup
+                </button>
+              </p>
+            ) : (
+              <p className="fine">Účet vydává kraj. Registrace tu není.</p>
+            )}
           </form>
         )}
 

@@ -49,3 +49,12 @@ Backend k tomu je v [TODO_BACKEND.md](TODO_BACKEND.md). Cílová podoba obrazove
 - **F‑10 ✅** Otevřený detail zavře panel vah a naopak, Esc zavře horní vrstvu (dialog, váhy, detail).
 - **Objížďka** výraznější (Tomáš): plná fialová čára s bílým lemem a září, v legendě „objížďka“.
 - Proklikáno v demo režimu na úzkém panelu. Desktop 1440×900 a tmavý režim přes Playwright ještě neověřené; P1 a P2 nezačaté.
+
+## Stav (15. 10. odpoledne, Matouš): frontend volá další funkce backendu
+- **Váhy:** názvy, skupiny a popisy z `GET /api/weights/schema`, předvolby z `GET /api/weights/presets`. Bez serveru platí seznam ve `src/lib/weights.ts`. (F‑3 výše už není „zatím“.)
+- **Hledání na /sprava:** našeptávač obcí (`GET /api/obce`) a silnic (`GET /api/search`, B‑2). Obec přiblíží mapu, silnice otevře detail.
+- **Admin:** karty z `GET /api/admin/overview`, žádosti o přístup se schválením a zamítnutím (s důvodem), zapnutí a vypnutí AI (`/api/admin/ai`), odkaz na metadata DCAT.
+- **/sprava:** formulář „Požádat o přístup“ (`POST /api/auth/request-access`).
+- **Povodňový scénář:** Q5/Q20/Q100 v panelu správce (`GET /api/flood`), zaplavené úseky zvýrazněné v mapě, odříznuté obce a lidé.
+- Ověřeno proti backendu z `main` na testovací databázi: žádost → schválení adminem → uživatel je správce; hledání; povodeň Q100.
+- Zatím nevyužité (nízká priorita): `/ranking/diff` (žebříček změn počítá frontend ze serverového pořadí), `/useky/{id}`, `/pois/{id}`, `/reports`, `/votes`, `/me/weights`, `/me/route`, `/roads/other`, `/stability`, filtry `GET /closures`.

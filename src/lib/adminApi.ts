@@ -6,6 +6,29 @@ import { notifyUnauthorized } from "./auth";
 
 export type AdminUser = { id: number; email: string; role: Role; blocked: boolean; created_at: string };
 export type AuditItem = { id: number; email: string; action: string; detail: string; created_at: string };
+export type AccessRequest = {
+  id: number;
+  email: string;
+  name: string | null;
+  organization: string | null;
+  job_title: string | null;
+  email_verified: boolean;
+  official_domain: boolean;
+  verify_url: string | null;
+  created_at: string;
+};
+export type AdminOverview = {
+  users_by_role: Record<string, number>;
+  pending_requests: number;
+  closures_by_status: Record<string, number>;
+  notifications: number;
+  last_audit: { email: string; action: string; detail: string; created_at: string } | null;
+  snapshot: { roads: number; updated_label?: string | null };
+  ai_enabled: boolean;
+  ai_configured: boolean;
+  push_configured: boolean;
+};
+export type AiStatus = { provider: string; configured: boolean; enabled: boolean; model: string | null };
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/admin${path}`, {
@@ -40,6 +63,13 @@ export const adminApi = {
       body: JSON.stringify({ weights, vote_cap: cap }),
     });
   },
+  overview: () => call<AdminOverview>("/overview"),
+  accessRequests: () => call<{ items: AccessRequest[] }>("/access-requests").then((r) => r.items),
+  approve: (id: number) => call<AccessRequest>(`/access-requests/${id}/approve`, { method: "POST" }),
+  reject: (id: number, reason: string) =>
+    call<{ id: number; status: string }>(`/access-requests/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+  ai: () => call<AiStatus>("/ai"),
+  setAi: (enabled: boolean) => call<AiStatus>("/ai", { method: "PUT", body: JSON.stringify({ enabled }) }),
   audit: (limit = 30) => call<{ items: AuditItem[] }>(`/audit?limit=${limit}`).then((r) => r.items),
 };
 

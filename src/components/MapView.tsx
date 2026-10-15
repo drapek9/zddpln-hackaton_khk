@@ -26,6 +26,8 @@ type Props = {
   showRepairs?: boolean;
   /** Právě probíhající uzavírky ŘSD (SRTI). Veřejnost je zapíná ve filtru. */
   showSrti?: boolean;
+  /** Přiblížit mapu na místo (hledání obce). Nové t = nový přelet. */
+  focus?: { lon: number; lat: number; t: number } | null;
 };
 
 // Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
@@ -208,6 +210,7 @@ function MapInner({
   hoverId = null,
   showRepairs = true,
   showSrti = true,
+  focus = null,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -619,6 +622,10 @@ function MapInner({
     if (map.getSource("detour")) apply();
     else map.once("load", apply);
   }, [detour]);
+
+  useEffect(() => {
+    if (focus) mapRef.current?.flyTo({ center: [focus.lon, focus.lat], zoom: 12.5, duration: 900 });
+  }, [focus]);
 
   useEffect(() => {
     const map = mapRef.current;

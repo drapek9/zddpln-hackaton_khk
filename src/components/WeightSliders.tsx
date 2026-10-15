@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
 import type { Weights } from "../lib/types";
-import { WEIGHT_GROUPS, WEIGHT_META } from "../lib/weights";
+import { useWeightMeta } from "../lib/weights";
 
 type Props = {
   weights: Weights;
@@ -41,12 +41,14 @@ function WeightNumber({ value, onCommit, label }: { value: number; onCommit: (v:
 
 /** Všech 14 parametrů ve skupinách s krátkým popisem (F‑3). */
 export default function WeightSliders({ weights, onChange, serverOnline = true }: Props) {
+  // Názvy, skupiny a popisy z GET /api/weights/schema (B‑W‑1), bez serveru seznam ve weights.ts.
+  const { meta, groups } = useWeightMeta();
   return (
     <div className="weight-groups">
-      {WEIGHT_GROUPS.map((group) => (
+      {groups.map((group) => (
         <fieldset key={group} className="weight-group">
           <legend>{group}</legend>
-          {WEIGHT_META.filter((w) => w.group === group).map((w) => (
+          {meta.filter((w) => w.group === group).map((w) => (
             <div key={w.key} className="weight">
               <span>
                 <span className="weight-label">

@@ -14,7 +14,9 @@ import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import Dialog from "./Dialog";
 import WeightSliders from "./WeightSliders";
-import { WEIGHT_META } from "../lib/weights";
+import SearchBox from "./SearchBox";
+import FloodPanel from "./FloodPanel";
+import { WEIGHT_META, useWeightPresets } from "../lib/weights";
 import { DEFAULT_WEIGHTS, WEIGHT_PRESETS } from "../lib/types";
 import { STATUS_LABEL, STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatPeriod, formatSil, stavLabel } from "../lib/geo";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
@@ -73,6 +75,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [savedNote, setSavedNote] = useState(false);
   const [weightMode, setWeightMode] = useState<"simple" | "detail">("simple");
   const [preset, setPreset] = useState<string | null>(null);
+  // Předvolby ze serveru (B‑3, GET /api/weights/presets), bez serveru návrh aplikace.
+  const { presets, fromServer: presetsFromServer } = useWeightPresets(WEIGHT_PRESETS);
 
   // Přihlášený admin: trvalé váhy ze serveru (GET /api/admin/weights).
   useEffect(() => {
@@ -113,6 +117,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [okres, setOkres] = useState(prefs.okres);
   const [stav, setStav] = useState(prefs.stav);
   const [query, setQuery] = useState("");
+  const [focus, setFocus] = useState<{ lon: number; lat: number; t: number } | null>(null);
+  const [floodIds, setFloodIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<"rank" | "score" | "length" | "stav">("rank");
   const [onlyBad, setOnlyBad] = useState(false);
   // Seznam uzavírek a oprav s filtrem termínu (kap. 25.2): ukáže ty, které do zvoleného období zasahují.
@@ -465,14 +471,20 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         <aside className="side left" ref={sideRef} onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 400)}>
           <SheetClose onClose={() => setSheet("map")} />
           <div className="side-sticky">
-          <label className="search">
-            <input
-              ref={searchRef}
-              placeholder="Hledat silnici nebo úsek   /"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
+          <SearchBox
+            inputRef={searchRef}
+            placeholder="Hledat obec, silnici nebo úsek   /"
+            value={query}
+            onValue={setQuery}
+            onRoad={(id) => {
+              setQuery("");
+              setSelectedId(id);
+            }}
+            onPlace={(lon, lat) => {
+              setQuery("");
+              setFocus({ lon, lat, t: Date.now() });
+            }}
+          />
           <div className="filters">
             <select value={okres} onChange={(e) => setOkres(e.target.value)}>
               {okresy.map((o) => (
@@ -697,6 +709,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               ))}
             </div>
           </Fold>
+          {official && (
+            <Fold title="Povodňový scénář" meta={floodIds.length ? `${floodIds.length} úseků` : undefined}>
+              <FloodPanel onRoads={setFloodIds} />
+            </Fold>
+          )}
           <Fold title="Vrstvy mapy">
             <label className="check">
               <input type="checkbox" checked={showCondition} onChange={(e) => setShowCondition(e.target.checked)} />
@@ -718,6 +735,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         </aside>
         <div className="map-wrap">
           <MapView
+            focus={focus}
             hoverId={hoverId}
             roads={filtered}
             repairs={repairs}
@@ -731,6 +749,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             showRepairs={layers.repairs}
             showSrti={layers.srti}
             detour={detour}
+            highlight={floodIds}
           />
           <div className={`params ${paramsOpen ? "open" : ""}`}>
             <button
@@ -768,7 +787,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 </div>
                 {weightMode === "simple" ? (
                   <div className="presets">
-                    {WEIGHT_PRESETS.map((p) => (
+                    {presets.map((p) => (
                       <button
                         key={p.key}
                         className={preset === p.key ? "on" : ""}
@@ -781,7 +800,10 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                         <span>{p.hint}</span>
                       </button>
                     ))}
-                    <p className="fine">Předvolby jsou návrh aplikace, ne nastavení kraje. Přesné hodnoty jsou v režimu Podrobné.</p>
+                    <p className="fine">
+                      {presetsFromServer ? "Předvolby ze serveru." : "Předvolby jsou návrh aplikace, ne nastavení kraje."} Přesné hodnoty jsou v
+                      režimu Podrobné.
+                    </p>
                   </div>
                 ) : (
                   <>

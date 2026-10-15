@@ -1313,3 +1313,27 @@ html[data-theme="dark"] .legend i.detour-sw { background: #c4b5fd; box-shadow: 0
 .weight-group .weight .weight-num { width: 52px; }
 .weight-group .weight input[type="range"] { width: 100%; }
 .side-sticky + .rank-tools { margin-top: 10px; }
+
+/* Hledání s našeptávačem (GET /api/search a /api/obce) */
+.search-box { position: relative; }
+.search-hits { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); max-height: 320px; overflow: auto; }
+.search-hits button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: none; color: inherit; text-align: left; cursor: pointer; }
+.search-hits button.on { background: var(--hover, rgba(127,127,127,.14)); }
+.search-hits small { opacity: .7; font-size: 12px; }
+
+/* Žádosti o přístup (admin) */
+.access-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.access-list li { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.access-list li > div:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.access-list small { opacity: .75; overflow-wrap: anywhere; }
+.access-list input { min-width: 160px; }
+
+/* Žádost o přístup na /sprava */
+.auth-form label.check { grid-template-columns: auto 1fr; font-weight: 400; }
+
+/* Povodňový scénář (GET /api/flood) */
+.flood-result { margin-top: 10px; }
+.flood-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.flood-kpis > div { display: flex; flex-direction: column; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.flood-kpis b { font-size: 18px; }
+.flood-kpis span { font-size: 12px; opacity: .75; }
