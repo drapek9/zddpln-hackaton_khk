@@ -240,7 +240,7 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
   - `Engine.intensity(road_id)`. `closure_impact` při úplné uzavírce přidá varování „Objížďkou pojede ~N vozidel denně“ a kolik km denně navíc ujedou.
   - Licence ŘSD: **CC BY‑SA 4.0**. Export s intenzitou musí mít stejnou licenci (S9).
 
-### Stav 15. 10., ~11:45 (Tomáš): T16 ukázkové uzavírky 2022
+### Stav 15. 10., ~10:45 (Tomáš): T16 ukázkové uzavírky 2022
 - **Hotovo:** `Engine.demo_closures(full_only=True) -> list[DemoClosure]`. Zdroj: Data KHK, Plánované opravy silniční infrastruktury na rok 2022 (liniové), 23 záznamů, z toho 20 úplných uzavírek.
 - Každý plán se spáruje s našimi úseky podle čísla silnice a polohy čáry (vzorek po 20 m, do 40 m od úseku). Když číslo v plánu nesedí se Stavem povrchu (1 případ, III/2864 leží na 2861), páruje se jen podle polohy a v `note` to stojí.
 - Spárováno 17 z 20 úplných uzavírek. Tři čáry neleží na úsecích z dat (II/3041 Libňatov, III/32426 Nechanice – Hrádek, III/30011 Zálesí; místní komunikace nebo úsek mimo data). Mají `road_ids = []`, vysvětlení v `note` a dopad se nepočítá.
@@ -254,7 +254,7 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
 - **Pro Šimona (S13):** `GET /api/demo-closures` = `engine.demo_closures()`. První volání ~5 s, pak z cache. Výsledek je kopie, lze ho upravit.
 - **NEAKTIVNÍ:** `backtest_2022()` z tabulky T16 výše se dnes nedělá. Ověření modelu na plánech 2022 je podle `PLAN_FINAL.md`, kap. 13, přesunuté do `NAPADY.md`.
 
-### Stav 15. 10., ~11:30 (Tomáš): T8 SRTI, metody pro API
+### Stav 15. 10., ~11:00 (Tomáš): T8 SRTI, metody pro API
 - **T8 hotovo:** `scripts/fetch_srti.py` → `public/data/srti.json`. Zdroj: ŘSD / NDIC, SRTI jako linked open data (snímek `https://lod.tamtamresearch.com/srti/snapshot/`), **CC BY 4.0**.
   - Snímek 15. 10.: 2 324 záznamů v ČR, **45 situací v kraji**, 31 z nich leží do 100 m od úseku kraje, **22 úplných uzavírek na silnicích kraje**.
   - SRTI dává jen bod, termín a typ (údržba, stavební práce, uzavřená silnice, kyvadlový provoz…). Číslo silnice jen u I. tříd a dálnic, popis ani délku ne.
@@ -262,7 +262,7 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
 - `Engine.obce()` (448 obcí: kód, název, obyvatelé, střed, bbox) a `Engine.cut_off_obce(road_id)`. Tvar sedí na Šimonovo `services/scenarios.py`.
 - **Smlouva (jen přidané):** `SrtiClosure`.
 - Zdroje dat (Matouš): SRTI, CC BY 4.0, odkaz na NKOD je v `srti.json` → `url`.
-- **T11 hotovo (~11:45):** `scripts/fetch-data.mjs` počítá bod (škola, nemocnice, zastávka…) jen k nejbližším úsekům: nejvýš o 50 m dál než nejbližší úsek do 450 m. Dřív se bod počítal ke všem úsekům do 450 m.
+- **T11 hotovo (~11:05):** `scripts/fetch-data.mjs` počítá bod (škola, nemocnice, zastávka…) jen k nejbližším úsekům: nejvýš o 50 m dál než nejbližší úsek do 450 m. Dřív se bod počítal ke všem úsekům do 450 m.
   - Součet bodů u úseků klesl asi na polovinu (školy 5 889 → 2 525, nemocnice 38 → 22). Každý bod se dřív počítal v průměru ~2×.
   - Pole `obce` u úseku se nemění (pořád ze všech bodů do 450 m).
   - Skóre a pořadí se změnily stejně ve frontendu i v Pythonu (oba čtou `roads.json`). Testy shody s `priority.ts` přegenerované, 19/19 zelených.
