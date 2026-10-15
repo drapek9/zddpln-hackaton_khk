@@ -5,7 +5,7 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 - review od Matouše (M1–M4),
 - rešerše dopravních dat od Tomáše.
 
-`PLAN_OD_BIDAKA.md` zůstává jako historie. **Platí tento soubor.**
+`PLAN_OD_BIDAKA.md` byl 15. 10. smazán, aby se neplietl (je v historii gitu: `git show 5ee1fa1:PLAN_OD_BIDAKA.md`). **Platí jen tento soubor.**
 
 **Cesty KHK je webová aplikace** (běží v prohlížeči na počítači i na mobilu). Nativní mobilní aplikaci nestavíme.
 
@@ -299,7 +299,7 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 2. ~~**Nehody**~~ přesunuto do [NAPADY.md](NAPADY.md).
 3. ~~**Cena za km opravy**~~ vyřešeno 15. 10.: předpoklad podle stavu se zdroji, viz [NAPADY.md](NAPADY.md), č. 1.
 4. **Odpověď organizátorů** ke kódu připravenému předem.
-5. **Poskytovatel AI** a jestli klíč funguje už teď.
+5. **Poskytovatel AI** a jestli klíč funguje už teď. Návrh: kap. 14.2.
 6. Kdo po soutěži pohlídá odevzdání na `github.com/krhk`?
 7. Role (Šimon).
 
@@ -307,9 +307,9 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 
 ## 12. Odkud co je
 
-- Šimonovy poznatky o datech: `PLAN_OD_BIDAKA.md`, kap. 6 a otázka 4a.
-- Matoušovo review M1–M4: `PLAN_OD_BIDAKA.md`, kap. 13.
-- Rešerše dopravních dat: `PLAN_OD_BIDAKA.md`, kap. 6, „Zdroje dopravních dat a pravidla“.
+- Šimonovy poznatky o datech: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 6 a otázka 4a.
+- Matoušovo review M1–M4: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 13.
+- Rešerše dopravních dat: `PLAN_OD_BIDAKA.md` (smazaný, v historii gitu), kap. 6, „Zdroje dopravních dat a pravidla“.
 - Pravidla, porota a minulí vítězové: `docs/ROZBOR.md`.
 
 ---
@@ -341,3 +341,232 @@ Vynecháváme `Omezení_v_autobusové_dopravě` (4 záznamy) a `Výluky_v_želez
 
 ### Priorita
 Pořadí: toky studentů → odříznuté obce → ukázky 2022 (rozhodnuto 15. 10.: Tomáš dělá hned, je to datový základ ★1). Když nestíháme, škrtá se **před** V2. Úkoly: Tomáš T13–T16, Šimon S12–S13 v `docs/BACKEND.md`, kap. 7.
+
+---
+
+## 14. Zkratky pro Tomáše a Šimona: přesné odkazy a AI (15. 10.)
+
+Hotové podklady, ať se nic nemusí dohledávat. Kapitoly 0–13 platí.
+
+### 14.1 Data: přesné odkazy
+
+**Data KHK (ArcGIS REST).** Základ pro všechny sady:
+`https://services6.arcgis.com/ogJAiK65nXL1mXAW/arcgis/rest/services/<Název_sady>/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson`
+Stránka sady pro „Zdroje dat“: `https://www.datakhk.cz/datasets/<itemId>_0`. Stránkování: `resultOffset` + `resultRecordCount=2000` (už umí `scripts/fetch_khk_extra.py`).
+
+| Sada | itemId (stránka na Data KHK) | Kdo, kde |
+|---|---|---|
+| `Stav_povrchu_silnic` | [311df195461541069a5690e9491eb092](https://www.datakhk.cz/datasets/311df195461541069a5690e9491eb092_0) | Tomáš, `scripts/fetch-data.mjs` (hotovo) |
+| `Dojížďka_do_středních_škol` | [c62b3bf8a0dd40b4b1d70bc419d5d6e4](https://www.datakhk.cz/datasets/c62b3bf8a0dd40b4b1d70bc419d5d6e4_0) | Tomáš T13–T14, `scripts/fetch_khk_extra.py` |
+| `Obce` | [70564613fe434f149655e79a85e94efc](https://www.datakhk.cz/datasets/70564613fe434f149655e79a85e94efc_0) | Tomáš T13, T15; Šimon S13 |
+| `Plánované_opravy_silniční_infrastruktury_na_rok_2022_liniové` | [1915aa2911d74672a6ab58d5b615055b](https://www.datakhk.cz/datasets/1915aa2911d74672a6ab58d5b615055b_0) | Tomáš T16; Šimon S13 |
+| `Záplavové_území_stoleté_vody` (+ pětileté, dvacetileté) | [7d93751a3221478ca39a6e1ca6578047](https://www.datakhk.cz/datasets/7d93751a3221478ca39a6e1ca6578047_0) | jen [NAPADY.md](NAPADY.md) č. 7 |
+| `Výjezdové_základny_zdravotnické_záchranné_služby` | [1c28da5d644445d3a5f4b578ce22ed40](https://www.datakhk.cz/datasets/1c28da5d644445d3a5f4b578ce22ed40_0) | varování IZS, NAPADY č. 2 |
+| `Stanice_a_pracoviště_hasičského_záchranného_systému` | [3ff2f49c7f454870baf51628403ace6e](https://www.datakhk.cz/datasets/3ff2f49c7f454870baf51628403ace6e_0) | varování IZS, NAPADY č. 2 |
+
+Ostatní sady v1 (názvy služeb) jsou v `LAYERS` v `scripts/fetch-data.mjs`. Katalog kraje pro DCAT: `https://open.datakhk.cz/katalog.jsonld`.
+
+**Externí:**
+| Zdroj | Odkaz | Licence | Kde v kódu |
+|---|---|---|---|
+| ŘSD sčítání 2025 (XLSX) | `https://www.rsd.cz/documents/38144/3734982/V2_CSD_2025_20260826.xlsx/`, stránka `https://www.rsd.cz/silnice-a-dalnice/scitani-dopravy` | CC BY-SA | `scripts/fetch_rsd_counts.py` → `public/data/intensity.json` (T7, běží) |
+| ŘSD SRTI uzavírky | [NKOD](https://data.gov.cz/datová-sada?iri=https://data.gov.cz/zdroj/datové-sady/65993390/1087749998) | CC BY 4.0 | zatím nic; když bude čas, Šimon jako `GET /api/uzavirky?zdroj=srti` |
+| OSM silnice I. třídy | `https://overpass-api.de/api/interpreter` | ODbL (uvést „© přispěvatelé OpenStreetMap“) | `scripts/fetch_osm_roads.py` → `public/data/osm_roads.json` |
+
+Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s licencí a odkazem.
+
+### 14.2 AI: co, kde, kdo
+
+**NEAKTIVNÍ (15. 10., 10:45):** Šimon má AI hotovou po svém na větvi `simon` (`backend/app/ai/service.py`, `/api/ai/explain|announcement|weights`, šablona jako záloha, `nearest_road_id`). Návrh níže je jen pro srovnání, neimplementovat.
+
+**Doporučený poskytovatel:** Anthropic Claude přes oficiální SDK `anthropic` (Python).
+- Model `claude-haiku-5-5` pro všechno (rychlý a levný, stačí na krátké texty a JSON). `claude-sonnet-5-5` jen když bude oznámení znít špatně.
+- Záloha: Azure OpenAI, pokud partner Microsoft na místě dá kredit. Díky jednomu rozhraní se mění jen `.env`.
+- `.env` (už je v `.env.example`): `AI_PROVIDER=anthropic|azure|none`, `AI_API_KEY`, `AI_MODEL=claude-haiku-5-5`, `AI_ENDPOINT` (jen Azure). Klíč nikdy do gitu ani do frontendu.
+- `uv add anthropic` v `backend/` (Šimon).
+
+**Struktura `backend/app/ai/` (vlastní Šimon, úkol S10):**
+| Soubor | Co dělá |
+|---|---|
+| `provider.py` | Jedna funkce `complete_json(system, user, schema) -> dict \| None`. Volá model s nástrojem (tool use) s JSON schématem, timeout 8 s. Při chybě, timeoutu nebo `AI_PROVIDER=none` vrátí `None`. |
+| `prompts.py` | 4 systémové prompty, česky, krátké. Každý říká: „Používej jen čísla ze vstupu. Nic nevymýšlej.“ |
+| `fallback.py` | Šablony bez AI pro všechny 4 použití. Když `complete_json` vrátí `None`, použije se šablona. |
+| `cache.py` | Výsledek podle `hash(vstup)` v SQLite. Při demu se nic nevolá dvakrát a funguje i bez Wi‑Fi, pokud se demo jednou proklikne předem. |
+
+**4 použití, vstupy a výstupy:**
+| # | Endpoint (Šimon) | Vstup z `Engine` (Tomáš, už existuje) | Výstup (JSON schéma) | Obrazovka (Matouš) | Kdy |
+|---|---|---|---|---|---|
+| 1 | `POST /api/ai/zduvodneni {road_id}` | `breakdown(road_id)`, `road(road_id)` | `{text, faktory_pouzite[]}` | Detail úseku, Top N | 12:30–15:00, první |
+| 2 | `POST /api/ai/oznameni {road_id, od, do}` | `closure_impact(...)`, `detour(road_id)` | `{titulek, text, objizdka_popis}` | Simulátor uzavírky (★1), nahradí šablonu z `src/lib/announce.ts` | druhé |
+| 3 | `POST /api/ai/vahy {text}` | aktuální `Weights` | `{vahy: {faktor: 0–100}, duvod}` | Váhy, tlačítko „Navrhnout z textu“ | třetí, škrtá se první |
+| 4 | `POST /api/ai/hlaseni {text, lon, lat}` | nejbližší úsek (Tomáš: helper `nearest_road(lon, lat)`, zatím chybí) | `{typ: enum, zavaznost: 1–3, road_id}` | Fronta hlášení | jen když zbude čas |
+
+**Pravidla, která drží porotu (kap. 1, body 10 a 11):**
+- AI nikdy nemění skóre ani pořadí. Pořadí počítá jen `Engine`.
+- Každý AI text má ve UI štítek **„návrh AI“** a tlačítko „Použít“ nebo „Upravit“. Bez potvrzení člověkem se nic neuloží ani neodešle.
+- Text od občana (použití 4) jde do modelu jako data v `<hlaseni>…</hlaseni>`. Výstup je jen enum a čísla; nic se z něj nespouští.
+- Audit: kdo potvrdil AI návrh a kdy (Šimonův audit log).
+
+**Pořadí práce, ať AI nebrzdí MVP:**
+1. Šimon: `fallback.py` + endpoint 1 a 2 **jen se šablonou** (15 min). Matouš může hned napojit UI.
+2. Šimon: `provider.py` s Claude, zapnout přes `.env`. Ověřit 1 voláním z terminálu.
+3. Tomáš: zkontrolovat, že `breakdown` a `closure_impact` vrací vše, co prompt potřebuje (čísla, názvy obcí, počty). Doplnit jen přidáním polí do `schemas.py`.
+4. Demo: proklikat 2–3 ukázkové uzavírky předem, aby byly v `cache.py`.
+
+Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho, jaký klíč máme.
+
+---
+
+## 15. Přihlášení: landing, login, role a token (15. 10., Tomáš)
+
+**Proč:** v kap. 3 a 4 jsou role i „Registrace a přihlášení“, ale chybí, jak to uživatel projde krok za krokem. Backend už to umí (Šimon, větev `simon`). Chybí frontend (Matouš) a dohoda, jak se to propojí.
+
+### 15.1 Co uživatel uvidí
+1. **Landing page** (`Landing.tsx`). Dvě hlavní volby:
+   - **„Pokračovat bez přihlášení“** → veřejná mapa (role Veřejnost). Nic se neukládá na server.
+   - **„Přihlásit se“** → login formulář.
+   - Dnešní dvě karty „Správa silnic“ a „Veřejný přehled“ zůstanou, jen „Správa silnic“ nejdřív vyžádá přihlášení.
+2. **Login formulář:** e‑mail, heslo, tlačítko „Přihlásit“. Pod ním odkaz „Nemám účet → registrace“ (jen pro občany). Chybová hláška z backendu se ukáže pod formulářem („Špatný e‑mail nebo heslo.“, „Účet je zablokovaný.“).
+3. **Po přihlášení** frontend podle role otevře správnou obrazovku:
+   | Role v DB | Česky | Kam ho pošleme | Co může |
+   |---|---|---|---|
+   | `citizen` | Občan | veřejná mapa + „Moje místa“, „Moje trasa“, upozornění | hlášení, hlas, odběr push |
+   | `official` | Úředník | Správa silnic | žebříček, piny, simulátor uzavírky, váhy jen pro sebe |
+   | `admin` | Admin | Správa silnic + záložka Admin | vše, uživatelé, trvalé váhy, audit, AI |
+4. V hlavičce je pak e‑mail a role uživatele a tlačítko „Odhlásit“.
+
+### 15.2 Odkud se berou role
+- **Dnes role přidělujeme ručně v databázi.** Nikdo si roli nevybírá sám.
+- Při prvním startu backend založí testovací účty (`backend/app/db/seed.py`, funkce `seed_if_empty`): 1 admin, 1 úředník, 2 občané s doménou `@cesty-khk.test`. Hesla jsou jen pro demo; na pitchi je neukazujeme.
+- **Registrace** (`POST /api/auth/register`) vždy vytvoří roli `citizen`. Úředníka nebo admina z ní udělat nejde.
+- Změna role: admin přes `PATCH /api/admin/users/{id}` (obrazovka Uživatelé, kap. 4 D). Do té doby ručně v SQLite: `UPDATE user SET role='official' WHERE email='…';`.
+
+### 15.3 Jak funguje token (krok za krokem)
+1. Frontend pošle `POST /api/auth/login` s `{email, password}`.
+2. Backend najde uživatele a ověří heslo. Hesla jsou v DB jen jako hash (PBKDF2‑SHA256, 120 000 kol, sůl). Heslo samo se nikde neukládá.
+3. Backend vytvoří **JWT token** (HS256, podepsaný `CESTY_SECRET_KEY` z `.env`). Uvnitř je: id uživatele (`sub`), role (`role`), verze tokenu (`ver`) a platnost 7 dní (`exp`).
+4. Backend token uloží do **httpOnly cookie** `cesty_session` (`SameSite=Lax`, na HTTPS i `Secure`) a zároveň vrátí `{token, user: {id, email, role}}`.
+5. Frontend si z odpovědi vezme jen `user` (role, e‑mail) a přepne obrazovku. **Token neukládá do localStorage.** Prohlížeč posílá cookie sám ke každému `/api/...` volání (stejný původ přes Vite proxy nebo tunel).
+6. Při načtení stránky frontend zavolá `GET /api/auth/me`. Když vrátí uživatele, je přihlášený (přežije to obnovení stránky). Když vrátí 401, ukáže landing.
+7. Backend u každého chráněného endpointu token ověří (`auth/deps.py`: `require_user`, `require_official`, `require_admin`, `require_citizen`). Špatná role = 403, bez tokenu = 401.
+8. **Odhlášení** `POST /api/auth/logout` smaže cookie a zvýší `token_version`. Tím přestanou platit i staré kopie tokenu.
+
+### 15.4 Kdo co udělá
+| Kdo | Co | Stav |
+|---|---|---|
+| Šimon | `api/auth.py`, `auth/security.py`, `auth/deps.py`, `db/seed.py` | ✅ hotovo na větvi `simon`, čeká na sloučení do `main` |
+| Šimon | Sloučit `simon` do `main` a poslat Matoušovi tvar odpovědí (`/auth/login`, `/auth/me`) | ❌ |
+| Matouš | Landing se dvěma volbami, login a registrace, `src/lib/auth.ts` (`login`, `logout`, `me`), přepnutí obrazovky podle role, „Odhlásit“ v hlavičce | ❌ |
+| Matouš | Volání `/api/...` s `credentials: "same-origin"`, při 401 zpět na login | ❌ |
+| Tomáš | Nic v jádru; role ani token se `Engine` netýkají | — |
+
+### 15.5 Na co pozor
+- **Úředník bez přihlášení:** dokud login ve frontendu není, `POST /api/closures` vrací 401. Simulátor proto dál používá snímek `public/demo/detours.json`. Po loginu přepnout na API.
+- **Demo:** pro pitch mít 2 záložky: úředník přihlášený v počítači, občan v telefonu (Web Push). Přihlásit předem, ne před porotou.
+- **Bezpečnost (repo je veřejné):** `CESTY_SECRET_KEY` jen v `.env`, na sdíleném serveru jiný než `change-me-dev-only`. Demo hesla v `seed.py` jsou jen pro doménu `.test`; před ostrým nasazením změnit.
+- Ostrá varianta po hackathonu (zatím jen nápad): přihlášení přes NIA / identitu občana, role z adresáře kraje.
+
+---
+
+## 16. Sloučení do `main` ve 12:00 a co zbývá (15. 10., 10:55, Tomáš)
+
+Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všechno na `main` a šlo zkontrolovat, co máme.
+
+### 16.1 Zkušební sloučení (ověřeno 10:55, lokálně, nic se nepushlo)
+- `tomas` + `simon` + `matous` jdou sloučit **bez konfliktu**. `npm run build` projde.
+- Backend: 32 z 36 testů zelených. 4 padají jen proto, že Šimonovy testy čekají „data ještě nejsou“ a data už jsou (viz 16.2).
+- API po sloučení odpovídá: `/api/health` (4 726 úseků), `/api/demo-closures` (20 skutečných uzavírek 2022), `/api/obce` (448 obcí z Data KHK), `/api/flood` (po přihlášení).
+
+### 16.2 Šimon (před sloučením, ~20 min)
+1. **Chyba v intenzitě:** `services/access.py`, `intensity_of`. `road["intensity"]` není číslo, ale slovník `{"sv": vozidel za den, "src": "csd2025" | "odhad", "usek": …}`. Vracet `sv` a jako kvalitu `src`. Dnes API vrací celý slovník a kvalita je vždy „odhad“.
+2. **Testy čekající prázdná data** (`tests/test_api.py`) přepsat na skutečné hodnoty:
+   - `test_closure_notifies_citizen_on_route`: `vehicles_per_day`, `students_per_day`, `cut_off_obce` už mají hodnotu.
+   - `test_flood_waits_for_engine`, `test_obce_are_names_until_dataset_arrives`, `test_demo_closures_from_current_network`: teď `ready: True`.
+3. **Štítek ukázek:** `/api/demo-closures` dává `label: "demo data"`, ale jsou to skutečné plány kraje 2022. Navrhuji `"skutečný plán 2022 (Data KHK)"`. Pravidlo „označovat poctivě“ platí oběma směry.
+4. **Sloučit do `main`:** nejdřív `tomas`, pak `simon`. `uv run pytest`, push. **Do 12:00.**
+5. V `Engine` je nově: `students_on(id)`, `cut_off_obce(id)`, `people_impact(ids)`, `obce()`, `flood(level)`, `flood_geojson(level)`, `demo_closures()`, `graph.detour_set(ids)` (uzavírka přes víc úseků). Popis v `docs/BACKEND.md`, kap. 7.
+6. Volitelné: v lifespanu zavolat `engine.people` a `engine.demo_closures()`. Jinak první požadavek trvá ~3 + 5 s.
+
+### 16.3 Matouš a Přemek (po sloučení)
+1. **★1 simulátor přes API:** `POST /api/closures` vrací objížďku s geometrií, varování, auta za den, studenty a odříznuté obce. Přepnout ze snímku `public/demo/detours.json` na API. Bez toho není hlavní demo.
+2. **Seznam „Skutečné uzavírky 2022“** z `GET /api/demo-closures`. Tři mají `recommended: true` a `recommended_reason`. Klik otevře simulátor s touto uzavírkou (`road_ids`, `detour`, `people`, `alerts` jsou už spočítané).
+3. Login podle kap. 15.
+4. **Zdroje dat:** doplnit ŘSD Celostátní sčítání dopravy 2025 (CC BY‑SA 4.0), OpenStreetMap (ODbL) a z Data KHK Obce, Dojížďka do středních škol, Záplavová území a Plánované opravy 2022. itemId jsou v `docs/BACKEND.md`, kap. 7. U `intensity_src == "odhad"` ukázat štítek „odhad“.
+
+### 16.4 Tomáš
+- Do 12:00: T8 uzavírky ŘSD SRTI (`engine.srti_closures()`, Šimon na něj už má místo v `api/closures.py`), pak T11 oprava 450 m.
+- **Doplněno 11:05:** T8 i T11 hotové na `tomas`. T11 změnilo počty bodů u úseků a tím skóre a pořadí. Po sloučení se žebříček ve webu bude lišit od dopoledne, je to oprava, ne chyba.
+- Ve 12:00: pomoct se sloučením a s kontrolou.
+
+### 16.5 Kontrola ve 12:00 (všichni, 15 min)
+- ★1: proklikat 3 doporučené uzavírky 2022 od výběru po „Potvrdit“.
+- ★2: občan s trasou dostane upozornění po potvrzení uzavírky.
+- ★3: admin, export CSV/GeoJSON, dokumentace API.
+- Rozhodnout škrty podle kap. 8 a **kdo dělá pitch a PDF** (zatím nikdo).
+
+---
+
+## 17. Rozbor nápadů a rozdělení práce po 12:00 (15. 10., ~11:05, Tomáš)
+
+Tomáš prošel všech 19 nápadů z [NAPADY.md](NAPADY.md) a rozhodl. Kap. 16 (sloučení do 12:00) má přednost. Tohle je práce **po sloučení**. Pořadí v každém seznamu = priorita. Škrtá se odspodu.
+
+### 17.1 Rozhodnutí
+| Nápad | Rozhodnutí | Proč |
+|---|---|---|
+| 1 Rozpočtový asistent + 15 porovnání dvou částek | **do plánu** | Silné pro porotu z ekonomické gesce. PDF (16) zůstává v NAPADY. |
+| 2 Dojezd ZZS + HZS | **do plánu jako varování** na kartě uzavírky | Porota z krizového řízení. Graf už máme. |
+| 3 Kolize uzavírek | **do plánu jako varování** | Malé. Časová osa (14) zůstává v NAPADY. |
+| 4 DCAT‑AP‑CZ + 19 názvy stavů v exportu | **do plánu** | Porota je z Data KHK. |
+| 5 Bezpečnost a GDPR | **do plánu** (patička, souhlas, rate limit) | Porota se zeptá. |
+| 6 QR na poslední slajd | **do plánu** pro pitch | Jen když mobil v 16:00 funguje. |
+| 7 Povodeň Q5/Q20/Q100 | **do plánu** | Jádro i API jsou hotové, chybí jen tlačítko a mapa. |
+| 8 Ověření modelu | **zkusit** | Ukázat jen když vyjde dobře. |
+| 11 Moje obec | **do plánu** | Widget (12) zůstává v NAPADY. |
+| 17 Ranní souhrn „Moje cesty“ | **do plánu** | Malé, posílí ★2. |
+| 18 Trasa po silnicích | **do plánu** | `Engine.route` a `/api/me/route` existují. |
+| 9 A vs B, 12 widget, 13 e‑maily, 14 časová osa, 16 PDF | zůstává v NAPADY | Není kapacita. |
+| 10 Nehody Policie ČR | **zamítnuto pro dnešek** | Data neověřená, mění skóre na poslední chvíli. |
+
+### 17.2 Tomáš (jádro `backend/app/core/`, data)
+| Úkol | Co | Výstup pro Šimona |
+|---|---|---|
+| T11 | Oprava bodů do 450 m (nadsazené školy u objížďky). Z kap. 16. | beze změny API |
+| **T17** | **Rozpočtový asistent:** z částky vybrat souvislé stavby. Stavba = navazující úseky na stejné silnici (`sil`) v jednom okrese, malé dobré mezery se pohltí. Cena podle stavu (2,5 / 12 / 17 mil. Kč/km, štítek `estimate`, zdroje v NAPADY č. 1). Výběr hladově podle skóre na Kč. | `Engine.budget_plan(amount_kc, weights) -> BudgetPlan` (stavby, km, Kč, kolik havarijních km zůstane) |
+| **T18** | **Dojezd ZZS + HZS:** pro uzavírku spočítat, u kterých obcí se prodlouží dojezd z nejbližší základny, o kolik minut a jestli přesáhne 20 min. | pole v `PeopleImpact` nebo `Alert` „Dojezd záchranky do X se prodlouží o N min“ |
+| **T19** | **Ověření modelu:** kolik % opravených úseků 2018–2024 mělo skóre v horní třetině. Ukázat jen když vyjde. | `Engine.backtest()` → jedno číslo + počet úseků |
+| **T20** | **Nové faktory ve skóre** (slíbené v kap. 6, zatím chybí): intenzita (auta za den, T7), délka objížďky (T4) a středoškoláci denně (T14). 3 nové váhy, výchozí hodnoty střední, rozpad skóre je ukáže. Doplněno 15. 10. po kontrole `PLAN_OD_BIDAKA.md`. | `Weights` + 3 pole (jen přidaná, Šimon souhlasí), `breakdown` ukáže nové řádky. **Frontend musí brát žebříček z API (F2)**, lokální výpočet v `src/lib/priority.ts` nové faktory nezná. |
+
+### 17.3 Šimon (`backend/app/api|db|auth|notify|ai`)
+| Úkol | Co | Endpoint |
+|---|---|---|
+| **S14** | **AI dokončit:** poskytovatel Claude (`AI_PROVIDER=anthropic`, `AI_MODEL=claude-haiku-5-5`, klíč jen v `.env`), šablona jako záloha (už je), cache odpovědí v SQLite pro demo bez Wi‑Fi, štítek „návrh AI“ v každé odpovědi. Nově AI text k rozpočtovému plánu (3–5 vět, jen čísla z výpočtu). | `/api/ai/explain`, `/api/ai/announcement`, `/api/ai/weights` (hotové), nově `POST /api/ai/budget` |
+| **S15** | **Login pro frontend (kap. 15):** po sloučení poslat Matoušovi tvar `/api/auth/login`, `/api/auth/me`, `/api/auth/register`. Rate limit na login (5 pokusů / min na IP). | `/api/auth/*` (hotové) |
+| **S16** | **Napojení frontendu:** dohodnout s Matoušem tvar `/api/ranking` (`{items}` vs pole, váhy v query) a náhled uzavírky bez uložení do DB. | `POST /api/closures/preview` (úředník, bez zápisu) |
+| **S17** | **Rozpočet:** volá T17, umí dvě částky najednou pro porovnání. | `GET /api/budget?amount=…&amount2=…` |
+| **S18** | **Kolize uzavírek:** při náhledu uzavírky varovat, když objížďka vede přes jinou aktivní uzavírku (z DB nebo SRTI, T8) s překrývajícím se termínem. + výstup T18 do odpovědi uzavírky. | v odpovědi `POST /api/closures` |
+| **S19** | **Export:** `metadata.jsonld` podle DCAT‑AP‑CZ (vzor: `https://open.datakhk.cz/katalog.jsonld`) a sloupec s názvem stavu pro lidi vedle původní hodnoty. | `/api/export.*`, `/api/export/metadata.jsonld` |
+| **S20** | **Trasa bez přihlášení:** pro „Moje cesty“ na veřejném webu. | `GET /api/route?home=lon,lat&work=lon,lat` |
+
+### 17.4 Matouš a Přemek (frontend `src/`)
+| Úkol | Co | Závisí na |
+|---|---|---|
+| **F1** | **Login (kap. 15):** landing „Pokračovat bez přihlášení“ / „Přihlásit se“, formulář, registrace občana, obrazovka podle role, „Odhlásit“. | S15 |
+| **F2** | **★1 přes API:** simulátor, ukázkové uzavírky 2022 (kap. 16.3). Karta uzavírky: auta za den, studenti, odříznuté obce, dojezd IZS, kolize. | S16, S18 |
+| **F3** | **Moje cesty po silnicích** místo pásu 1,5 km + **ranní souhrn** nahoře („Dnes na vaší cestě: …“). | S20, `/api/me/notifications` |
+| **F4** | **Povodeň:** tlačítko Q5 / Q20 / Q100 u úředníka, zatopené silnice a odříznuté obce na mapě. | `/api/flood` (hotové) |
+| **F5** | **Rozpočtový asistent:** zadat částku (nebo dvě), stavby na mapě, tabulka, AI text se štítkem „návrh AI“. | S17, S14 |
+| **F6** | **Moje obec:** výběr obce, stav jejích silnic, uzavírky, pořadí v kraji. | `/api/obce` (hotové) |
+| **F7** | **Patička:** zásady ochrany údajů, souhlas při registraci, odkaz na Zdroje dat. | — |
+
+### 17.5 Pitch (kdo dělá pitch, kap. 16.5)
+- Poslední slajd: QR na web, **jen když mobil v 16:00 funguje** (NAPADY č. 6).
+- Když T19 vyjde: „X % úseků, které kraj opravil, mělo u nás skóre v horní třetině.“
+- **Přesně o číslech** (z `PLAN_OD_BIDAKA.md`, Matouš M1.2, M1.3): říkat „kraj **opravuje** zhruba 90 km ročně“ (historické tempo 2015–2024, 906 km / 10 let), ne „má peníze na 90 km“. A „jen havarijní úseky **aspoň** 15 let“, protože část oprav jde jinam a síť se mezitím zhoršuje.
+- **Poctivě o objížďce:** model pošle všechna auta jednou nejkratší objížďkou. Ve skutečnosti se rozdělí.
+- **Záložní web (Přemek, po 15:00):** build frontendu na GitHub Pages. Frontend umí počítat lokálně a má snímek objížděk, takže porota otevře odkaz i když tunel spadne. Na odkazu štítek „offline ukázka bez serveru“.
+
+### 17.7 Kontrola `PLAN_OD_BIDAKA.md` před smazáním (15. 10.)
+Prošel jsem celý starý plán (je v historii gitu, `git show 5ee1fa1:PLAN_OD_BIDAKA.md`). Skoro vše už je v kap. 0–17 nebo v NAPADY. Nově z něj: T20 (faktory ve skóre, které plán slíbil a chyběly), přesné formulace čísel a objížďky v pitchi, záložní web. Nehody zůstávají zamítnuté pro dnešek, i když podle rešerše data mají GPS a příčinu „stav vozovky“: soubor je `.rar` za celou ČR, to je riziko na poslední chvíli. V pitchi jako rozvoj.
+
+### 17.6 Aktualizace
+Při každém rozhodnutí v chatu se tato kapitola, [NAPADY.md](NAPADY.md) a `docs/BACKEND.md` upraví a pushnou na `main`. Hotové úkoly se tu označí ✅.

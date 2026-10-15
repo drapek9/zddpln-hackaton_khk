@@ -205,7 +205,75 @@ class RoadGraph:
         if start == end:
             return DetourResult(road_id=road_id, found=False, closed_km=closed_km, note="Úsek začíná a končí ve stejném uzlu.")
 
-        view = nx.subgraph_view(self.graph, filter_edge=lambda a, b, k: self.graph[a][b][k]["road_id"] != road_id)
+        return self._detour_between(road_id, {road_id}, start, end, closed_km, self.road_minutes.get(road_id, 0.0))
+
+    def detour_set(self, road_ids: Iterable[int]) -> DetourResult:
+        """Detour when several roads are closed together (one closure over more úseky).
+
+        The detour connects the two outer ends of the closed stretch: nodes where
+        only one closed edge meets. Side roads that join inside the stretch are
+        ignored (they lose access, the model does not route them).
+        """
+        ids = _unique(r for r in road_ids if r in self.road_ends)
+        if not ids:
+            return DetourResult(road_id=0, found=False, closed_km=0, note="Úsek není v grafu.")
+        if len(ids) == 1:
+            result = self.detour(ids[0])
+            result.closed_road_ids = ids
+            return result
+        closed = set(ids)
+        closed_g = nx.MultiGraph()
+        closed_g.add_edges_from(
+            (a, b, d) for a, b, d in self.graph.edges(data=True) if d["road_id"] in closed and a != b
+        )
+        # Pieces with a gap between them get one detour each; the results add up.
+        parts: list[DetourResult] = []
+        for comp in nx.connected_components(closed_g):
+            sub = closed_g.subgraph(comp)
+            part_ids = _unique(d["road_id"] for _, _, d in sub.edges(data=True))
+            ends = [n for n in comp if sub.degree(n) == 1] or list(comp)
+            if len(ends) < 2:
+                continue
+            start, end = self._farthest_pair(ends)
+            km = round(sum(d["m"] for _, _, d in sub.edges(data=True)) / 1000, 2)
+            minutes = sum(d["minutes"] for _, _, d in sub.edges(data=True))
+            parts.append(self._detour_between(part_ids[0], closed, start, end, km, minutes))
+
+        closed_km = round(sum(self.road_km[r] for r in ids), 2)
+        if not parts:
+            return DetourResult(
+                road_id=ids[0], found=False, closed_km=closed_km, closed_road_ids=ids,
+                note="Úsek začíná a končí ve stejném uzlu.",
+            )
+        missing = [p for p in parts if not p.found]
+        if missing:
+            result = missing[0].model_copy(update={"road_id": ids[0], "closed_km": closed_km, "closed_road_ids": ids})
+            return result
+        return DetourResult(
+            road_id=ids[0],
+            found=True,
+            closed_km=closed_km,
+            detour_km=round(sum(p.detour_km or 0 for p in parts), 2),
+            extra_km=round(sum(p.extra_km or 0 for p in parts), 2),
+            extra_min=round(sum(p.extra_min or 0 for p in parts), 1),
+            geometry=[pt for p in parts for pt in p.geometry],
+            via_road_ids=_unique(r for p in parts for r in p.via_road_ids),
+            havarijni_km=round(sum(p.havarijni_km for p in parts), 2),
+            class1_km=round(sum(p.class1_km for p in parts), 2),
+            note=parts[0].note + (f" Uzavírka má {len(parts)} oddělené části, objížďky jsou sečtené." if len(parts) > 1 else ""),
+            closed_road_ids=ids,
+        )
+
+    def _farthest_pair(self, nodes: list[int]) -> tuple[int, int]:
+        """Two nodes far apart (two sweeps, straight-line distance)."""
+        a = max(nodes, key=lambda n: _dist(self.node_xy[n], self.node_xy[nodes[0]]))
+        b = max(nodes, key=lambda n: _dist(self.node_xy[n], self.node_xy[a]))
+        return a, b
+
+    def _detour_between(
+        self, road_id: int, closed: set[int], start: int, end: int, closed_km: float, closed_min: float
+    ) -> DetourResult:
+        view = nx.subgraph_view(self.graph, filter_edge=lambda a, b, k: self.graph[a][b][k]["road_id"] not in closed)
         try:
             # Bidirectional search stops early when one end is a dead end.
             _, nodes = nx.bidirectional_dijkstra(view, start, end, weight=_min_weight("minutes"))
@@ -220,7 +288,6 @@ class RoadGraph:
         edges = _pick_edges(view, nodes, "minutes")
         km = sum(e["m"] for e in edges) / 1000
         minutes = sum(e["minutes"] for e in edges)
-        closed_min = self.road_minutes.get(road_id, 0.0)
         via = _unique(e["road_id"] for e in edges if e["road_id"] > 0)
         class1_km = sum(e["m"] for e in edges if e["road_id"] < 0) / 1000
         bad_km = sum(e["m"] for e in edges if self.road_state.get(e["road_id"]) in BAD_STATES) / 1000

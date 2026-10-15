@@ -13,6 +13,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 1. Rozpočtový asistent (nahrazuje „Scénář s rozpočtem“, v plánu je jako V2)
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly T17, S17, S14, F5. Včetně porovnání dvou částek (č. 15).
+
 
 **Proč:** Úředník neplánuje po kouscích silnic, ale po stavbách a po penězích. Porota z MF, NKÚ a ekonomické gesce kraje chce vidět, co se za danou částku pořídí. Odpovídá na větu z pitche „co opravit dřív“.
 
@@ -49,6 +51,14 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
   - [Liberecký kraj, III/28711](https://liberecka.drbna.cz/zpravy/doprava/42668-kraj-opravi-tri-silnice-za-88-milionu-docka-se-bily-kostel-i-rychnov.html)
 - Na místě se zeptat mentorů nebo lidí z kraje na skutečnou cenu. Když ji řeknou, dosadit ji a citovat.
 
+**Doplnění 15. 10. (Šimon).** Body 1–6 a tabulka cen za km zůstávají. Tohle je k nim navíc.
+
+**Odhad ceny jedné opravy.** Úředník vybere jednu silnici nebo několik silnic a může zadat vlastní cenu za metr čtvereční. Výchozí odhad pořád vychází z tabulky za kilometr podle stavu a nese štítek „předpoklad“. Když to datové sady dovolí, do odhadu vstupují další údaje, každý se stejným štítkem, nebo s textem „v datech není“: šířka vozovky (plocha = šířka × délka, pak plocha × Kč/m²), hloubka nebo tloušťka konstrukce, třída silnice, roky od poslední opravy a typ povrchu. Úředník výslednou částku dál upraví. Pořád se říká „odhad“, ne „cena zakázky“. Sada oprav od roku 2016 náklady neobsahuje, to platí i tady.
+
+**Napojené silnice vhodné k opravě.** Kromě stavby z úseků stejného čísla silnice (bod 2) jde sestavit řetěz, který pokračuje na navazující silnici jiného čísla. Podmínka je spojení v grafu a stav, ve kterém se oprava vyplatí: nevyhovující, havarijní nebo SUPERhavarijní. Krátký lepší kus mezi nimi se může přibrat stejně jako v bodu 2, ať se trasa nezavírá dvakrát. Výsledek je víc na sebe napojených silnic, ne jeden úsek. S celým řetězem se pak pracuje jako se samostatnou silnicí: skóre, rozpad, objížďka, varování, dopady a odhad ceny.
+
+**Víc nabídek do jednoho stropu.** Úředník zadá maximální rozpočet. Kromě jednoho výběru, který rozpočet naplní (bod 4), se ukáže několik samostatných nabídek, třeba pět až deset. Každá nabídka je jedna napojená trasa z odstavce výše a celá se vejde do stropu. Pořadí nabídek je podle skóre na korunu a je deterministické. U každé je délka, odhad ceny, objížďka a kolik havarijních kilometrů by po ní ještě zůstalo.
+
 **Kdo:** Tomáš `core/` (`Engine.budget`, sestavení staveb), Šimon endpoint `POST /api/budget` a AI text, Matouš obrazovka.
 **Odhad:** core 1,5 h, API 30 min, obrazovka 1 h.
 **Rizika:** cena je hrubá. Říkat „pořadí a poměry“, ne „přesný rozpočet“. Stavba přes hranici okresu se rozdělí na dvě.
@@ -57,6 +67,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 2. Dojezd záchranky a hasičů (ZZS + HZS) při uzavírce
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly T18, S18, F2 (varování na kartě uzavírky).
+
 
 **Proč:** Nejsilnější argument „škody“ uzavírky. Porota z veřejné správy a krizového řízení. Žádný jiný tým to mít nebude.
 
@@ -77,6 +89,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 3. Kolize uzavírek
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S18, F2 (jen varování, časová osa č. 14 ne).
+
 
 **Proč:** V praxi nejčastější chyba: dvě uzavírky ve stejném termínu a objížďka jedné vede přes druhou. Kraj to dnes hlídá ručně.
 
@@ -94,6 +108,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 4. Export s metadaty podle DCAT‑AP‑CZ
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S19 (spolu s č. 19).
+
 
 **Proč:** Kritérium „využití pro kraj“ a publikace na Data KHK. Porotkyně z DIA (bývalé NKÚ) a lidé z Data KHK. Výstup se dá rovnou nahrát do NKOD.
 
@@ -111,6 +127,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 5. Bezpečnost a osobní údaje
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S15 (rate limit), F7 (patička, souhlas).
+
 
 **Proč:** Porotce Horálek (kyberbezpečnost). Ukládáme domov a práci občanů.
 
@@ -118,7 +136,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 - Hesla jen jako hash (`argon2` nebo `bcrypt`).
 - Role kontrolovat na **každém** endpointu, nejen ve frontendu.
 - Limit pokusů o přihlášení (např. 5 za minutu).
-- Domov a práce jen jako **bod**, žádná adresa. Bod zaokrouhlit na ~100 m.
+- Domov a práce jen jako **bod**, žádná adresa. Bod zaokrouhlit na ~100 m. Další uložené body (nápad 17) jsou totéž: jen bod, žádná adresa.
 - Text od občana do AI jen k roztřídění, výstup jen v pevné struktuře.
 - Tajné hodnoty jen v `.env`, CORS jen na naše adresy.
 - **Souhlas** při registraci a při uložení míst (zaškrtávací pole s jednou větou, k čemu data slouží a jak je smazat).
@@ -132,6 +150,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 ---
 
 ### 6. QR kód na web na posledním slajdu
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly 17.5 (pitch).
+
 
 **Proč:** Cena diváků a porotci si web proklikají sami.
 
@@ -151,6 +171,8 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud nejede MVP a V2.
 
 ### 7. Povodňový scénář Q5 / Q20 / Q100
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly F4 (jádro T15 a API S12 jsou hotové).
+
 - **Data KHK:** `Záplavové_území_{pětileté,dvacetileté,stoleté}_vody`, 78 / 77 / 65 polygonů.
 - **Jak:** tlačítko u úředníka „Povodeň Q100“. Zavřou se všechny úseky, které záplavové území protíná. Mapa ukáže zatopené silnice, odříznuté obce, počet lidí a studentů a dojezd IZS (navazuje na nápad 2).
 - **Proč:** porota z veřejné správy a krizového řízení. Kraj nic takového nemá.
@@ -159,6 +181,8 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Závisí na:** T13 (obce) a T14 (toky studentů).
 
 ### 8. Ověření modelu (zpětná kontrola)
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly T19. Ukázat jen když vyjde.
+
 - **Otázka:** měly úseky opravené v letech 2018–2024 vysoké skóre už před opravou? A měly vysoké skóre úseky v plánu oprav na rok 2022?
 - **Jak:** skóre spočítat ze stavu měření před rokem opravy, porovnat s pořadím. Výstup: „X % opravených úseků bylo v horní třetině“.
 - **Proč:** odpověď na výtku „váhy jste si vymysleli“ (`PLAN_FINAL.md`, kap. 1, výtka 1). Matouš M2.4.
@@ -166,34 +190,92 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Kdo:** Tomáš T16 (`backtest_2022()`).
 
 ### 9. Srovnání dvou úseků A vs B
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+
 - Dva úseky vedle sebe: rozpad skóre, objížďka, dopady. Zvýrazní faktor, který rozhodl.
 - **Proč:** úředník musí obhájit, proč A a ne B. Matouš M2.1.
 - **Kdo:** Matouš (obrazovka), data už dává `Engine.breakdown`.
 
 ### 10. Nehody Policie ČR
+**Zamítnuto pro dnešek (15. 10.):** data neověřená, faktor by měnil skóre na poslední chvíli. Po hackathonu.
+
 - **Zdroj:** [statistiky nehodovosti 2025](https://policie.gov.cz/statistiky-dopravni-nehodovosti-za-rok-2025), bez omezení. Sada KŘP KHK na Data KHK.
 - **K čemu:** nový faktor bezpečnosti ve skóre, export nehod na úsecích.
 - **Otevřené:** co přesně sada obsahuje (GPS? jen KHK?). Neověřeno, termín „do čtvrtka“ propadl (Matouš M3.7).
 - **Kdo:** Tomáš (napárování na úseky), jen když se ověří, že data mají souřadnice.
 
 ### 11. Moje obec a statistiky
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly F6 (widget č. 12 ne).
+
 - Veřejnost vybere obec a uvidí stav jejích silnic, pořadí v kraji, uzavírky a linky.
 - **Data:** `Obce` z Data KHK (T13) a hranice obcí a ORP (otevřená data ČÚZK nebo RÚIAN).
 - **API:** `GET /api/obce`, `GET /api/statistiky`.
 - **Kdo:** Šimon S13, Matouš obrazovka.
 
 ### 12. Widget pro weby obcí
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+
 - Malá vložitelná mapka (`iframe`) se stavem silnic a uzavírkami v obci. Obec ji dá na svůj web.
 - **Závisí na:** Moje obec (nápad 11).
 
 ### 13. Skutečné odesílání e‑mailů
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+
 - Dnes je v plánu jen testovací SMTP (Mailpit) a náhled na webu. Skutečný e‑mail potřebuje SMTP účet a ochranu proti spamu.
 - **Kdo:** Šimon, až po Web Push.
 
 ---
 
+## Část C: nápady k designu (Matouš, 15. 10. odpoledne)
+
+Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho se hned nedělá.
+
+### 14. Časová osa uzavírek na mapě
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+
+- Posuvník s datem nad mapou. Mapa ukáže uzavírky a opravy platné v ten den (dnes, za týden, v listopadu).
+- **Proč:** úředník hned vidí souběh uzavírek (navazuje na č. 3), občan vidí, kdy ho to potká.
+- **Kdo:** Matouš (frontend). Data už jsou v opravách (`from`, `to`).
+
+### 15. Porovnání dvou rozpočtů vedle sebe
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly T17, S17, F5 (spolu s č. 1).
+
+- V rozpočtovém asistentu (č. 1) dvě částky vedle sebe, třeba 100 a 250 mil. Kč: kolik km, kolik havarijních km zůstane, které stavby přibudou.
+- **Proč:** zastupitelstvo rozhoduje o částce, ne o úsecích. Silný moment pro porotu z MF a ekonomické gesce.
+- **Kdo:** Matouš (obrazovka), výpočet je stejný jako č. 1.
+
+### 16. Plán staveb jako PDF pro zastupitelstvo
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+
+- Tlačítko „Tisk / PDF“: mapa staveb, tabulka, předpoklady ceny a štítek „návrh, ne rozhodnutí“.
+- **Kdo:** Matouš (tiskový styl v CSS, bez backendu).
+
+### 17. Ranní souhrn „Moje cesty“
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly F3.
+
+- Po přihlášení jedna věta nahoře: „Dnes na vaší cestě: bez omezení“ nebo „od pondělí uzavírka II/300, objížďka +6 min“.
+- Navazuje na Web Push (v3). Bez přihlášení jen v prohlížeči.
+- **Kdo:** Matouš (frontend), Šimon (push), Tomáš (trasa po silnicích místo pásu kolem spojnice).
+
+**Doplnění 15. 10. (Šimon).** V nastavení si přihlášený občan uloží víc bodů: bydliště, práci a další místa, která si sám označí na mapě. Uloží se jen bod, ne adresa (nápad 5). Mezi těmi body se spočítá trasa (nápad 18). Aplikace ukáže, jestli ji něco omezuje teď, a jestli ji omezení čeká do budoucna, tedy plánovaná oprava nebo uzavírka s termínem. Když se takový plán týká jeho trasy, může mu přijít oznámení. Jedno oznámení na jednu událost. Ranní věta nahoře bere text z toho samého.
+
+### 18. Trasa po silnicích místo pásu kolem spojnice
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S20, F3.
+
+- „Moje cesty“ teď berou silnice v pásu 1,5 km kolem přímky domov–práce (odhad). Lepší je skutečná trasa z grafu (`Engine.route`), stejně jako objížďka.
+- Trasa se počítá mezi všemi body, které si občan uloží, ne jen mezi domovem a prací (nápad 17).
+- **Kdo:** Tomáš (`core/`), Šimon endpoint `GET /api/route`.
+
+### 19. Srozumitelné názvy stavů v exportu
+**→ Přesunuto do plánu (15. 10.):** [PLAN_FINAL.md](PLAN_FINAL.md), kap. 17, úkoly S19 (spolu s č. 4).
+
+- V UI teď „Rozpadlá vozovka“ místo „SUPERhavarijní“, „Opotřebovaná“ místo „nevyhovující“ atd. V datech kraje zůstávají původní hodnoty. Do exportu (č. 4) přidat oba sloupce: původní hodnota a název pro lidi.
+
+---
+
 ## Zamítnuto
 
+- Nehody Policie ČR (č. 10) pro dnešek, 15. 10. Po hackathonu znovu.
 - Veřejný odkaz a QR ke každé uzavírce (pro web obce, zastávku). Stačí upozornění pro přihlášené.
 - Samostatný pohled „peníze kraje po okresech“. Místo něj je rozpočtový asistent (nápad 1).
 - Živé hlasování publika během pitche.

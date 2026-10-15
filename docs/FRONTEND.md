@@ -78,6 +78,11 @@ Podle připomínek Matouše k designu. Přemek, prosím, projdi (review designu)
 
 Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i veřejnost, čára objížďky se na mapě vykreslí. Neověřeno: mobilní šířka 375 px.
 
+## Úkoly po sloučení ve 12:00 (15. 10., rozhodl Tomáš)
+
+Podrobně v [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 17.4. Pořadí = priorita:
+F1 login (kap. 15) → F2 ★1 přes API + karta uzavírky → F3 Moje cesty po silnicích + ranní souhrn → F4 povodeň → F5 rozpočtový asistent → F6 Moje obec → F7 patička a souhlas.
+
 ## Stav 15. 10. po poledni (Matouš, větev `matous`): design a přihlášení
 
 **Design (podle zadání Přemka):** jeden design systém pro veřejnost i úřad, jedna akcentová barva (petrolejová), světlý a tmavý režim (tokeny v `src/styles.css`, volba v prohlížeči, jinak `prefers-color-scheme`), kompaktní hlavička, roztahovací a sbalitelné boční panely, na mobilu mapa a vysouvací panely zdola. Srozumitelné názvy stavů (`STAV_LABEL` v `src/lib/geo.ts`), data kraje beze změny.
