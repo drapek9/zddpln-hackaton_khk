@@ -374,7 +374,7 @@ Doplněk k části D. D je o tom, jak spolu mluví frontend a backend. E je o to
 
 **E5. AI není nikde vidět.** Backend má zdůvodnění, oznámení a váhy z textu, frontend nevolá nic z `/api/ai/*`. Oznámení o uzavírce je pořád šablona z `src/lib/announce.ts`. Nevíme, jestli máme platný klíč. (Šimon ověří klíč, Matouš jedno tlačítko „Zdůvodnit“ v detailu.)
 
-**E6. Nové faktory T20 mají váhu 0.** Intenzita, objížďka a studenti jsou ve skóre, ale nic nemění. Rozhodnout výchozí váhy (návrh 40 / 30 / 30) a ukázat je v rozpadu. (Tomáš rozhodne, po D1 a D6.)
+**E6. Nové faktory T20 mají váhu 0.** Intenzita, objížďka a studenti jsou ve skóre, ale nic nemění. Řeší T24 v `PLAN_FINAL.md`, kap. 19.4 (váhy 50 po D1 a D6).
 
 **E7. Povodeň nemá obrazovku.** Jádro i API jsou hotové. Silné pro porotu z krizového řízení, ale až po E1–E5. (Matouš, jen když zbude čas.)
 
