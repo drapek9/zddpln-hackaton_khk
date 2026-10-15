@@ -13,7 +13,7 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
 
-Čtení: kapitoly 1–3 říkají, co a proč stavíme. Kapitoly 4–9 popisují, jak to postavíme. Kapitoly 10–12 obsahují termíny a otevřené věci.
+Čtení: kapitoly 1–3 říkají, co a proč stavíme. Kapitoly 4–9 popisují, jak to postavíme. Kapitoly 10–12 obsahují termíny a otevřené věci. Přehled funkcí a výhod pro uživatele (hotovo / jádro / plán) je v [docs/funkce.html](docs/funkce.html). Když se stav změní, uprav tu stránku a kapitoly 4 a 7.
 
 ---
 
@@ -95,7 +95,7 @@ Demo běží podle scénáře se záložním videem. Porota může otevřít web
 
 ## 4. Webová aplikace v ideálním případě (obrazovka po obrazovce)
 
-✅ = je ve v1, ◐ = částečně, ❌ = chybí. Priorita: **MVP** / V2 / V3 (viz kap. 8).
+Stav k ránu **15. 10. 2026**. ✅ = uživatel to má v aplikaci, ◉ = výpočet je hotový a obrazovka chybí, ◐ = částečně, ❌ = chybí. Priorita: **MVP** / V2 / V3 (viz kap. 8). Stejný přehled po výhodách pro uživatele je v [docs/funkce.html](docs/funkce.html).
 
 ### A) Veřejnost
 | Obrazovka | Obsah | Stav | Priorita |
@@ -111,7 +111,7 @@ Demo běží podle scénáře se záložním videem. Porota může otevřít web
 |---|---|---|---|
 | Registrace a přihlášení | E‑mail + heslo | ❌ | MVP (★2) |
 | Moje místa | Domov + práce nebo škola, kliknutím do mapy nebo hledáním adresy. Uloží se jen bod. | ❌ | MVP (★2) |
-| Moje trasa | Nejkratší trasa domov ↔ práce po grafu silnic: stav úseků, uzavírky a opravy na trase | ❌ | MVP (★2) |
+| Moje trasa | Nejkratší trasa domov ↔ práce po grafu silnic: stav úseků, uzavírky a opravy na trase | ◉ (`Engine.route`, obrazovka chybí) | MVP (★2) |
 | Upozornění | Povolit push, záložní e‑mail, seznam upozornění na webu. Pravidlo v kap. 6. | ❌ | MVP (★2) |
 | Hlášení závady | Bod na mapě, typ, popis, foto volitelně. AI navrhne typ a úsek. | ◐ (localStorage) | V2 |
 | Hlasování | „Opravte tohle“, 1 hlas na úsek | ❌ | V2 |
@@ -119,13 +119,13 @@ Demo běží podle scénáře se záložním videem. Porota může otevřít web
 ### C) Úředník
 | Obrazovka | Obsah | Stav | Priorita |
 |---|---|---|---|
-| Žebříček + mapa | Top N, filtry, 4 třídy priority, štítek stability (v Top N při jakýchkoli rozumných vahách) | ◐ (bez tříd a stability) | MVP |
+| Žebříček + mapa | Top N, filtry, 4 třídy priority, štítek stability (v Top N při jakýchkoli rozumných vahách) | ◐ (žebříček v aplikaci; 4 třídy jen v jádru; stabilita chybí) | MVP |
 | Váhy | Posuvníky pro svůj pohled. **Váhy z textu přes AI**: AI navrhne, úředník potvrdí. | ◐ (posuvníky) | V2 (AI) |
 | Scénář s rozpočtem | Zadám X km nebo Y mil. Kč. Dostanu seznam úseků, které se vejdou, a kolik havarijních km zůstane. Cena za km je **předpoklad**. | ❌ | V2 |
 | Detail úseku | Rozpad skóre, třída, AI zdůvodnění, historie, opravy, intenzita (nebo „odhad“), hlášení, hlasy | ◐ | MVP |
-| Připíchnutí | Priorita ručně + důvod (rychlé volby nebo text). Má přednost před modelem a zapisuje se. | ❌ | MVP |
-| Stav práce | Navrženo → Schváleno → Naplánováno (termín) → Probíhá → Hotovo. Od „Schváleno“ to vidí veřejnost. | ❌ | MVP |
-| **Simulátor uzavírky** | Vyberu úsek a termín. Uvidím objížďku na mapě, +km a +min, auta za den, kolik občanů má úsek na trase. Varování: škola ve školním roce, nemocnice a IZS, zaručené přípoje, zima, objížďka přes havarijní úsek. AI napíše návrh oznámení. Tlačítko „Potvrdit uzavírku“ pošle upozornění. | ◐ (varování a oznámení ano, objížďka ne) | **MVP (★1)** |
+| Připíchnutí | Priorita ručně + důvod (rychlé volby nebo text). Má přednost před modelem a zapisuje se. | ◉ (pořadí v jádru, obrazovka, důvod a zápis chybí) | MVP |
+| Stav práce | Navrženo → Schváleno → Naplánováno (termín) → Probíhá → Hotovo. Od „Schváleno“ to vidí veřejnost. | ◐ (zveřejnění opravy v prohlížeči, workflow chybí) | MVP |
+| **Simulátor uzavírky** | Vyberu úsek a termín. Uvidím objížďku na mapě, +km a +min, auta za den, kolik občanů má úsek na trase. Varování: škola ve školním roce, nemocnice a IZS, zaručené přípoje, zima, objížďka přes havarijní úsek. AI napíše návrh oznámení. Tlačítko „Potvrdit uzavírku“ pošle upozornění. | ◐ varování, šablona oznámení a zveřejnění opravy v aplikaci; ◉ objížďka v jádru, na mapě ne | **MVP (★1)** |
 | Srovnání A vs B | Dva úseky vedle sebe, které faktory rozhodly (Matouš M2.1) | ❌ | V3 |
 | Fronta hlášení | Hlášení od občanů, AI roztřídění, sloučení k úseku, vyřízení | ❌ | V2 |
 | Ověření modelu | Volitelně: měly úseky opravené v letech 2018–2024 vysoké skóre už před opravou? (Matouš M2.4) | ❌ | V3 |
@@ -227,18 +227,20 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 
 ---
 
-## 7. Co v1 má a co chybí
+## 7. Stav k ránu 15. 10.
 
-| Oblast | v1 | Chybí |
-|---|---|---|
-| Data | 18 sad, celá síť (oprava `c6de97f`) | ŘSD 2025, SRTI, silnice I. třídy, graf, oprava započítání bodů, nehody |
-| Skóre | 10 vah, rozpad, Top N | třídy, stabilita, nové faktory, pořadí pravidel |
-| Úředník | žebříček, mapa, detail, varování při uzavírce, oznámení | připíchnutí, stavy práce, **simulátor s objížďkou**, scénář s rozpočtem, fronta hlášení |
-| Občan | mapa, „Můj autobus“, hlášení (localStorage) | účet, moje místa, moje trasa, **push**, hlasování |
-| Admin | — | uživatelé, trvalé váhy, audit, export |
-| Backend | — | celý FastAPI + SQLite, přihlášení, API |
-| AI | — | 4 použití + fallback |
-| Pravidla | stránka Zdroje dat, simulace označené | `LICENSE` (EUPL‑1.2), nové zdroje na stránce |
+Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/funkce.html). Tahle tabulka je totéž po oblastech. Když se něco dodělá, uprav obojí.
+
+| Oblast | V aplikaci | V jádru, uživatel to nevidí | Chybí |
+|---|---|---|---|
+| Data | 18 sad Data KHK, celá síť | silnice I. třídy a dálnice z OSM v grafu (objížďka u 81,5 % úseků) | ŘSD 2025, SRTI, nehody, oprava započítání bodů do 450 m, sady z kap. 13 |
+| Skóre | 10 vah, rozpad, žebříček, posuvníky v sezení | stejné skóre v Pythonu, 4 třídy, pořadí s připíchnutím | stabilita, intenzita, hlasy v aplikaci, váhy uložené podle role |
+| Úředník | žebříček, mapa, detail, varování, šablona oznámení, zveřejnění opravy v prohlížeči | objížďka (+km, +min, asi 2 ms) | objížďka na mapě, auta za den, potvrzení uzavírky, připíchnutí na obrazovce, stavy práce, scénář, fronta hlášení |
+| Veřejnost a občan | mapa, hledání, „Můj autobus“, hlášení v prohlížeči, Zdroje dat | trasa mezi dvěma body | účet, místa, trasa na obrazovce, push, hlasování, skutečné uzavírky |
+| Admin | — | — | uživatelé, trvalé váhy, audit, export, dokumentace API |
+| Backend | — | FastAPI kostra, `Engine`, `/api/health` | SQLite, přihlášení, ostatní endpointy |
+| AI | šablona oznámení | — | zdůvodnění, váhy z textu, třídění hlášení, fallback |
+| Pravidla | Zdroje dat, štítek simulace, `LICENSE` EUPL‑1.2 | — | nové zdroje na stránce Zdroje |
 
 ---
 
@@ -250,7 +252,7 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 3. ★2 Občan: účet, domov a práce, moje trasa, push při potvrzené uzavírce na trase. E‑mail a seznam upozornění na webu jako záloha.
 4. ★3 Admin: uživatelé, trvalé váhy, audit, veřejné API a export s metadaty.
 5. Žebříček se 4 třídami, připíchnutí s důvodem, stavy práce.
-6. Stránka Zdroje dat (nové zdroje), `LICENSE`, štítky „demo data“ a „odhad“.
+6. Stránka Zdroje dat (nové zdroje) a štítky „demo data“ a „odhad“. `LICENSE` EUPL‑1.2 už je.
 
 **V2:**
 - AI: zdůvodnění, oznámení, váhy z textu.
@@ -281,7 +283,7 @@ Jedno rozhraní pro poskytovatele AI. **Když AI nejede, aplikace funguje dál.*
 
 Kód funkcí vzniká na soutěži (rozhodnutí 13. 10.). Před soutěží jen připravit prostředí a podklady.
 
-- [ ] `LICENSE` (EUPL‑1.2).
+- [x] `LICENSE` (EUPL‑1.2).
 - [ ] E‑mail organizátorům: co je připravené předem a jestli to vadí. Odpověď uložit.
 - [ ] Ověřit přístup k AI (Azure for Students nebo jiný klíč) a mít plán, když nebude.
 - [ ] Vyzkoušet tunel + HTTPS + Web Push na vlastním telefonu (prázdná stránka „hello push“).
