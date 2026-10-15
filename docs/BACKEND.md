@@ -88,6 +88,13 @@ Stav, který se mění (piny, uzavírky, hlasy, váhy admina), drží **Šimon v
 | S9 | **Otevřená data:** export CSV a GeoJSON s metadaty + česká stránka dokumentace API | `/api/export.*`, `/api/docs` | **★3** |
 | S10 | **AI v aplikaci (vlastní Šimon):** jedno rozhraní + fallback. Zdůvodnění, oznámení, váhy z textu, třídění hlášení. Tomáš dodá vstupy (rozpad skóre, dopady, objížďka) přes `Engine`. | `ai/` | V2 |
 | S11 | Hlášení a hlasování | `/api/reports`, `/api/votes` | V2 |
+| S14 | **AI dokončit** (PLAN_FINAL kap. 17): Claude `claude-haiku-5-5` přes `.env`, cache v SQLite, štítek „návrh AI“, nově AI text k rozpočtu | `POST /api/ai/budget` | V2 |
+| S15 | **Login pro frontend** (kap. 15): tvar `/api/auth/*` pro Matouše, rate limit na login | `/api/auth/*` | ★2, ★3 |
+| S16 | Napojení frontendu: tvar `/api/ranking`, náhled uzavírky bez zápisu do DB | `POST /api/closures/preview` | ★1 |
+| S17 | Rozpočtový asistent (volá T17), dvě částky pro porovnání | `GET /api/budget?amount=…&amount2=…` | V2 |
+| S18 | Kolize uzavírek + dojezd IZS (T18) v odpovědi uzavírky | v `POST /api/closures` | ★1 |
+| S19 | Export DCAT‑AP‑CZ (`metadata.jsonld`) + sloupec s názvem stavu pro lidi | `/api/export/*` | ★3 |
+| S20 | Trasa bez přihlášení | `GET /api/route` | ★2 |
 
 ---
 
@@ -182,6 +189,9 @@ Důvod a sady: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Sekce 1–6 platí be
 | T14 | **Toky studentů:** dvojice (obec → škola) pustit po grafu, sečíst žáky na úsecích | `students_on(road_id)`, pole v `detour` | ★1 |
 | T15 | **Odříznuté obce** při uzavírce + **povodňový scénář** | `flood(level)`, pole v `detour` | ★1 |
 | T16 | Ukázkové uzavírky ze skutečných plánů 2022 + ověření modelu | `demo_closures()`, `backtest_2022()` | demo, V2 |
+| T17 | **Rozpočtový asistent** (PLAN_FINAL kap. 17): souvislé stavby (stejná `sil`, okres), cena podle stavu (`estimate`), hladově podle skóre na Kč | `budget_plan(amount_kc, weights)` | V2 |
+| T18 | **Dojezd ZZS + HZS** při uzavírce: obce s delším dojezdem, +min, limit 20 min | pole v `PeopleImpact` / `Alert` | ★1 |
+| T19 | **Ověření modelu:** % opravených úseků 2018–2024 v horní třetině skóre | `backtest()` | pitch |
 
 ### Šimon (API)
 | # | Úkol | Endpoint |
@@ -252,3 +262,9 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
 - `Engine.obce()` (448 obcí: kód, název, obyvatelé, střed, bbox) a `Engine.cut_off_obce(road_id)`. Tvar sedí na Šimonovo `services/scenarios.py`.
 - **Smlouva (jen přidané):** `SrtiClosure`.
 - Zdroje dat (Matouš): SRTI, CC BY 4.0, odkaz na NKOD je v `srti.json` → `url`.
+- **T11 hotovo (~11:45):** `scripts/fetch-data.mjs` počítá bod (škola, nemocnice, zastávka…) jen k nejbližším úsekům: nejvýš o 50 m dál než nejbližší úsek do 450 m. Dřív se bod počítal ke všem úsekům do 450 m.
+  - Součet bodů u úseků klesl asi na polovinu (školy 5 889 → 2 525, nemocnice 38 → 22). Každý bod se dřív počítal v průměru ~2×.
+  - Pole `obce` u úseku se nemění (pořád ze všech bodů do 450 m).
+  - Skóre a pořadí se změnily stejně ve frontendu i v Pythonu (oba čtou `roads.json`). Testy shody s `priority.ts` přegenerované, 19/19 zelených.
+  - `repairs.json` (simulované plánované opravy) se při přegenerování vybraly znovu podle nového skóre.
+  - Poznámka výše „Počet škol u objížďky je zatím nadsazený … Opraví T11“ je tím **NEAKTIVNÍ**.

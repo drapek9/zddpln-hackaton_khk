@@ -380,11 +380,25 @@ async function main() {
   }
   const lineGrid = buildGrid(linePoints);
 
-  const roads = [];
+  // T11 (15. 10.): bod se počítá jen k nejbližším úsekům. Dřív se škola nebo nemocnice
+  // započítala ke každému úseku do 450 m (na křižovatce i k pěti úsekům naráz).
+  // Teď jen k úsekům, které jsou od bodu nejvýš o NEAR_SLACK_M dál než ten nejbližší.
+  const NEAR_SLACK_M = 50;
+  const prepared = [];
+  const minDist = new Map();
   for (const f of roadsRaw) {
-    const a = f.attributes;
     const g = simplify(lineCoords(f.geometry));
     if (g.length < 2) continue;
+    const near = nearby(poiGrid, g, 450);
+    for (const p of near) {
+      if (!minDist.has(p.id) || p.dist < minDist.get(p.id)) minDist.set(p.id, p.dist);
+    }
+    prepared.push({ f, g, near });
+  }
+
+  const roads = [];
+  for (const { f, g, near: nearAll } of prepared) {
+    const a = f.attributes;
     const hist = history[a.ozn_sil_usek] || {};
     const years = Object.keys(hist).sort();
     let worse = false;
@@ -394,8 +408,8 @@ async function main() {
       const curr = hist[years[years.length - 1]];
       worse = order.indexOf(curr) > order.indexOf(prev);
     }
-    const near = nearby(poiGrid, g, 450);
-    const obce = [...new Set(near.map((p) => p.obec).filter(Boolean))];
+    const obce = [...new Set(nearAll.map((p) => p.obec).filter(Boolean))];
+    const near = nearAll.filter((p) => p.dist <= minDist.get(p.id) + NEAR_SLACK_M);
     const hsoo = obce.filter((o) => threatened[o]);
     const counts = {};
     const samples = {};
