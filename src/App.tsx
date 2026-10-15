@@ -4,7 +4,6 @@ import AdminApp from "./components/AdminApp";
 import PublicApp from "./components/PublicApp";
 import Sources from "./components/Sources";
 import Privacy from "./components/Privacy";
-import LoginScreen from "./components/LoginScreen";
 import { loadDataset } from "./lib/data";
 import { loadLocalRepairs, loadReports, saveRepairs, saveReports } from "./lib/store";
 import { logout, me, onUnauthorized, type Session, type User } from "./lib/auth";
@@ -90,24 +89,10 @@ export default function App() {
   if (view === "sources") return <Sources stats={data.stats} onHome={() => go("home")} onNavigate={go} />;
   if (view === "privacy") return <Privacy onHome={() => go("home")} onNavigate={go} />;
 
-  if (view === "login" || (view === "office" && !officeRole)) {
-    return (
-      <LoginScreen
-        offline={offline}
-        note={loginNote}
-        onUser={enterAs}
-        onDemo={(role) => {
-          setDemoRole(role);
-          setView("office");
-        }}
-        onPublic={() => go("public")}
-        onHome={() => go("home")}
-        onNavigate={go}
-      />
-    );
-  }
+  // Přihlášení je přímo na úvodní stránce (vpravo).
+  const showLanding = view === "home" || view === "login" || (view === "office" && !officeRole);
 
-  if (view === "office" && officeRole) {
+  if (!showLanding && view === "office" && officeRole) {
     return (
       <AdminApp
         data={data}
@@ -144,5 +129,18 @@ export default function App() {
     );
   }
 
-  return <Landing data={data} user={user} onNavigate={go} onLogout={signOut} />;
+  return (
+    <Landing
+      user={user}
+      offline={offline}
+      note={loginNote}
+      onUser={enterAs}
+      onDemo={(role) => {
+        setDemoRole(role);
+        setView("office");
+      }}
+      onNavigate={go}
+      onLogout={signOut}
+    />
+  );
 }

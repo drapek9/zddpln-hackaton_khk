@@ -7,6 +7,7 @@ import Fold from "./Fold";
 import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import UserMenu from "./UserMenu";
+import DetailSheet from "./DetailSheet";
 import type { User } from "../lib/auth";
 import { ThemeToggle, useTheme } from "../lib/theme";
 import { HIGHLIGHT_COLOR } from "./MapView";
@@ -26,12 +27,12 @@ type Props = {
 };
 
 export default function PublicApp({ data, repairs, reports, onReport, onHome, user, onLogin, onLogout }: Props) {
-  const [selectedId, setSelectedIdState] = useState<number | null>(repairs[0]?.roadId ?? null);
+  const [selectedId, setSelectedIdState] = useState<number | null>(null);
   const [sheet, setSheet] = useState<Sheet>("map");
   const panels = usePanelSizes();
   const setSelectedId = (id: number | null) => {
     setSelectedIdState(id);
-    if (id != null && isNarrow()) setSheet("right");
+    if (id != null && isNarrow()) setSheet("map");
   };
   const [tab, setTab] = useState<"trip" | "repairs" | "bus" | "report">("trip");
   const { theme } = useTheme();
@@ -103,9 +104,8 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
           <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
         </div>
       </header>
-      <div className={`workspace ${panels.className}`} data-sheet={sheet} style={panels.style}>
+      <div className={`workspace no-right ${panels.className}`} data-sheet={sheet} style={panels.style}>
         <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
-        <Resizer side="right" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
           <div className="tabs four">
             <button className={tab === "trip" ? "active" : ""} onClick={() => setTab("trip")}>
@@ -300,7 +300,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             highlight={highlight}
           />
           {picking && <div className="pick-banner">Klikněte do mapy: {picking === "home" ? "kde bydlíte" : "kam jezdíte"}</div>}
-          <SheetBar value={sheet} onChange={setSheet} left="Přehled" right="Detail" />
+          <SheetBar value={sheet} onChange={setSheet} left="Přehled" />
           <div className="legend">
             <span>
               <i className="active" /> probíhá
@@ -320,27 +320,19 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
               </span>
             )}
           </div>
-        </div>
-        <aside className="side right">
-          {selected ? (
-            <RoadPanel
-              key={selected.id}
-              road={selected}
-              weights={DEFAULT_WEIGHTS}
-              connections={data.connections}
-              existing={repairs.find((r) => r.roadId === selected.id)}
-              mode="public"
-            />
-          ) : (
-            <div className="empty">
-              <h2>Aktuální opravy kraje</h2>
-              <p>
-                Veřejná mapa ukazuje, co se chystá a co se už opravuje. U každého úseku je vidět,
-                proč má prioritu a které linky to potká.
-              </p>
-            </div>
+          {selected && (
+            <DetailSheet id={selected.id} onClose={() => setSelectedId(null)}>
+              <RoadPanel
+                key={selected.id}
+                road={selected}
+                weights={DEFAULT_WEIGHTS}
+                connections={data.connections}
+                existing={repairs.find((r) => r.roadId === selected.id)}
+                mode="public"
+              />
+            </DetailSheet>
           )}
-        </aside>
+        </div>
       </div>
     </div>
   );

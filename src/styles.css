@@ -785,3 +785,180 @@ body.is-resizing .workspace { transition: none; }
   .auth-card { padding: 22px 18px; }
   .app-shell:has(> .site-foot) { grid-template-rows: auto 1fr auto; }
 }
+
+/* Šipka pro schování panelu (vždy vidět na okraji) */
+.panel-collapse {
+  position: absolute;
+  top: 50%;
+  z-index: 9;
+  width: 18px;
+  height: 44px;
+  margin-top: -22px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.panel-collapse.left { left: var(--left-w, 260px); border-left: 0; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.panel-collapse.right { right: var(--right-w, 260px); border-right: 0; border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.panel-collapse:hover { color: var(--accent); border-color: var(--accent-line); }
+.workspace.no-right { grid-template-columns: var(--left-w, 260px) minmax(0, 1fr); }
+
+/* Detail jako spodní pruh nad mapou */
+.detail-sheet {
+  position: absolute;
+  left: 12px;
+  right: 60px;
+  bottom: 12px;
+  margin: 0 auto;
+  max-width: 760px;
+  height: 168px;
+  z-index: 5;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  transition: height 0.32s var(--ease);
+  animation: sheetIn 0.3s var(--ease) both;
+}
+.detail-sheet.open { height: min(72%, 720px); }
+@keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-head { position: relative; height: 18px; }
+.sheet-grip { position: absolute; left: 50%; top: 6px; width: 44px; height: 6px; margin-left: -22px; border: 0; border-radius: 6px; background: var(--line-strong); cursor: pointer; padding: 0; }
+.sheet-grip:hover { background: var(--accent); }
+.sheet-close { position: absolute; right: 8px; top: 4px; width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; border-radius: 50%; z-index: 2; }
+.sheet-close:hover { background: var(--surface-2); color: var(--text); }
+.sheet-body { overflow: hidden; padding: 0 18px 16px; scrollbar-width: thin; }
+.detail-sheet.open .sheet-body { overflow: auto; }
+.detail-sheet .panel { animation: none; }
+.sheet-more {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+  border: 0;
+  background: linear-gradient(to bottom, transparent, var(--surface) 55%);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding-top: 14px;
+}
+.map-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 2;
+  background: var(--overlay);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+/* Legenda nahoře vlevo, dole je místo pro detail */
+.legend { top: 12px; bottom: auto; max-width: calc(100% - 340px); }
+@media (max-width: 900px) {
+  .panel-collapse { display: none; }
+  .detail-sheet { left: 0; right: 0; bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; max-width: none; height: 190px; z-index: 8; }
+  .detail-sheet.open { height: calc(100% - 20px); }
+  .map-hint { bottom: 70px; white-space: normal; text-align: center; width: max-content; max-width: calc(100% - 32px); }
+  .legend { max-width: calc(100% - 20px); }
+}
+
+/* ===== Úvod: vlevo název, vpravo přihlášení ===== */
+.landing3 {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  background: var(--bg);
+  color: var(--text);
+  position: relative;
+}
+.landing3-top { position: absolute; top: 20px; right: clamp(16px, 4vw, 48px); z-index: 2; }
+.landing3-intro {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  padding: 48px clamp(24px, 6vw, 96px);
+  max-width: 640px;
+  justify-self: end;
+  width: 100%;
+}
+.landing3-intro h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(56px, 7vw, 104px); line-height: 0.92; letter-spacing: -0.02em; margin: 0 0 20px; }
+.landing3-lead { font-size: 19px; line-height: 1.55; color: var(--text-2); margin: 0 0 24px; max-width: 480px; }
+.landing3-points { list-style: none; margin: 0; padding: 20px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; max-width: 480px; }
+.landing3-points li { position: relative; padding-left: 18px; color: var(--text-2); font-size: 15px; line-height: 1.45; }
+.landing3-points li::before { content: ""; position: absolute; left: 0; top: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.landing3-points b { color: var(--text); }
+.landing3-auth {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+  padding: 72px clamp(16px, 5vw, 80px) 40px;
+  background: var(--surface-2);
+  border-left: 1px solid var(--line);
+}
+.landing3-auth .auth-card { width: min(420px, 100%); }
+.landing3-auth .auth-card .link { justify-self: center; }
+.landing3-foot { grid-column: 1 / -1; grid-row: 2; }
+
+/* ===== Stránka admina ===== */
+.sys-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 16px; }
+.sys-kpis div { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; }
+.sys-kpis b { font-family: var(--serif); font-weight: 600; font-size: 28px; font-variant-numeric: tabular-nums; }
+.sys-kpis span { font-size: 13px; color: var(--muted); }
+.system-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sys-weights { grid-row: span 2; }
+.sys-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.weight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; }
+.weight-grid .weight { margin: 6px 0; }
+.segmented.small { margin: 0; }
+.segmented.small button { padding: 4px 10px; font-size: 13px; }
+.segmented.small { grid-template-columns: repeat(4, auto); }
+.sys-table th { text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.sys-table select { border: 1px solid var(--line); background: var(--surface-2); border-radius: var(--r-sm); padding: 4px 8px; font-size: 13px; }
+.sys-table tr.blocked td { color: var(--muted); }
+.sys-table tr.blocked .user-cell span:last-child { text-decoration: line-through; }
+.user-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.user-cell span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.audit { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.audit li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.audit li:last-child { border-bottom: 0; }
+.audit em { font-style: normal; font-size: 12px; color: var(--muted); }
+a.btn { text-decoration: none; color: inherit; display: inline-block; }
+.app-shell > .system { min-height: 0; }
+
+@media (max-width: 1100px) {
+  .system-grid { grid-template-columns: 1fr; }
+  .sys-weights { grid-row: auto; }
+}
+@media (max-width: 900px) {
+  .landing3 { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+  .landing3-intro { grid-row: 1; justify-self: stretch; padding: 64px 20px 24px; }
+  .landing3-intro h1 { font-size: 52px; }
+  .landing3-auth { grid-column: 1; grid-row: 2; border-left: 0; border-top: 1px solid var(--line); padding: 24px 16px 32px; }
+  .landing3-foot { grid-row: 3; }
+  .sys-kpis { grid-template-columns: repeat(2, 1fr); }
+  .weight-grid { grid-template-columns: 1fr; }
+  .segmented.small { grid-template-columns: repeat(2, 1fr); width: 100%; }
+}
+@media (max-width: 900px) {
+  .tb-right > .sim-tag { display: none; }
+  .tb-left { gap: 8px; }
+  .role-switch button { padding: 3px 8px; font-size: 12px; }
+}

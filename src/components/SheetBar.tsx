@@ -4,7 +4,7 @@ type Props = {
   value: Sheet;
   onChange: (next: Sheet) => void;
   left: string;
-  right: string;
+  right?: string;
 };
 
 // Mobil: přepínání mezi levým panelem, mapou a detailem (panely se vysouvají zdola).
@@ -12,7 +12,7 @@ export default function SheetBar({ value, onChange, left, right }: Props) {
   const items: [Sheet, string][] = [
     ["left", left],
     ["map", "Mapa"],
-    ["right", right],
+    ...(right ? ([["right", right]] as [Sheet, string][]) : []),
   ];
   return (
     <div className="sheet-bar" role="tablist">

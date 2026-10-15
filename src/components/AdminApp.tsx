@@ -8,6 +8,8 @@ import AdminSystem from "./AdminSystem";
 import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import UserMenu from "./UserMenu";
+import DetailSheet from "./DetailSheet";
+import { adminApi } from "../lib/adminApi";
 import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
@@ -31,10 +33,11 @@ type Props = {
 };
 
 type View = "map" | "budget" | "system";
+// Admin začíná na Správě systému (nastavení je pro něj hlavní), úředník na mapě.
 const VIEWS: { key: View; label: string; adminOnly?: boolean; soon?: boolean }[] = [
+  { key: "system", label: "Správa systému", adminOnly: true },
   { key: "map", label: "Priority a uzavírky" },
   { key: "budget", label: "Plán podle rozpočtu" },
-  { key: "system", label: "Správa systému", adminOnly: true, soon: true },
 ];
 
 // Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
@@ -54,22 +57,44 @@ const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
 ];
 
 export default function AdminApp({ data, repairs, onRepairs, onHome, role, user, onRole, onLogout }: Props) {
-  const [view, setView] = useState<View>("map");
+  const [view, setView] = useState<View>(role === "admin" ? "system" : "map");
+  // Demo přepínač rolí: admin jde na Správu systému, úředník ji nemá.
   useEffect(() => {
-    if (role !== "admin" && view === "system") setView("map");
-  }, [role, view]);
+    setView((v) => (role === "admin" ? "system" : v === "system" ? "map" : v));
+  }, [role]);
+  const live = !!user && user.role === "admin";
   const { theme } = useTheme();
   const mapTheme = theme === "dark" ? "dark" : "office";
   // Výchozí jsou trvalé váhy kraje od admina. Úředník je mění jen pro sebe, admin je může uložit trvale.
   const [regionWeights, setRegionWeights] = useState<Weights>(() => loadRegionWeights(DEFAULT_WEIGHTS));
   const [weights, setWeights] = useState<Weights>(regionWeights);
   const [savedNote, setSavedNote] = useState(false);
+
+  // Přihlášený admin: trvalé váhy ze serveru (GET /api/admin/weights).
+  useEffect(() => {
+    if (!live) return;
+    adminApi
+      .weights()
+      .then(({ weights: w }) => {
+        const next = { ...DEFAULT_WEIGHTS, ...w };
+        setRegionWeights(next);
+        setWeights(next);
+      })
+      .catch(() => {});
+  }, [live]);
+
+  const saveRegion = async (next: Weights) => {
+    if (live) await adminApi.saveWeights(next);
+    else saveRegionWeights(next);
+    setRegionWeights(next);
+    setWeights(next);
+  };
   const [selectedId, setSelectedIdState] = useState<number | null>(null);
   const [sheet, setSheet] = useState<Sheet>("map");
   const panels = usePanelSizes();
   const setSelectedId = (id: number | null) => {
     setSelectedIdState(id);
-    if (id != null && isNarrow()) setSheet("right");
+    if (id != null && isNarrow()) setSheet("map");
   };
   const [okres, setOkres] = useState("vše");
   const [stav, setStav] = useState("vše");
@@ -191,11 +216,12 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         </div>
       </header>
       {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
-      {view === "system" && <AdminSystem key="system" weights={regionWeights} pins={pins} />}
+      {view === "system" && (
+        <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} />
+      )}
       {view === "map" && (
-      <div className={`workspace view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
+      <div className={`workspace no-right view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
         <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
-        <Resizer side="right" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
           <label className="search">
             <input
@@ -367,9 +393,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     <button
                       className="btn primary"
                       disabled={!weightsChanged}
-                      onClick={() => {
-                        setRegionWeights(weights);
-                        saveRegionWeights(weights);
+                      onClick={async () => {
+                        await saveRegion(weights);
                         setSavedNote(true);
                         setTimeout(() => setSavedNote(false), 2000);
                       }}
@@ -378,11 +403,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     </button>
                   )}
                 </div>
-                {role === "admin" && <p className="fine">Demo: ukládá se v tomto prohlížeči, pro všechny až s backendem (v4).</p>}
+                {role === "admin" && !live && <p className="fine">Demo: ukládá se jen v tomto prohlížeči.</p>}
               </div>
             )}
           </div>
-          <SheetBar value={sheet} onChange={setSheet} left="Žebříček" right="Detail" />
+          <SheetBar value={sheet} onChange={setSheet} left="Žebříček" />
           <div className="legend">
             {STAV_ORDER.map((s) => (
               <span key={s}>
@@ -391,48 +416,31 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               </span>
             ))}
           </div>
-        </div>
-        <aside className="side right">
           {selected ? (
-            <RoadPanel
-              key={`${selected.id}-${demoId === selected.id}`}
-              simulate={demoId === selected.id}
-              road={selected}
-              weights={weights}
-              connections={data.connections}
-              existing={existing}
-              mode="admin"
-              rank={rowById.get(selected.id)}
-              pin={pins.find((p) => p.road_id === selected.id)}
-              onPin={(pin) => updatePins([...pins.filter((p) => p.road_id !== selected.id), ...(pin ? [pin] : [])])}
-              roadsById={roadsById}
-              onDetour={setDetour}
-              onPlan={(repair) => {
-                const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
-                onRepairs(next);
-              }}
-            />
+            <DetailSheet id={`${selected.id}-${demoId === selected.id}`} onClose={() => setSelectedId(null)}>
+              <RoadPanel
+                key={`${selected.id}-${demoId === selected.id}`}
+                simulate={demoId === selected.id}
+                road={selected}
+                weights={weights}
+                connections={data.connections}
+                existing={existing}
+                mode="admin"
+                rank={rowById.get(selected.id)}
+                pin={pins.find((p) => p.road_id === selected.id)}
+                onPin={(pin) => updatePins([...pins.filter((p) => p.road_id !== selected.id), ...(pin ? [pin] : [])])}
+                roadsById={roadsById}
+                onDetour={setDetour}
+                onPlan={(repair) => {
+                  const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
+                  onRepairs(next);
+                }}
+              />
+            </DetailSheet>
           ) : (
-            <div className="empty">
-              <h2>Vyberte úsek</h2>
-              <p>
-                Klikněte na silnici v mapě nebo v žebříčku. Uvidíte školy, zastávky, linky a
-                zaručené přípoje, které uzavírka ohrozí.
-              </p>
-              <ul className="legend-repairs">
-                <li>
-                  <i className="active" /> probíhající oprava
-                </li>
-                <li>
-                  <i className="planned" /> plán
-                </li>
-                <li>
-                  <i className="done" /> dokončeno
-                </li>
-              </ul>
-            </div>
+            <div className="map-hint">Klikněte na silnici v mapě nebo v žebříčku, detail se ukáže tady dole.</div>
           )}
-        </aside>
+        </div>
       </div>
       )}
     </div>

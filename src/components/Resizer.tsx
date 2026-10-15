@@ -2,9 +2,11 @@ import { useCallback, useState, type CSSProperties, type PointerEvent as ReactPo
 
 // Roztahovací boční panely. Každý si pracovní plochu nastaví po svém, šířky se pamatují v tomto prohlížeči.
 // Když panel stáhnete až ke kraji, schová se a na okraji mapy zůstane jazýček, kterým ho zase vysunete.
-const KEY = "cesty-khk-panels";
-const DEFAULTS = { left: 340, right: 400 };
-const MIN = 260;
+// v2: výchozí šířka je nejmenší možná (dřív 340 / 400 px).
+const KEY = "cesty-khk-panels-v2";
+const MIN_W = 260;
+const DEFAULTS = { left: MIN_W, right: MIN_W };
+const MIN = MIN_W;
 const MAX = 620;
 /** Pod touto šířkou se panel při tažení sbalí. */
 const COLLAPSE_AT = 170;
@@ -112,6 +114,15 @@ export default function Resizer({ side, sizes, onChange }: Props) {
   }
 
   return (
+    <>
+    <button
+      className={`panel-collapse ${side}`}
+      onClick={() => onChange({ ...sizes, [hiddenKey(side)]: true })}
+      aria-label={`Schovat ${label}`}
+      title={`Schovat ${label}`}
+    >
+      {side === "left" ? "‹" : "›"}
+    </button>
     <div
       className={`resizer ${side} ${dragging ? "dragging" : ""}`}
       role="separator"
@@ -130,5 +141,6 @@ export default function Resizer({ side, sizes, onChange }: Props) {
         if (e.key === "Escape") onChange({ ...sizes, [hiddenKey(side)]: true });
       }}
     />
+    </>
   );
 }

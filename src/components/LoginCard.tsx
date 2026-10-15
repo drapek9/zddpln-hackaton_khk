@@ -1,6 +1,4 @@
 import { useState, type FormEvent } from "react";
-import Footer from "./Footer";
-import { ThemeToggle } from "../lib/theme";
 import { AuthError, login, register, type User } from "../lib/auth";
 import type { View } from "../App";
 
@@ -11,12 +9,11 @@ type Props = {
   onUser: (user: User) => void;
   onDemo: (role: "official" | "admin") => void;
   onPublic: () => void;
-  onHome: () => void;
   onNavigate: (view: View) => void;
 };
 
 // Přihlášení a registrace občana (kap. 15.1). Roli úředníka a admina přiděluje kraj, registrace dává vždy občana.
-export default function LoginScreen({ offline, note, onUser, onDemo, onPublic, onHome, onNavigate }: Props) {
+export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onNavigate }: Props) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,15 +45,6 @@ export default function LoginScreen({ offline, note, onUser, onDemo, onPublic, o
   };
 
   return (
-    <div className="auth-page">
-      <header className="auth-top">
-        <button className="brand" onClick={onHome}>
-          Cesty KHK
-        </button>
-        <ThemeToggle />
-      </header>
-
-      <main className="auth-main">
         <section className="auth-card view-enter">
           <p className="eyebrow">{mode === "login" ? "Přihlášení" : "Nový účet občana"}</p>
           <h1>{mode === "login" ? "Vítejte zpět" : "Registrace"}</h1>
@@ -153,9 +141,5 @@ export default function LoginScreen({ offline, note, onUser, onDemo, onPublic, o
             Pokračovat bez přihlášení →
           </button>
         </section>
-      </main>
-
-      <Footer onNavigate={onNavigate} />
-    </div>
   );
 }
