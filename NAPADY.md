@@ -273,6 +273,88 @@ Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho
 
 ---
 
+## Část D: kontrola propojení frontendu a backendu (15. 10. ~13:00, Tomáš)
+
+Kontrola na sloučeném `main` (`ae75d6e`): backend a Vite proxy spuštěné lokálně, každé volání ověřené přes `curl`, frontend přečtený v `src/lib/`. Nic se tím nemění samo, o pořadí rozhodne tým. **Chyby D1–D10 mají přednost před novými funkcemi.** D1 až D3 je potřeba udělat najednou, jinak se rozbijí piny.
+
+### Jak frontend dnes mluví s backendem
+
+| Endpoint | Volá ho frontend? | Výsledek |
+|---|---|---|
+| `/api/auth/*` (login, registrace, me, odhlášení) | ano | funguje |
+| `/api/admin/users`, `/weights`, `/audit` | ano | funguje (drobnost D5) |
+| `GET /api/ranking` | ano | **nefunguje**: odpověď se nepřečte, vždy se počítá lokálně (D1) |
+| `POST /api/closures` (simulátor) | ano | **nefunguje**: vždy se použije snímek `public/demo/detours.json` (D2) |
+| `/api/export.csv`, `/export.geojson`, `/docs` | jen odkazy u admina | funguje |
+| `closures/preview`, `demo-closures`, `budget`, `flood`, `obce`, `route`, `me/*`, `pins`, `votes`, `reports`, `ai/*`, `statistiky`, `useky/{id}` | **ne** | backend je hotový, ve frontendu nic |
+
+Shrnutí: frontend dnes běží skoro celý z lokálních JSON v `public/data` (asi 11 MB) a z vlastního výpočtu v TypeScriptu. Backend je hotový a odpovídá rychle, ale v ukázce pro porotu ho není vidět.
+
+**Změřené odpovědi** (přes Vite proxy, přihlášený úředník):
+
+| Volání | Čas | Velikost |
+|---|---|---|
+| `GET /api/ranking` | 0,09 s | **1,7 MB** |
+| `GET /api/ranking?stav=30` | 0,24 s | 1,7 MB |
+| `GET /api/ranking?detour=50&students=50&intensity=50` (poprvé) | **5,2 s** | 1,7 MB |
+| `POST /api/closures/preview` | 0,09 s | 16 kB |
+| `GET /api/budget?amount=…&amount2=…` | 0,74 s | 25 kB |
+| `GET /api/route`, `/flood`, `/obce`, `/demo-closures`, `/closures`, `/statistiky` | do 0,06 s | 0,5–133 kB |
+
+### Nalezené chyby
+
+**D1. Žebříček z API se nepřečte.** `src/lib/api.ts` čeká pole, backend vrací `{weights_source, count, items}`. `ranked.map` spadne s TypeError, `fetchRanking` to jen zapíše do konzole a spočítá žebříček lokálně. Oprava: číst `items` (jeden řádek, Matouš, je to úkol M-b). Pozor: backend už váhy z query bere (`weights_from_query` v `api/roads.py`). Věta „váhy bere z účtu“ v `PLAN_FINAL.md`, kap. 18, už neplatí.
+
+**D2. Simulátor uzavírky volá špatný endpoint.** `POST /api/closures` vrací nepřihlášenému 401, občanovi 403 a úředníkovi 422, protože chybí `title`. Kdyby `title` posílal, každé kliknutí na „Simulovat“ by uložilo novou uzavírku do DB. Oprava: náhled přes `POST /api/closures/preview` (klíče `detour` a `alerts` jsou stejné), ukládat přes `/closures` až tlačítkem „Potvrdit“. Náhled je jen pro úředníka. Občan a nepřihlášený zůstanou u snímku a frontend to musí označit. (Matouš, M-b.)
+
+**D3. Piny jsou jen v prohlížeči.** `src/lib/store.ts` je drží v `localStorage`. Jakmile se opraví D1, žebříček z API piny z prohlížeče nezná a ručně připnutá priorita zmizí. Oprava: `POST` a `DELETE /api/pins` (backend je hotový). **Udělat spolu s D1.** (Matouš.)
+
+**D4. Posuvníky a pořadí se můžou rozejít.** `weightsQuery` posílá jen váhy změněné proti výchozím. Když jsou všechny výchozí, backend použije uložené váhy admina nebo úředníka a posuvníky ukazují jiné váhy, než podle kterých se řadí. Oprava: posílat vždy všechny váhy, nebo posuvníky naplnit z `GET /api/me/weights`. (Matouš.)
+
+**D5. Uložení vah admina přepíše strop hlasů.** `adminApi.saveWeights` posílá vždy `vote_cap = 10`. Oprava: poslat hodnotu načtenou z `GET /api/admin/weights`. (Matouš.)
+
+**D6. Nové váhy T20 ve frontendu chybí.** Typ `Weights` ve `src/lib/types.ts` nemá `intensity`, `detour` a `students`, takže pro ně nejsou posuvníky. Dají se přidat až po D1, lokální výpočet je nezná. První výpočet s `detour` nebo `students` nad 0 trvá asi 5 s, pak je v cache. Oprava v backendu: předpočítat v lifespanu (B3). (Matouš posuvníky, Tomáš a Šimon předpočet.)
+
+**D7. Žebříček je 1,7 MB bez komprese při každém pohybu posuvníku.** Přes tunel cloudflared (`start-server.command`) a na mobilu to bude pomalé. Opravy:
+- backend: `GZipMiddleware`, jeden řádek v `main.py` (Šimon). JSON se zmenší asi na desetinu.
+- frontend: debounce asi 300 ms a zrušení starého požadavku přes `AbortController` (Matouš).
+- později malý režim žebříčku (B4).
+
+**D8. Chybová odpověď 404 se tváří jako „API neběží“.** `api.ts` bere 404 jako „endpoint zatím není“ a tiše přepne na lokální data. Po přechodu na API (F2) odlišit skutečné 404, například neexistující úsek, od nedostupného serveru. (Matouš, nízká priorita.)
+
+**D9. Bezpečnost: veřejný server a veřejná demo hesla.** Hesla demo účtů jsou v `backend/app/db/seed.py` ve veřejném repu. Server je přes tunel dostupný odkudkoli, takže se kdokoli přihlásí jako admin. Oprava: hesla seedu brát z `.env` (`CESTY_SEED_ADMIN_PASSWORD` atd.). Když tam nejsou, vygenerovat náhodná a vypsat je jen do konzole serveru. (Šimon, **před ukázkou porotě přes tunel**.)
+
+**D10. Duplicitní názvy obcí v datech.** 22 úseků má stejnou obec dvakrát s jinou velikostí písmen, třeba „Hradec Králové“ a „Hradec králové“. Vidí se to v `/api/useky/{id}` i v kartě úseku. Oprava: v `scripts/` sjednotit názvy podle číselníku obcí (448 obcí z Data KHK) a odstranit duplicity. (Tomáš.)
+
+### Návrhy: frontend (Matouš)
+
+- **F‑a. Štítek zdroje dat v hlavičce:** „živá data ze serveru“ nebo „offline snímek“ podle `/api/health`. Porota uvidí, že běží backend, a my uvidíme, když spadne fallback.
+- **F‑b. Karta uzavírky z `/closures/preview`:** auta za den s kvalitou (`csd2025` / `odhad`), středoškoláci denně, odříznuté obce, dojezd ZZS a HZS (`rescue.obce` s časem před a po, limit 20 min), kolize s jinými uzavírkami. Rozšiřuje M-b o T18.
+- **F‑c. Rozpad skóre z API:** `GET /api/useky/{id}` vrací `breakdown` po faktorech, včetně T20. Nahradí výpočet v `priority.ts` a čísla budou stejná jako v exportu.
+- **F‑d. Aktuální uzavírky ŘSD na mapě:** `GET /api/closures` vrací i `srti` (NDIC, CC BY 4.0). Šedá vrstva „právě teď zavřeno“ vedle simulace.
+- **F‑e. Načítání a chyby:** skeleton nebo spinner při čekání a krátká hláška při chybě 5xx. Teď se chyba schová do `console.warn` a tiše se přepne na lokální výpočet.
+- **F‑f. Hlasování a hlášení občana:** endpointy `votes` a `reports` existují, UI chybí. Tlačítko „Tahle silnice je špatná“ u úseku, u úředníka fronta hlášení.
+- **F‑g. Odznak stability pořadí:** „jisté“ / „citlivé na váhy“ u úseku v top 100. Potřebuje B2.
+
+### Návrhy: backend
+
+- **B1. GZip** (D7), Šimon, 1 řádek.
+- **B2. `GET /api/stability`:** `Engine.stability(weights)` (T10) je hotová, endpoint chybí. Vrací pro top N úseků, jak často zůstanou nahoře při náhodných vahách ±50 %. Šimon, asi 15 min.
+- **B3. Zahřátí při startu:** v lifespanu spočítat také faktory T20, `stavby()` a `rescue`, nejen `people` a `demo_closures`. Pak první posuvník ani první rozpočet nečekají. Tomáš přidá `Engine.warmup()`, Šimon ho zavolá. Start serveru se prodlouží asi o 10 s.
+- **B4. Malý režim žebříčku:** `?compact=1` vrací jen `id`, `score`, `priority`, `rank` a `pinned`. Geometrie a názvy má frontend ze `roads.json`. Asi 150 kB místo 1,7 MB. Šimon.
+- **B5. Typy pro frontend z OpenAPI:** vygenerovat `src/lib/api-types.ts` z `/openapi.json` (balíček `openapi-typescript`). Chyby D1 a D2 by pak našel už překladač. Šimon a Matouš.
+- **B6. Kontrola všech endpointů jedním skriptem:** `scripts/smoke_api.sh` přihlásí demo úředníka a zavolá všechny GET a náhledové endpointy přes proxy. Hodí se před ukázkou a po každém sloučení. Tomáš.
+- **B7. Hesla demo účtů z `.env`** (D9), Šimon.
+
+### Doporučené pořadí na odpoledne
+1. **Před ukázkou přes tunel:** D9 a B1.
+2. **Matouš najednou:** D1, D3 a D4, pak D2 a F‑b. Tím začne být backend v ukázce vidět.
+3. B3 a D6: nové váhy ve skóre a posuvníky.
+4. F‑a, F‑e, D5, D10.
+5. Zbytek (B2, B4–B6, F‑c, F‑d, F‑f, F‑g, D8) podle času.
+
+---
+
 ## Zamítnuto
 
 - Nehody Policie ČR (č. 10) pro dnešek, 15. 10. Po hackathonu znovu.
