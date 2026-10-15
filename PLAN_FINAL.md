@@ -651,3 +651,35 @@ Pořadí: **T21 → T22 → T23**, T24 až po D1 a D6.
 - Posuvník přes tunel reaguje do 1 s.
 - Demo hesla nejsou v repu.
 - `scripts/smoke_api.sh` projde bez chyby.
+
+---
+
+## 20. Doplněk ke kap. 19: co uvidí porota, pitch a škrty do 16:00 (15. 10., 13:00, Tomáš)
+
+Kap. 19 platí a má přednost: úkoly D1–D10, S21–S26 a T21–T24 se tu neopakují. Tahle kapitola přidává jen to, co z kap. 19 nevyplývá: nedostatky E1–E8 z pohledu poroty ([NAPADY.md](NAPADY.md), část E), vlastníka pitche, ukázku a škrty.
+
+**Hodnocení:** backend a jádro jsou hotové a silné (49/49 testů). Porota ale vidí frontend, který počítá skoro všechno lokálně. Do 16:00 **žádné nové funkce**. Jen udělat backend vidět a připravit pitch. Podrobně v [NAPADY.md](NAPADY.md), část D (chyby D1–D10) a část E (nedostatky E1–E8).
+
+### Pořadí práce
+| # | Kdo | Co | Do |
+|---|---|---|---|
+| 1 | **Tým** | Určit vlastníka pitche, PDF/PPTX a záložního videa (E2). Návrh: Přemek. | 13:15 |
+| 2 | Šimon | S21 a S22 (kap. 19). Navíc ověřit, že platí AI klíč (E5). | 13:45 |
+| 3 | Matouš | D1 + D3 + D4, pak D2 (kap. 19.2). | 14:30 |
+| 4 | Matouš | Karta uzavírky z náhledu: auta, studenti, odříznuté obce, dojezd IZS (F‑b). Ukázkové uzavírky = 3 doporučené plány 2022 z `/api/demo-closures` (E4). | 15:15 |
+| 5 | Matouš + Šimon | ★2: seznam upozornění v Moje cesty z `/api/me/notifications`. Web Push jen když zbude čas (E1). | 15:30 |
+| 6 | Matouš | Rozpočet z `/api/budget` (E3), tlačítko „Zdůvodnit“ z `/api/ai/explain` (E5). | 15:45 |
+| 7 | Tomáš | T21 → T22 → T23, T24 po D1 a D6 (kap. 19.4). | 15:00 |
+| 8 | Přemek | Pitch podle kap. 2 a 17.5, PDF/PPTX, záložní video, GitHub Pages (E8), test mobilu 375 px. | 16:30 |
+
+### Škrty, když nestíháme (odspodu)
+Povodeň (E7), Moje obec (F6), hlasování a hlášení (F‑f), stabilita (B2, F‑g), malý žebříček (B4), typy z OpenAPI (B5).
+
+### Ukázka pro porotu (3 příběhy, kap. 2)
+- **★1 úředník:** žebříček → detail → simulace skutečné uzavírky 2022 (II/303 Velké Poříčí – Hronov) → objížďka, auta, studenti, IZS → „Potvrdit“.
+- **★2 občan:** Moje cesty → upozornění na potvrzenou uzavírku.
+- **★3 admin a data:** váhy, audit, export s metadaty, Zdroje dat.
+
+### 20.1 Pitch: vlastník Přemek (15. 10., ~13:30)
+- **Rozhodnuto:** pitch, PDF/PPTX a záložní video dělá **Přemek** (řádek 1 tabulky výše je vyřešený). Společně ho doladíme kolem 15:00.
+- Do té doby se pitch jen rozepisuje v [docs/PITCH.md](docs/PITCH.md): osnova 5 min, demo klik po kliku, čísla se zdroji, věty pro porotu, odpovědi na výtky, slajdy, záloha a kontrola v 16:00. Kdo něco rozhodne, připíše to tam.
