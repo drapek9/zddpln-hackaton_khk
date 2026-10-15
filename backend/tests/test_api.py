@@ -546,3 +546,13 @@ def test_demo_password_follows_env(client: TestClient, monkeypatch):
         sync_demo_accounts(session)
         session.commit()
     client.cookies.clear()
+
+
+def test_login_short_name_variants(client):
+    from app.api.auth import _login_email
+
+    assert _login_email("admin@") == "admin@cesty-khk.test"
+    assert _login_email(" Spravce@ ") == "spravce@cesty-khk.test"
+    assert _login_email("občan") == "obcan@cesty-khk.test"
+    assert _login_email("správa") == "spravce@cesty-khk.test"
+    assert _login_email("jana@example.cz") == "jana@example.cz"

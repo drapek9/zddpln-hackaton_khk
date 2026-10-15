@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -15,6 +16,8 @@ from app.config import get_settings
 from app.db.models import User
 from app.db.session import get_session
 
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["Přihlášení"])
 
 _WINDOW_S = 60.0
@@ -23,9 +26,14 @@ _failures: dict[str, list[float]] = {}
 
 
 def _client_ip(request: Request) -> str:
-    if request.client is None or not request.client.host:
-        return "unknown"
-    return request.client.host
+    host = request.client.host if request.client and request.client.host else "unknown"
+    # Behind cloudflared and the Vite proxy every request comes from loopback; without the
+    # forwarded address one person's typos would lock the whole team out for a minute.
+    if host in ("127.0.0.1", "::1", "localhost", "unknown"):
+        forwarded = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "").split(",")[0]
+        if forwarded.strip():
+            return forwarded.strip()
+    return host
 
 
 def _recent(ip: str) -> list[float]:
@@ -47,9 +55,18 @@ class LoginBody(BaseModel):
 DEMO_DOMAIN = "cesty-khk.test"
 
 
+# Short names people actually type for the demo accounts (with or without diacritics).
+_DEMO_ALIASES = {"občan": "obcan", "sprava": "spravce", "správa": "spravce", "správce": "spravce", "urednik": "spravce", "úředník": "spravce"}
+
+
 def _login_email(raw: str) -> str:
     email = raw.strip().lower()
-    return email if "@" in email else f"{email}@{DEMO_DOMAIN}"
+    # "admin@" or "spravce@" without a domain means the demo account.
+    if email.endswith("@"):
+        email = email[:-1]
+    if "@" in email:
+        return email
+    return f"{_DEMO_ALIASES.get(email, email)}@{DEMO_DOMAIN}"
 
 
 def _is_https(request: Request) -> bool:
@@ -113,6 +130,8 @@ def login(
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None or not verify_password(body.password, user.password_hash):
         _failures[ip] = [*recent, time.monotonic()]
+        # No password in the log; only whether the account exists, so the operator sees typos vs wrong .env.
+        log.info("login failed for %s (account %s)", email, "exists" if user else "missing")
         raise HTTPException(status_code=401, detail="Špatné jméno, e-mail nebo heslo.")
     if user.blocked:
         _failures[ip] = [*recent, time.monotonic()]
