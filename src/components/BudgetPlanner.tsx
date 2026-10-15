@@ -313,7 +313,7 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
           }
           open={online}
         >
-          {server.status === "off" && <p className="fine">Výpočet serveru je pro přihlášeného úředníka. Vlevo je náhled v prohlížeči.</p>}
+          {server.status === "off" && <p className="fine">Výpočet serveru je pro přihlášeného správce. Vlevo je náhled v prohlížeči.</p>}
           {server.status === "down" && <p className="fine">Server teď neodpovídá. Platí náhled v prohlížeči.</p>}
           {server.status === "waiting" && <p className="fine">{server.note}</p>}
           {serverPlan && (

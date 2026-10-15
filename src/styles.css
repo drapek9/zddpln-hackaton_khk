@@ -209,9 +209,12 @@ a { color: var(--accent); }
   padding: 16px;
   min-height: 0;
   background: var(--surface);
-  scrollbar-width: none;
+  /* F‑8: viditelný tenký posuvník. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
-.side::-webkit-scrollbar { display: none; }
+.side::-webkit-scrollbar { width: 8px; }
+.side::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
 .left { border-right: 1px solid var(--line); }
 .side > *, .place-row .place-body { min-width: 0; }
 .place-row .place-body { flex: 1; }
@@ -319,9 +322,14 @@ button.link { background: none; border: 0; padding: 0; color: var(--accent); fon
 .rank-meta { font-size: 13px; color: var(--muted); }
 .rank-sil { font-weight: 600; justify-content: flex-start; flex-wrap: wrap; }
 .rank-sil i, .legend i, .legend-repairs i, .dot { width: 8px; height: 8px; border-radius: 99px; display: inline-block; flex: none; }
-i.active { background: #0ea5e9; }
-i.planned { background: #eab308; }
-i.done { background: #22c55e; }
+/* Opravy = přerušovaná čára (F‑6), stejně jako v mapě. */
+i.active, i.planned, i.done { background: repeating-linear-gradient(90deg, var(--rep) 0 5px, transparent 5px 8px) !important; border-radius: 1px !important; height: 4px !important; width: 18px !important; }
+i.active { --rep: #111827; }
+i.planned { --rep: #7c3aed; }
+i.done { --rep: #64748b; }
+html[data-theme="dark"] i.active { --rep: #f8fafc; }
+html[data-theme="dark"] i.planned { --rep: #c4b5fd; }
+html[data-theme="dark"] i.done { --rep: #94a3b8; }
 
 .class-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .class-filter button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
@@ -1265,3 +1273,43 @@ html[data-theme="dark"] .moved li.down button { color: #f87171; }
 .compare { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; font-variant-numeric: tabular-nums; }
 .compare th, .compare td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: right; }
 .compare th:first-child, .compare td:first-child { text-align: left; color: var(--muted); }
+
+/* F‑2: pořadí s návrhem AI. */
+.seg.ai-mode { margin: 0 0 8px; }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ai-note { margin: -2px 0 8px; }
+.ai-note.warn { color: #b45309; }
+.rank-why.ai { white-space: normal; }
+.ai-tag { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #ede9fe; color: #5b21b6; }
+html[data-theme="dark"] .ai-tag { background: #2e1065; color: #c4b5fd; }
+
+/* F‑3/F‑4: váhy ve skupinách, číslo vedle posuvníku. */
+.weight-groups { display: grid; gap: 10px; }
+.weight-group { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.weight-group legend { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 4px; }
+.weight-group .weight > span { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.weight-label { display: grid; gap: 1px; min-width: 0; }
+.weight-label small { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.weight-num { width: 48px; flex: none; text-align: right; font: inherit; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); }
+.weight-num:focus { outline: 2px solid var(--accent-line); outline-offset: 0; }
+.sys-weights .weight-grid { display: block; }
+
+/* F‑5: karta tečky na mapě. */
+.poi-popup .maplibregl-popup-content { display: grid; gap: 2px; padding: 10px 28px 10px 12px; border-radius: 10px; font: inherit; font-size: 13px; background: var(--surface); color: var(--text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+.poi-popup .maplibregl-popup-tip { border-top-color: var(--surface); border-bottom-color: var(--surface); }
+.poi-popup .poi-kind { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.poi-popup small { color: var(--muted); }
+.poi-popup .maplibregl-popup-close-button { font-size: 18px; color: var(--muted); right: 4px; top: 2px; }
+
+/* F‑8: záhlaví panelu zůstává nahoře, tlačítko Nahoru. */
+.side-sticky { position: sticky; top: -16px; z-index: 3; margin: -16px -16px 0; padding: 16px 16px 4px; background: var(--surface); }
+.side-sticky::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 8px; background: linear-gradient(var(--surface), transparent); pointer-events: none; }
+.to-top { position: sticky; bottom: 8px; z-index: 3; display: block; margin: 8px auto; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); }
+.to-top:hover { border-color: var(--accent-line); }
+.legend i.detour-sw { width: 18px; height: 5px; border-radius: 3px; background: #6d28d9; box-shadow: 0 0 0 2px #fff, 0 0 6px 2px rgba(109, 40, 217, 0.4); }
+html[data-theme="dark"] .legend i.detour-sw { background: #c4b5fd; box-shadow: 0 0 0 2px #0b1220; }
+.weight-group .weight { display: grid; gap: 4px; }
+.weight-group .weight .weight-label { display: grid; justify-content: start; gap: 1px; flex: 1; }
+.weight-group .weight .weight-num { width: 52px; }
+.weight-group .weight input[type="range"] { width: 100%; }
+.side-sticky + .rank-tools { margin-top: 10px; }

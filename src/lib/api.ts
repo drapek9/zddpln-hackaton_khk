@@ -34,12 +34,19 @@ export type RankedRoad = {
   pin_reason: string | null;
   rank: number;
   votes: number;
+  /** Návrh AI (B‑AI‑1): pořadí podle vzorce, důvod posunu a štítek. Jen u vah kraje. */
+  formula_rank?: number;
+  ai_reason?: string | null;
+  ai_label?: string | null;
 };
 
 export type RankingResponse = {
   weights_source: string;
   count: number;
   vypocteno: string;
+  /** "vzorec" | "navrh" | "nedostupne" */
+  ai?: string;
+  ai_note?: string;
   items: RankedRoad[];
 };
 
@@ -174,6 +181,10 @@ export const api = {
   ranking: (query: string, signal?: AbortSignal) =>
     request<RankingResponse | RankedRoad[]>(`/ranking${query ? `?${query}` : ""}`, { signal }).then((res) =>
       Array.isArray(res) ? res : res.items,
+    ),
+  rankingFull: (query: string, signal?: AbortSignal) =>
+    request<RankingResponse | RankedRoad[]>(`/ranking${query ? `?${query}` : ""}`, { signal }).then(
+      (res): RankingResponse => (Array.isArray(res) ? { weights_source: "", count: res.length, vypocteno: "", items: res } : res),
     ),
   setPin: (body: { road_id: number; priority: PriorityClass; reason?: string | null }) =>
     request<{ road_id: number; priority: PriorityClass; reason: string | null }>("/pins", {

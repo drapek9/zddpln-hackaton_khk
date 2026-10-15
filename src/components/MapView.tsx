@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { Poi, Repair, Road, Stop } from "../lib/types";
-import { KIND_COLOR, STAV_COLOR, midpoint } from "../lib/geo";
+import { KIND_COLOR, KIND_LABEL, STAV_COLOR, formatSil, midpoint } from "../lib/geo";
 
 type Props = {
   roads: Road[];
@@ -55,7 +55,20 @@ const WORLD: Ring = [
 ];
 
 /** Hranice kraje i státu: tmavě zelená čára (v tmavém režimu světlejší, aby byla vidět). */
-export const BORDER_COLOR = { light: "#14532d", dark: "#3f9d6e" };
+// Neutrální tmavě šedá (TODO_FRONTEND F‑7): zelená se pletla se silnicí ve stavu „dobrý“.
+export const BORDER_COLOR = { light: "#3f3f46", dark: "#a1a1aa" };
+
+// Opravy a uzavírky jsou jiný kanál než stav (F‑6): přerušovaná čára přes silnici, ne další odstín.
+export const REPAIR_DASH = {
+  light: { active: "#111827", planned: "#7c3aed", done: "#64748b" },
+  dark: { active: "#f8fafc", planned: "#c4b5fd", done: "#94a3b8" },
+};
+
+// Objížďka (Tomáš 15. 10.): výrazná, s bílým lemem a měkkou září, ať je vidět přes stav silnic.
+const DETOUR_COLOR = { light: "#6d28d9", dark: "#c4b5fd" };
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 
 /** Státní hranici z podkladové mapy přebarvíme stejně jako hranici kraje. */
 function styleCountryBorder(map: MapLibreMap, dark: boolean) {
@@ -217,6 +230,8 @@ function MapInner({
   highlightRef.current = highlight;
   const placesRef = useRef(places);
   placesRef.current = places;
+  const roadsRef = useRef(roads);
+  roadsRef.current = roads;
   const fitKeyRef = useRef<string | null>(null);
   // Otáčení a náklon (3D) je ve výchozím stavu vypnuté, aby se mapa omylem nepřetočila.
   const [tilt, setTilt] = useState(false);
@@ -264,25 +279,18 @@ function MapInner({
       map.addSource("pois", { type: "geojson", data: pointsToGeo(pois) });
       map.addSource("stops", { type: "geojson", data: pointsToGeo(stops.map((s) => ({ ...s, kind: "stop" }))) });
 
+      const dash = REPAIR_DASH[theme === "dark" ? "dark" : "light"];
       map.addLayer({
         id: "roads-glow",
         type: "line",
         source: "roads",
-        layout: { visibility: showRepairsRef.current ? "visible" : "none" },
+        filter: ["!=", ["get", "repair"], ""],
+        layout: { visibility: showRepairsRef.current ? "visible" : "none", "line-cap": "butt", "line-join": "round" },
         paint: {
-          "line-color": [
-            "match",
-            ["get", "repair"],
-            "active",
-            "#38bdf8",
-            "planned",
-            "#fbbf24",
-            "done",
-            "#34d399",
-            "#94a3b8",
-          ],
-          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 6, 12, 10, 14, 16, 16, 26, 18, 40],
-          "line-opacity": ["case", ["==", ["get", "repair"], ""], 0, 0.45],
+          "line-color": ["match", ["get", "repair"], "active", dash.active, "planned", dash.planned, dash.done],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 2.5, 12, 4, 14, 6, 16, 9, 18, 14],
+          "line-dasharray": [1.4, 1.1],
+          "line-opacity": 0.95,
         },
       }, labels);
       map.addLayer({
@@ -328,6 +336,8 @@ function MapInner({
           "line-opacity": showConditionRef.current ? 1 : 0.32,
         },
       }, labels);
+      // Přerušovaná čára oprav je nad barvou stavu, mezerami je stav pořád vidět.
+      map.moveLayer("roads-glow", labels);
       // Neviditelná široká čára jen pro klik a najetí: trefit tenkou silnici prstem je jinak těžké.
       map.addLayer({
         id: "roads-hit",
@@ -388,19 +398,38 @@ function MapInner({
         .catch(() => undefined);
       map.addSource("places", { type: "geojson", data: placesToGeo(placesRef.current) });
       map.addSource("detour", { type: "geojson", data: detourToGeo(detourRef.current) });
+      const detourColor = DETOUR_COLOR[theme === "dark" ? "dark" : "light"];
+      map.addLayer({
+        id: "detour-glow",
+        type: "line",
+        source: "detour",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": detourColor,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 14, 12, 22, 16, 34],
+          "line-blur": 6,
+          "line-opacity": 0.3,
+        },
+      }, labels);
       map.addLayer({
         id: "detour-casing",
         type: "line",
         source: "detour",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#0b1220", "line-width": 8, "line-opacity": 0.6 },
+        paint: {
+          "line-color": theme === "dark" ? "#0b1220" : "#ffffff",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 8, 12, 12, 16, 20],
+        },
       }, labels);
       map.addLayer({
         id: "detour-line",
         type: "line",
         source: "detour",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#a78bfa", "line-width": 4, "line-dasharray": [1.5, 1] },
+        paint: {
+          "line-color": detourColor,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4.5, 12, 7, 16, 12],
+        },
       }, labels);
       map.addLayer({
         id: "poi-circles",
@@ -493,10 +522,47 @@ function MapInner({
         }
         return best;
       };
+      // F‑5: tečky (školy, nemocnice, IZS, zastávky, uzavírky ŘSD) mají vlastní kartu s názvem a vzdáleností k silnici.
+      const pointLayers = ["poi-circles", "stop-circles", "srti-points"];
+      let popup: maplibregl.Popup | null = null;
       map.on("click", (e) => {
+        const visible = pointLayers.filter((l) => map.getLayer(l) && map.getLayoutProperty(l, "visibility") !== "none");
+        const point = visible.length ? map.queryRenderedFeatures(e.point, { layers: visible })[0] : undefined;
+        if (point && point.geometry.type === "Point") {
+          const [lng, lat] = point.geometry.coordinates as [number, number];
+          const p = point.properties || {};
+          const kind = point.layer.id === "srti-points" ? "Uzavírka ŘSD" : KIND_LABEL[p.kind as string] || (p.kind === "stop" ? "Zastávka" : "Místo");
+          const name = String(p.name || p.label || kind);
+          // Nejbližší silnice kraje a vzdálenost k ní (rovinná aproximace, na kraj stačí).
+          const k = Math.cos((lat * Math.PI) / 180) * 111.32;
+          let best: Road | null = null;
+          let bestD = Infinity;
+          for (const r of roadsRef.current)
+            for (const [x, y] of r.g) {
+              const d = Math.hypot((x - lng) * k, (y - lat) * 110.57);
+              if (d < bestD) {
+                bestD = d;
+                best = r;
+              }
+            }
+          const dist = bestD < 1 ? `${Math.round(bestD * 1000)} m` : `${bestD.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} km`;
+          popup?.remove();
+          popup = new maplibregl.Popup({ closeButton: true, maxWidth: "260px", className: "poi-popup" })
+            .setLngLat([lng, lat])
+            .setHTML(
+              `<span class="poi-kind">${escapeHtml(kind)}</span><b>${escapeHtml(name)}</b>` +
+                (best ? `<small>${dist} od silnice ${escapeHtml(formatSil(best.sil, best.trida))}</small>` : ""),
+            )
+            .addTo(map);
+          return;
+        }
         const id = nearestRoad(e.point);
         onSelectRef.current(id != null ? Number(id) : null, e.lngLat);
       });
+      for (const l of pointLayers) {
+        map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+        map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
+      }
       let pointerId: number | null = null;
       const setPointer = (id: number | null) => {
         if (id === pointerId) return;

@@ -73,7 +73,7 @@ export default function Privacy({ onHome, onNavigate }: Props) {
           7 dní. Odhlášení ji smaže a zneplatní i její kopie.
         </p>
 
-        <h2>Úředníci a admini</h2>
+        <h2>Správci a admini</h2>
         <p>
           Účty úřadu zakládá kraj, registrací vzniká vždy jen účet občana. Změny priorit a vah se zapisují do záznamu
           změn (kdo, kdy a proč).

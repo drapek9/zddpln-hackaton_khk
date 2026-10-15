@@ -7,7 +7,7 @@ export type User = { id: number; email: string; role: Role; blocked?: boolean };
 
 export const ROLE_LABEL: Record<Role, string> = {
   citizen: "Občan",
-  official: "Úředník",
+  official: "Správce",
   admin: "Admin",
 };
 

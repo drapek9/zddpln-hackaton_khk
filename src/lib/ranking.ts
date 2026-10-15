@@ -37,6 +37,9 @@ export type RankRow = {
   pinned: boolean;
   pinReason: string | null;
   rank: number;
+  /** Návrh AI: o kolik míst AI úsek posunula (+ nahoru) a proč. */
+  aiShift?: number;
+  aiReason?: string | null;
 };
 
 export type RankingSource = "api" | "local";
@@ -101,10 +104,13 @@ export async function fetchRanking(
   weights: Weights,
   localPins: Pin[],
   signal?: AbortSignal,
-): Promise<{ rows: RankRow[]; source: RankingSource; apiPins?: Pin[] }> {
+  /** "Parametry + AI" (F‑2): bez vah v dotazu, server vezme váhy kraje a přidá návrh AI. */
+  withAi = false,
+): Promise<{ rows: RankRow[]; source: RankingSource; apiPins?: Pin[]; ai?: string; aiNote?: string }> {
   try {
-    const query = weightsQuery(weights);
-    const ranked = await api.ranking(query, signal);
+    const query = withAi ? "ai=1" : `ai=0&${weightsQuery(weights)}`;
+    const res = await api.rankingFull(query, signal);
+    const ranked = res.items;
     const apiPins: Pin[] = [];
     const rows = ranked.map((r) => {
       if (r.pinned) {
@@ -118,12 +124,16 @@ export async function fetchRanking(
         pinned: r.pinned,
         pinReason: r.pin_reason,
         rank: r.rank,
+        aiShift: r.ai_label && r.formula_rank != null ? r.formula_rank - r.rank : undefined,
+        aiReason: r.ai_reason ?? null,
       };
     });
     return {
       source: "api",
       rows,
       apiPins,
+      ai: res.ai,
+      aiNote: res.ai_note,
     };
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "AbortError") {

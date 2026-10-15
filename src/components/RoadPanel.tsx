@@ -228,7 +228,7 @@ export default function RoadPanel({
       {tab === "priorita" && mode === "admin" && onPin && (
         <section className="pin-form">
           <h3>Připíchnout prioritu</h3>
-          <p className="muted">Volba úředníka má přednost před modelem. Třída modelu zůstane vidět.</p>
+          <p className="muted">Volba správce má přednost před modelem. Třída modelu zůstane vidět.</p>
           <div className="pin-row">
             <select value={pinClass} onChange={(e) => setPinClass(e.target.value as PriorityClass)}>
               {CLASS_ORDER.map((c) => (

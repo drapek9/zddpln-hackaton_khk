@@ -38,7 +38,7 @@ export function roadScore(road: Road, weights: Weights) {
 }
 
 const REASON: Partial<Record<keyof Weights, (road: Road) => string>> = {
-  stav: (r) => `Povrch ve stavu ${stavLabel(r.stav)}`,
+  stav: (r) => `Povrch ve stavu ${stavLabel(r.stav).toLowerCase()}`,
   worse: () => "Stav se zhoršuje",
   trida: (r) => `Důležitá silnice (${r.trida})`,
   schools: () => "Vede ke školám",

@@ -35,3 +35,17 @@ Backend k tomu je v [TODO_BACKEND.md](TODO_BACKEND.md). Cílová podoba obrazove
 ## Co se nemění
 - Skóre počítá backend deterministicky. AI jen posouvá v okně (max 5 míst) a vždy má štítek „návrh AI“.
 - Žádná nová knihovna pro routing. Adresy `/`, `/sprava`, `/admin` už fungují (`src/lib/route.ts`).
+
+## Stav (15. 10., Matouš, větev matous)
+- **F‑1 ✅** „Úředník“ → „Správce“ ve všech textech UI (role v kódu dál `official`).
+- **F‑2 ✅** Přepínač „Jen parametry“ / „Parametry + AI“ nad žebříčkem (`/api/ranking?ai=1`), štítek „návrh AI ↑/↓ N“ s důvodem. Bez AI nebo s vlastními vahami zamčený s vysvětlením.
+- **F‑3 ✅** 14 parametrů ve 4 skupinách s popisem. Seznam je zatím ve `src/lib/weights.ts`, `GET /api/weights/schema` (B‑W‑1) ještě není.
+- **F‑4 ✅** Číslo vedle posuvníku (Enter, šipky ±1, Shift ±10), „Výchozí hodnoty aplikace“.
+- **F‑5 ✅** Klik na tečku (škola, nemocnice, IZS, zastávka, uzavírka ŘSD) otevře kartu s názvem a vzdáleností k nejbližší silnici kraje. Detail tečky z B‑P‑1 zatím není.
+- **F‑6 ✅** Opravy jsou přerušovaná čára přes barvu stavu (probíhá černá, plán fialová, hotovo šedá), legenda stejně.
+- **F‑7 ✅** Hranice kraje tmavě šedá, ne zelená.
+- **F‑8 ✅** Viditelný posuvník, záhlaví panelu (hledání, filtry, přepínač AI) zůstává nahoře, tlačítko „Nahoru“.
+- **F‑9 ✅** Výchozí šířka levého panelu 440 px, Resizer ji pamatuje.
+- **F‑10 ✅** Otevřený detail zavře panel vah a naopak, Esc zavře horní vrstvu (dialog, váhy, detail).
+- **Objížďka** výraznější (Tomáš): plná fialová čára s bílým lemem a září, v legendě „objížďka“.
+- Proklikáno v demo režimu na úzkém panelu. Desktop 1440×900 a tmavý režim přes Playwright ještě neověřené; P1 a P2 nezačaté.

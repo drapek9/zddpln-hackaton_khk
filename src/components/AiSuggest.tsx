@@ -42,7 +42,7 @@ export default function AiSuggest({ label, load, enabled }: Props) {
           </button>
         ) : null}
       </div>
-      {!enabled && <p>Návrh AI je pro přihlášeného úředníka (v ukázce bez účtu není).</p>}
+      {!enabled && <p>Návrh AI je pro přihlášeného správce (v ukázce bez účtu není).</p>}
       {state === "error" && <p>{error}</p>}
       {result && <p className="ai-text">{result.text}</p>}
       {result && (
