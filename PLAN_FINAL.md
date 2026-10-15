@@ -751,3 +751,49 @@ Cíl: **jedna databáze, jedno místo**, Tomáš se přihlásí z telefonu nebo 
 
 ### 22.3 Co zůstává mimo tento test
 Matouš: AI tlačítka a rozpočet z API (kap. 21, F7, F8). Hledání adresy (místa se zadávají kliknutím do mapy). Sloučení všech větví do `main` ve 15:00 a pak po 30 minutách (kap. 16).
+
+## 23. Přihlášení: kde jsou demo účty, e-mail a Google login přes QR (15. 10., ~15:20, Tomáš)
+
+Ověřeno v kódu (`backend/app/api/auth.py`, `db/seed.py`, `db/models.py`, větev `simon`). Navazuje na kap. 15 a 22. **Úkoly S33 a M‑g jsou po S27–S32 a po prvním ostrém testu (kap. 22.2); nejsou MVP a škrtají se před ★1–★3.**
+
+### 23.1 Kde zjistit demo účty
+- **E‑maily jsou pevné a nejsou tajné:** `admin@cesty-khk.test`, `urednik@cesty-khk.test`, `obcan1@cesty-khk.test`, `obcan2@cesty-khk.test` (`seed.py`).
+- **Hesla jsou jen v prostředí serveru:** `CESTY_SEED_ADMIN_PASSWORD`, `CESTY_SEED_OFFICIAL_PASSWORD`, `CESTY_SEED_CITIZEN_PASSWORD` v `.env` na Šimonově Macu. Hesla se nikdy nepíšou do repa, plánu ani veřejného chatu. Předat je jde jen mimo git (osobně, soukromá zpráva).
+- **Když v `.env` chybí:** server je při prvním založení databáze vygeneruje a vypíše do konzole, ve skriptu `start-server.command` do `.server-logs/api.log`. Po opravě S28 jen při prvním založení účtů. Do té doby po restartu **vypsaná hesla nefungují**.
+- **Pravidlo pro dnešek:** Šimon vyplní tři `CESTY_SEED_*` do `.env` **před prvním startem** a pošle je Tomášovi a Přemkovi soukromě.
+
+### 23.2 Přihlášení e‑mailem
+- Dnes **jen e‑mail + heslo**: `POST /api/auth/register` (heslo ≥ 8 znaků, role vždy občan) a `POST /api/auth/login`. Cookie `cesty_session`, platí 7 dní, po obnovení stránky zůstane.
+- **Chybí:** ověření e‑mailu, odkaz „zapomenuté heslo“, přihlášení odkazem z e‑mailu. Registrovat jde libovolná adresa se znakem `@`. SMTP v kódu slouží jen k upozorněním. Pro demo to stačí: porota si zaregistruje občana s vlastním e‑mailem a heslem, úředník a admin jsou jen demo účty.
+- **Pozor:** odhlášení zvýší `token_version`, takže se účet **odhlásí na všech zařízeních** najednou. U dvou lidí na jednom demo účtu (např. `obcan1` na telefonu i na notebooku) se navzájem vyhodí. Pro porotu proto registrace vlastního účtu, ne sdílený.
+
+### 23.3 Google login (S33 Šimon, M‑g Matouš)
+**Návrh (Google Identity Services, ID token, bez client secretu):**
+1. Frontend načte `https://accounts.google.com/gsi/client` a ukáže tlačítko „Přihlásit přes Google“ **jen když** `GET /api/auth/config` vrátí `google_client_id` (bez něj tlačítko zmizí, e‑mail + heslo dál funguje).
+2. Po výběru účtu dostane frontend `credential` (JWT) a pošle `POST /api/auth/google {credential}`.
+3. Backend token **ověří** (`google-auth`: `id_token.verify_oauth2_token(credential, Request(), GOOGLE_CLIENT_ID)`), vyžaduje `email_verified == true`, správné `aud` a `iss`.
+4. Najde uživatele podle e‑mailu, nebo založí `role="citizen"` s náhodným nepoužitelným `password_hash` (sloupec zůstává povinný, schéma neměníme). Pak stejné `_issue(...)` jako při loginu (cookie).
+5. **Role nikdy z Googlu.** Účty `official` a `admin` se přes Google **nepřihlásí** (jen heslem), ať se nedá převzít úředník cizím Google účtem se stejným e‑mailem. Zablokovaný účet vrací 403 jako dnes.
+6. Env: `GOOGLE_CLIENT_ID` (veřejná hodnota, smí do `.env.example`). Žádné tajemství navíc.
+
+**Kritická omezení, která rozhodnou, jestli to půjde:**
+- **Povolený původ (Authorized JavaScript origins) musí být přesná HTTPS adresa, žádné hvězdičky.** Rychlý tunel `cloudflared tunnel --url …` dává **novou adresu při každém startu**, Google login na něm **nepůjde**. Potřebujeme **stabilní adresu**: pojmenovaný tunel Cloudflare na vlastní doméně, nebo ngrok se statickou doménou, nebo Tailscale Funnel (`*.ts.net`). Jestli Google přijme `ts.net` / `ngrok-free.app` jako původ, **ověřit v Google Cloud Console dřív, než na tom něco postavíme**. Nejjistější je vlastní doména. Tomáš rozhodne a zařídí (T25).
+- **Obrazovka souhlasu:** typ „Externí“. Ve stavu „Testing“ se přihlásí jen přidaní testovací uživatelé (do 100). Pro porotu buď přidat jejich účty, nebo přepnout na „In production“ (stačí základní rozsahy `openid email profile`, ověření aplikace se nevyžaduje, jen Google ukáže varování „neověřená aplikace“).
+- **QR z aplikací** (Instagram, Facebook, některé čtečky) otevírají vestavěný prohlížeč, kde Google přihlášení blokuje (`disallowed_useragent`). Na QR kódu proto dát adresu a na slajdu „otevřít v Chrome / Safari“.
+- Záloha vždy: e‑mail + heslo a demo účty.
+
+Reference: [Google Identity Services](https://developers.google.com/identity/gsi/web/guides/overview), [ověření ID tokenu na serveru](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token), [nastavení obrazovky souhlasu](https://support.google.com/cloud/answer/10311615).
+
+### 23.4 QR kód a telefony
+- **QR vede na stabilní HTTPS adresu** (stejná jako u Google původu). Adresa se mezi zkouškou a pitchem **nesmí změnit**, jinak je QR na slajdu k ničemu. Vygenerovat PNG jednou (Přemek na slajd, Tomáš do `docs/`), např. `uv run --with qrcode[pil] python -c "import qrcode; qrcode.make('https://…').save('docs/qr.png')"`.
+- **Web Push na iPhonu funguje jen u aplikace přidané na plochu** (iOS 16.4+) a vyžaduje `manifest.webmanifest`, který v repu **není** (je jen `public/sw.js`). Android Chrome push zvládne rovnou. Úkol **M‑h (Matouš): přidat `public/manifest.webmanifest` + ikony + odkaz v `index.html`**, jinak na iPhonu upozornění v prohlížeči nepřijdou. Záloha: seznam upozornění v „Moje cesty“ (funguje všude).
+- Push potřebuje HTTPS a VAPID klíče (S31), tedy opět stabilní adresa.
+
+### 23.5 Úkoly
+| # | Kdo | Co | Hotovo, když |
+|---|---|---|---|
+| S33 | Šimon | `POST /api/auth/google`, `GET /api/auth/config`, `GOOGLE_CLIENT_ID` do `.env.example`, test s falešným tokenem (ověření podpisu zamockovat) | bez `GOOGLE_CLIENT_ID` endpoint vrací 404 a testy dál prochází; role z Googlu jen `citizen` |
+| M‑g | Matouš | tlačítko Google v `LoginCard`, jen když `auth/config` vrací klientské ID | po přihlášení se zobrazí „Občan“ a session přežije obnovení |
+| M‑h | Matouš | `manifest.webmanifest`, ikony | iPhone nabídne „Přidat na plochu“ |
+| T25 | Tomáš | stabilní HTTPS adresa (doména / pojmenovaný tunel), Google Cloud projekt, klientské ID, QR | adresa se po restartu serveru nemění, QR ji otevře |
+| P1 | Přemek | QR na slajd a „otevřít v Chrome / Safari“ | slajd obsahuje QR a stabilní adresu |
