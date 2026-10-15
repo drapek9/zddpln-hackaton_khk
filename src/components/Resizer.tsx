@@ -3,9 +3,10 @@ import { useCallback, useState, type CSSProperties, type PointerEvent as ReactPo
 // Roztahovací boční panely. Každý si pracovní plochu nastaví po svém, šířky se pamatují v tomto prohlížeči.
 // Když panel stáhnete až ke kraji, schová se a na okraji mapy zůstane jazýček, kterým ho zase vysunete.
 // v3: levý panel je víc vysunutý a nejde zúžit pod 320 px, aby obsah nebyl useknutý.
-const KEY = "cesty-khk-panels-v3";
+// v4: výchozí levý panel 440 px (TODO_FRONTEND F‑9), detail úseku se vejde bez vodorovného posunu.
+const KEY = "cesty-khk-panels-v4";
 const MIN_W = 320;
-const DEFAULTS = { left: 360, right: 320 };
+const DEFAULTS = { left: 440, right: 320 };
 const MIN = MIN_W;
 const MAX = 620;
 /** Pod touto šířkou se panel při tažení sbalí. */

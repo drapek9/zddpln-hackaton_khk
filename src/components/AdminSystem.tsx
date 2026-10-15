@@ -6,6 +6,8 @@ import { CLASS_LABEL } from "../lib/ranking";
 import { ROLE_LABEL, type Role } from "../lib/auth";
 import { DEMO_USERS, adminApi, type AdminUser, type AuditItem } from "../lib/adminApi";
 import { toast } from "./Toaster";
+import WeightSliders from "./WeightSliders";
+import { WEIGHT_NAME } from "../lib/weights";
 
 type Props = {
   /** Trvalé váhy kraje (výchozí pro všechny úředníky). */
@@ -21,21 +23,7 @@ type Props = {
   onOpenMap?: () => void;
 };
 
-const WEIGHT_NAME: Record<keyof Weights, string> = {
-  stav: "Stav povrchu",
-  worse: "Zhoršování",
-  trida: "Třída silnice",
-  schools: "Školy",
-  hospitals: "Nemocnice a lékaři",
-  rescue: "IZS",
-  transit: "Autobusy",
-  industry: "Průmysl",
-  social: "Ohrožené oblasti",
-  age: "Stáří opravy",
-  intensity: "Vozidla za den",
-  detour: "Délka objížďky",
-  students: "Studenti",
-};
+
 
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -83,7 +71,7 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
     try {
       await onSaveWeights(draft);
       setSaving("saved");
-      toast("Váhy kraje uloženy pro všechny úředníky");
+      toast("Váhy kraje uloženy pro všechny správce");
       if (live) adminApi.audit().then(setAudit).catch(() => {});
       setTimeout(() => setSaving("idle"), 1800);
     } catch {
@@ -123,7 +111,7 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
       <div className="sys-kpis">
         <div>
           <b>{counts.official}</b>
-          <span>úředníků</span>
+          <span>správců</span>
         </div>
         <div>
           <b>{counts.admin}</b>
@@ -145,23 +133,9 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
             <h3>Trvalé váhy kraje</h3>
             {changed && <span className="chip">neuloženo</span>}
           </div>
-          <p className="muted">Výchozí pořadí pro všechny úředníky. Úředník si je může změnit jen pro sebe.</p>
+          <p className="muted">Výchozí pořadí pro všechny správce. Správce si je může změnit jen pro sebe.</p>
           <div className="weight-grid">
-            {(Object.keys(WEIGHT_NAME) as (keyof Weights)[]).map((k) => (
-              <label key={k} className="weight">
-                <span>
-                  {WEIGHT_NAME[k]}
-                  <b>{draft[k]}</b>
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={draft[k]}
-                  onChange={(e) => setDraft({ ...draft, [k]: Number(e.target.value) })}
-                />
-              </label>
-            ))}
+            <WeightSliders weights={draft} onChange={setDraft} serverOnline={live} />
           </div>
           <div className="row-actions">
             <button className="btn primary" disabled={!changed || saving === "saving"} onClick={save}>
@@ -184,7 +158,7 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
             <div className="segmented small">
               {(["official", "admin", "citizen", "all"] as const).map((f) => (
                 <button key={f} className={filter === f ? "on" : ""} onClick={() => setFilter(f)}>
-                  {f === "all" ? "Všichni" : f === "official" ? "Úředníci" : f === "admin" ? "Admini" : "Občané"}
+                  {f === "all" ? "Všichni" : f === "official" ? "Správci" : f === "admin" ? "Admini" : "Občané"}
                 </button>
               ))}
             </div>
@@ -237,7 +211,7 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
               )}
             </tbody>
           </table>
-          <p className="fine">Účty úředníků zakládá kraj. Registrace dává vždy roli občan, roli mění jen admin.</p>
+          <p className="fine">Účty správců zakládá kraj. Registrace dává vždy roli občan, roli mění jen admin.</p>
         </section>
 
         <section className="sys-card">

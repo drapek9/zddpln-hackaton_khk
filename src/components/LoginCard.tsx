@@ -163,7 +163,7 @@ export default function LoginCard({ offline, note, onUser, onDemo, onPublic, onN
             <span>Ukázka správy bez účtu</span>
             <div className="auth-demo-btns">
               <button className="btn small" onClick={() => onDemo("official")}>
-                Demo úředník
+                Demo správce
               </button>
               <button className="btn small" onClick={() => onDemo("admin")}>
                 Demo admin

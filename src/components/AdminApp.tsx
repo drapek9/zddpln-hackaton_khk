@@ -13,6 +13,8 @@ import { adminApi } from "../lib/adminApi";
 import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import Dialog from "./Dialog";
+import WeightSliders from "./WeightSliders";
+import { WEIGHT_META } from "../lib/weights";
 import { DEFAULT_WEIGHTS, WEIGHT_PRESETS } from "../lib/types";
 import { STATUS_LABEL, STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatPeriod, formatSil, stavLabel } from "../lib/geo";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
@@ -47,21 +49,7 @@ const VIEWS: { key: View; label: string; adminOnly?: boolean; soon?: boolean }[]
 // Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
 const LIST_STEP = 15;
 
-const WEIGHT_LABELS: { key: keyof Weights; label: string; server?: boolean }[] = [
-  { key: "stav", label: "Stav povrchu" },
-  { key: "worse", label: "Zhoršování" },
-  { key: "trida", label: "Třída silnice" },
-  { key: "schools", label: "Školy" },
-  { key: "hospitals", label: "Nemocnice a lékaři" },
-  { key: "rescue", label: "IZS" },
-  { key: "transit", label: "Autobusy" },
-  { key: "industry", label: "Průmysl" },
-  { key: "social", label: "Ohrožené oblasti" },
-  { key: "age", label: "Stáří opravy" },
-  { key: "intensity", label: "Vozidla za den", server: true },
-  { key: "detour", label: "Délka objížďky", server: true },
-  { key: "students", label: "Studenti", server: true },
-];
+const WEIGHT_LABELS = WEIGHT_META;
 
 export default function AdminApp({ data, repairs, onRepairs, onHome, role, user, onRole, onLogout }: Props) {
   const [view, setView] = useState<View>(role === "admin" ? "system" : "map");
@@ -116,6 +104,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const panels = usePanelSizes();
   const setSelectedId = (id: number | null) => {
     setSelectedIdState(id);
+    // F‑10: otevřený detail zavře plovoucí panel vah, ať se nepřekrývají.
+    if (id != null) setParamsOpen(false);
     if (id != null && isNarrow()) setSheet("map");
   };
   // Filtry a vrstvy si úředník nastaví jednou, pamatují se v tomto prohlížeči.
@@ -137,10 +127,16 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [hoverId, setHoverId] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  // F‑8: tlačítko „Nahoru“ po odscrollování levého panelu.
+  const sideRef = useRef<HTMLElement>(null);
+  const [scrolled, setScrolled] = useState(false);
   const [pins, setPins] = useState<Pin[]>(loadPins);
   const [rows, setRows] = useState<RankRow[]>([]);
   const [source, setSource] = useState<RankingSource>("local");
   const [rankingLoading, setRankingLoading] = useState(false);
+  // F‑2: „Jen parametry“ / „Parametry + AI“. AI jen posouvá v okně a má vždy štítek „návrh AI“.
+  const [aiOn, setAiOn] = useState(false);
+  const [aiState, setAiState] = useState<{ mode?: string; note?: string }>({});
   const [detour, setDetour] = useState<[number, number][] | null>(null);
   // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
   const [demoId, setDemoId] = useState<number | null>(null);
@@ -177,10 +173,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     setRankingLoading(true);
 
     timer = window.setTimeout(() => {
-      fetchRanking(data.roads, weights, pins, controller.signal)
+      fetchRanking(data.roads, weights, pins, controller.signal, aiOn && !weightsChanged)
         .then((res) => {
           setRows(res.rows);
           setSource(res.source);
+          setAiState({ mode: res.ai, note: res.aiNote });
           setRankingLoading(false);
           // Pokud API vrátilo serverové piny, sesynchronizujeme stav
           if (res.source === "api" && res.apiPins) {
@@ -199,7 +196,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
       if (timer) clearTimeout(timer);
       controller.abort();
     };
-  }, [data.roads, weights, pins]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.roads, weights, pins, aiOn]);
 
   const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
@@ -265,7 +263,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     // 2. Odeslání na server přes API (D3)
     const official = user?.role === "official" || user?.role === "admin";
     if (!official) {
-      toast(pin ? "Priorita připíchnuta jen v tomto prohlížeči (nejste přihlášen jako úředník)" : "Připíchnutí zrušeno");
+      toast(pin ? "Priorita připíchnuta jen v tomto prohlížeči (nejste přihlášen jako správce)" : "Připíchnutí zrušeno");
       return;
     }
     {
@@ -388,14 +386,14 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
           {onRole ? (
             <div className="role-switch" role="group" aria-label="Pohled (ukázka bez přihlášení)" title="Ukázka bez přihlášení: přepnutí role">
               <button className={role === "official" ? "on" : ""} onClick={() => onRole("official")}>
-                Úředník
+                Správce
               </button>
               <button className={role === "admin" ? "on" : ""} onClick={() => onRole("admin")}>
                 Admin
               </button>
             </div>
           ) : (
-            <span className="mode-tag">{role === "admin" ? "Admin" : "Úředník"}</span>
+            <span className="mode-tag">{role === "admin" ? "Admin" : "Správce"}</span>
           )}
         </div>
         <div className="tb-center">
@@ -464,8 +462,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
       {view === "map" && (
       <div className={`workspace no-right view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
         <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
-        <aside className="side left">
+        <aside className="side left" ref={sideRef} onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 400)}>
           <SheetClose onClose={() => setSheet("map")} />
+          <div className="side-sticky">
           <label className="search">
             <input
               ref={searchRef}
@@ -497,6 +496,32 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 {c !== "vše" && <small>{Math.round((classKm[c] || 0) / 1000)} km</small>}
               </button>
             ))}
+          </div>
+          <div className="seg ai-mode" role="group" aria-label="Jak se počítá pořadí">
+            <button className={!aiOn ? "on" : ""} onClick={() => setAiOn(false)}>
+              Jen parametry
+            </button>
+            <button
+              className={aiOn ? "on" : ""}
+              disabled={source !== "api" || weightsChanged}
+              title={
+                source !== "api"
+                  ? "AI teď není dostupná (server neběží)"
+                  : weightsChanged
+                    ? "Návrh AI je jen u vah kraje. Vraťte váhy kraje."
+                    : "Pořadí podle parametrů, AI může úsek posunout nejvýš o 5 míst"
+              }
+              onClick={() => setAiOn(true)}
+            >
+              Parametry + AI
+            </button>
+          </div>
+          {aiOn && aiState.note && (
+            <p className={`fine ai-note ${aiState.mode === "nedostupne" ? "warn" : ""}`}>
+              {aiState.mode === "nedostupne" ? "AI teď není dostupná. " : ""}
+              {aiState.note}
+            </p>
+          )}
           </div>
           <div className="rank-tools">
             <label className="check">
@@ -540,7 +565,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                         {CLASS_LABEL[row.priority]}
                       </span>
                       {row.pinned && (
-                        <span className="pin-tag" title={row.pinReason || "připíchnuto úředníkem"}>
+                        <span className="pin-tag" title={row.pinReason || "připíchnuto správcem"}>
                           📌
                         </span>
                       )}
@@ -548,7 +573,16 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     <span className="rank-meta">
                       #{row.rank} · {r.okres} · {formatKm(r.delka)}
                     </span>
-                    <span className="rank-why">{mainReason(r, weights)}</span>
+                    {row.aiShift ? (
+                      <span className="rank-why ai" title={row.aiReason || undefined}>
+                        <span className="ai-tag">
+                          návrh AI {row.aiShift > 0 ? `↑${row.aiShift}` : `↓${-row.aiShift}`}
+                        </span>{" "}
+                        {row.aiReason || mainReason(r, weights)}
+                      </span>
+                    ) : (
+                      <span className="rank-why">{mainReason(r, weights)}</span>
+                    )}
                     <b>{row.score}</b>
                   </button>
                 </li>
@@ -601,6 +635,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               </div>
             )}
           </Fold>
+          {scrolled && (
+            <button className="to-top" onClick={() => sideRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
+              ↑ Nahoru
+            </button>
+          )}
           <Fold title="Uzavírky a opravy" meta={closureList.length}>
             <div className="form-grid">
               <label>
@@ -694,7 +733,14 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             detour={detour}
           />
           <div className={`params ${paramsOpen ? "open" : ""}`}>
-            <button className="params-toggle" onClick={() => setParamsOpen(!paramsOpen)} aria-expanded={paramsOpen}>
+            <button
+              className="params-toggle"
+              onClick={() => {
+                if (!paramsOpen) setSelectedIdState(null);
+                setParamsOpen(!paramsOpen);
+              }}
+              aria-expanded={paramsOpen}
+            >
               <span>Parametry priority</span>
               {weightsChanged && <span className="chip">upraveno</span>}
               <span className="muted" style={{ marginLeft: "auto" }}>{paramsOpen ? "▴" : "▾"}</span>
@@ -738,25 +784,19 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                     <p className="fine">Předvolby jsou návrh aplikace, ne nastavení kraje. Přesné hodnoty jsou v režimu Podrobné.</p>
                   </div>
                 ) : (
-                  WEIGHT_LABELS.map((w) => (
-                    <label key={w.key} className="weight">
-                      <span>
-                        {w.label}
-                        {w.server && source !== "api" && <small className="muted"> (jen se serverem)</small>}
-                        <b>{weights[w.key]}</b>
-                      </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={weights[w.key]}
-                        onChange={(e) => {
-                          setPreset(null);
-                          setWeights({ ...weights, [w.key]: Number(e.target.value) });
-                        }}
-                      />
-                    </label>
-                  ))
+                  <>
+                    <WeightSliders
+                      weights={weights}
+                      serverOnline={source === "api"}
+                      onChange={(next) => {
+                        setPreset(null);
+                        setWeights(next);
+                      }}
+                    />
+                    <button className="link" onClick={() => setWeights(DEFAULT_WEIGHTS)}>
+                      Výchozí hodnoty aplikace
+                    </button>
+                  </>
                 )}
                 {weightsChanged && moved && (
                   <div className="moved">
@@ -832,6 +872,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             <button className={`filter-toggle ${layers.srti ? "on" : ""}`} aria-pressed={layers.srti} onClick={() => setLayers({ ...layers, srti: !layers.srti })}>
               <i className="srti" /> Uzavírky ŘSD
             </button>
+            {!!detour?.length && (
+              <span className="map-filter-sub">
+                <i className="detour-sw" /> objížďka
+              </span>
+            )}
             {layers.repairs && (
               <span className="map-filter-sub">
                 <i className="active" /> probíhá <i className="planned" /> plán <i className="done" /> hotovo

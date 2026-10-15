@@ -116,6 +116,8 @@ export type Weights = {
   intensity: number;
   detour: number;
   students: number;
+  /** Hlasy občanů (slabý faktor, jen server). */
+  votes: number;
 };
 
 export type Dataset = {
@@ -165,10 +167,11 @@ export const DEFAULT_WEIGHTS: Weights = {
   intensity: 0,
   detour: 0,
   students: 0,
+  votes: 0,
 };
 
 /** Váhy, které umí jen výpočet na serveru (D6). */
-export const SERVER_ONLY_WEIGHTS: (keyof Weights)[] = ["intensity", "detour", "students"];
+export const SERVER_ONLY_WEIGHTS: (keyof Weights)[] = ["intensity", "detour", "students", "votes"];
 
 /**
  * Předvolby vah pro režim „Jednoduché“ (kap. 25.2). Jsou jen v prohlížeči, ne z kraje:
