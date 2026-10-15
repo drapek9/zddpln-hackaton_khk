@@ -1,6 +1,10 @@
 # Nápady k doplnění (15. 10.)
 
-Zásobník schválených nápadů. **Zatím to nejsou úkoly.** Do `PLAN_FINAL.md` a `docs/BACKEND.md` / `docs/FRONTEND.md` je převedeme, až pojede MVP ★1 (sync ve 12:00 nebo později). Do té doby na nich nikdo nedělá.
+Zásobník věcí, které se **hned nedělají**. Nejsou to úkoly. `PLAN_FINAL.md` obsahuje jen to, co se dnes dělá. Když se nápad začne dělat, přesune se do `PLAN_FINAL.md` (a do `docs/BACKEND.md` / `docs/FRONTEND.md`) a tady se označí **PŘESUNUTO DO PLÁNU**. Nejdřív po MVP ★1 (sync ve 12:00 nebo později).
+
+Část A: nové nápady odsouhlasené 15. 10. Část B: věci přesunuté z `PLAN_FINAL.md`, protože se nebudou dělat hned.
+
+## Část A: nové nápady (15. 10.)
 
 Odsouhlasil Tomáš 15. 10. dopoledne. Ke každému nápadu: proč ho chceme, jak by fungoval, kdo by ho dělal, odhad času, rizika a co říct porotě.
 
@@ -8,7 +12,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 1. Rozpočtový asistent (nahrazuje „Scénář s rozpočtem“)
+### 1. Rozpočtový asistent (nahrazuje „Scénář s rozpočtem“, v plánu je jako V2)
 
 **Proč:** Úředník neplánuje po kouscích silnic, ale po stavbách a po penězích. Porota z MF, NKÚ a ekonomické gesce kraje chce vidět, co se za danou částku pořídí. Odpovídá na větu z pitche „co opravit dřív“.
 
@@ -52,7 +56,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 2. Dojezd záchranky a hasičů (ZZS + HZS) při uzavírce
+### 2. Dojezd záchranky a hasičů (ZZS + HZS) při uzavírce
 
 **Proč:** Nejsilnější argument „škody“ uzavírky. Porota z veřejné správy a krizového řízení. Žádný jiný tým to mít nebude.
 
@@ -72,7 +76,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 3. Kolize uzavírek
+### 3. Kolize uzavírek
 
 **Proč:** V praxi nejčastější chyba: dvě uzavírky ve stejném termínu a objížďka jedné vede přes druhou. Kraj to dnes hlídá ručně.
 
@@ -89,7 +93,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 4. Export s metadaty podle DCAT‑AP‑CZ
+### 4. Export s metadaty podle DCAT‑AP‑CZ
 
 **Proč:** Kritérium „využití pro kraj“ a publikace na Data KHK. Porotkyně z DIA (bývalé NKÚ) a lidé z Data KHK. Výstup se dá rovnou nahrát do NKOD.
 
@@ -106,7 +110,7 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 5. Bezpečnost a osobní údaje
+### 5. Bezpečnost a osobní údaje
 
 **Proč:** Porotce Horálek (kyberbezpečnost). Ukládáme domov a práci občanů.
 
@@ -127,18 +131,64 @@ Pořadí podle síly pro porotu: **1. Rozpočtový asistent → 2. Dojezd IZS �
 
 ---
 
-## 6. QR kód na web na posledním slajdu
+### 6. QR kód na web na posledním slajdu
 
 **Proč:** Cena diváků a porotci si web proklikají sami.
 
 **Jak:**
-- Veřejná HTTPS adresa (Tailscale Funnel nebo cloudflared, viz `STAV_A_DOPORUCENI.md`, kap. 6).
+- Veřejná HTTPS adresa (Tailscale Funnel nebo cloudflared, viz [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md), kap. 6).
 - QR na posledním slajdu a na plátně při otázkách.
 - **Podmínka:** QR dáme jen tehdy, když web na mobilu přes tunel jede dobře (rychlé načtení, žádné rozbité obrazovky). Ověřit v 16:00 na dvou telefonech. Jinak bez QR.
 - Živé hlasování během pitche **nebude**. Hlasování ve webu může fungovat normálně.
 
 **Kdo:** Přemek (slajd), Šimon (tunel).
 **Riziko:** ~9 MB dat na mobil. Mobil má brát data z API, nebo zmenšený snímek.
+
+---
+
+## Část B: přesunuto z PLAN_FINAL.md (15. 10.)
+
+Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud nejede MVP a V2.
+
+### 7. Povodňový scénář Q5 / Q20 / Q100
+- **Data KHK:** `Záplavové_území_{pětileté,dvacetileté,stoleté}_vody`, 78 / 77 / 65 polygonů.
+- **Jak:** tlačítko u úředníka „Povodeň Q100“. Zavřou se všechny úseky, které záplavové území protíná. Mapa ukáže zatopené silnice, odříznuté obce, počet lidí a studentů a dojezd IZS (navazuje na nápad 2).
+- **Proč:** porota z veřejné správy a krizového řízení. Kraj nic takového nemá.
+- **Poctivě:** úsek se zavře, jakmile jakákoli jeho část leží v záplavovém území. Skutečná povodeň zavírá podle hladiny.
+- **Kdo:** Tomáš T15 (`Engine.flood(level)`), Šimon S12 (`GET /api/flood?level=q5|q20|q100`), Matouš tlačítko a mapa.
+- **Závisí na:** T13 (obce) a T14 (toky studentů).
+
+### 8. Ověření modelu (zpětná kontrola)
+- **Otázka:** měly úseky opravené v letech 2018–2024 vysoké skóre už před opravou? A měly vysoké skóre úseky v plánu oprav na rok 2022?
+- **Jak:** skóre spočítat ze stavu měření před rokem opravy, porovnat s pořadím. Výstup: „X % opravených úseků bylo v horní třetině“.
+- **Proč:** odpověď na výtku „váhy jste si vymysleli“ (`PLAN_FINAL.md`, kap. 1, výtka 1). Matouš M2.4.
+- **Riziko:** většina měření je z let 2022–2024, takže stav „před opravou“ často není změřený. Výsledek může vyjít slabě, pak ho neukazovat.
+- **Kdo:** Tomáš T16 (`backtest_2022()`).
+
+### 9. Srovnání dvou úseků A vs B
+- Dva úseky vedle sebe: rozpad skóre, objížďka, dopady. Zvýrazní faktor, který rozhodl.
+- **Proč:** úředník musí obhájit, proč A a ne B. Matouš M2.1.
+- **Kdo:** Matouš (obrazovka), data už dává `Engine.breakdown`.
+
+### 10. Nehody Policie ČR
+- **Zdroj:** [statistiky nehodovosti 2025](https://policie.gov.cz/statistiky-dopravni-nehodovosti-za-rok-2025), bez omezení. Sada KŘP KHK na Data KHK.
+- **K čemu:** nový faktor bezpečnosti ve skóre, export nehod na úsecích.
+- **Otevřené:** co přesně sada obsahuje (GPS? jen KHK?). Neověřeno, termín „do čtvrtka“ propadl (Matouš M3.7).
+- **Kdo:** Tomáš (napárování na úseky), jen když se ověří, že data mají souřadnice.
+
+### 11. Moje obec a statistiky
+- Veřejnost vybere obec a uvidí stav jejích silnic, pořadí v kraji, uzavírky a linky.
+- **Data:** `Obce` z Data KHK (T13) a hranice obcí a ORP (otevřená data ČÚZK nebo RÚIAN).
+- **API:** `GET /api/obce`, `GET /api/statistiky`.
+- **Kdo:** Šimon S13, Matouš obrazovka.
+
+### 12. Widget pro weby obcí
+- Malá vložitelná mapka (`iframe`) se stavem silnic a uzavírkami v obci. Obec ji dá na svůj web.
+- **Závisí na:** Moje obec (nápad 11).
+
+### 13. Skutečné odesílání e‑mailů
+- Dnes je v plánu jen testovací SMTP (Mailpit) a náhled na webu. Skutečný e‑mail potřebuje SMTP účet a ochranu proti spamu.
+- **Kdo:** Šimon, až po Web Push.
 
 ---
 

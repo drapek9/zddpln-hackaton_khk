@@ -11,7 +11,7 @@ Hackathon Královéhradeckého kraje, **čt 15. 10. 2026**. Sestaveno 13. 10. z 
 
 > **15. 10., 9:30:** stav projektu, rizika a doporučený postup na dnešek (škrty hned, pořadí úkolů do 12:00) jsou v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Přečíst před prací.
 
-> **15. 10., 10:20:** schválené nápady, které zatím nejsou úkoly (rozpočtový asistent se souvislými stavbami, dojezd ZZS a HZS, kolize uzavírek, export DCAT‑AP‑CZ, bezpečnost a GDPR, QR na web), jsou v [docs/NAPADY.md](docs/NAPADY.md). Do plánu se převedou až po MVP ★1.
+> **15. 10., 10:20:** co se **hned nedělá** (schválené nápady, V3, nehody, povodeň, Moje obec), je v [NAPADY.md](NAPADY.md). Tento soubor obsahuje jen to, co se dnes dělá. Když se nápad začne dělat, přesune se sem.
 
 Role tu nejsou, řeší je Šimon (kap. 10 má prázdná jména).
 
@@ -52,7 +52,7 @@ Posuzujeme jako porota: veřejná správa, Data KHK, NKÚ, MF a FIM.
 
 | # | Výtka poroty | Naše odpověď |
 |---|---|---|
-| 1 | „Proč by kraj věřil vašemu skóre? Váhy jste si vymysleli.“ | Výchozí váhy jsou expertní odhad, admin je ladí. Model jen doporučuje, úředník rozhoduje a vše se zapisuje. Volitelně ukážeme zpětnou kontrolu modelu (kap. 4, „Ověření modelu“). |
+| 1 | „Proč by kraj věřil vašemu skóre? Váhy jste si vymysleli.“ | Výchozí váhy jsou expertní odhad, admin je ladí. Model jen doporučuje, úředník rozhoduje a vše se zapisuje. Zpětná kontrola modelu je nápad na později ([NAPADY.md](NAPADY.md)). |
 | 2 | „Kraj má peníze na 90 km ročně.“ To je nepravda. | Říkat: **„kraj v letech 2015–2024 opravoval zhruba 90 km ročně“** (906 km / 10 let). Je to tempo, ne rozpočet. (Matouš M1.2) |
 | 3 | „~15 let“ je optimistické. | Říkat **„nejméně 15 let“**. Výpočet předpokládá, že všechny opravy jdou na havarijní úseky a že se nic dalšího nezhorší. (Matouš M1.3) |
 | 4 | Jeden bod se započítá na mnoha úsecích. | **Ověřeno v kódu.** `scripts/fetch-data.mjs` (ř. ~397, `nearby(poiGrid, g, 450)`) přiřadí nemocnici či školu každému úseku do 450 m. Oprava: bod započítat jen k nejbližším úsekům, nebo váhu snižovat se vzdáleností. (Matouš M1.6) |
@@ -104,7 +104,7 @@ Stav k ránu **15. 10. 2026**. ✅ = uživatel to má v aplikaci, ◉ = výpoče
 |---|---|---|---|
 | Úvod | Problém v číslech, vstup do mapy, „Moje obec“, přihlášení | ◐ (Landing) | MVP |
 | Mapa | Stav úseků, hotové opravy, **potvrzené** plány, **uzavírky** (ŘSD SRTI a od úředníka), objížďky | ◐ | MVP |
-| Moje obec / linka | Stav silnic, pořadí v kraji, uzavírky, „Jede můj autobus?“ | ◐ | V2 |
+| Moje linka | „Jede můj autobus?“ (Moje obec je v [NAPADY.md](NAPADY.md)) | ◐ | V2 |
 | Zdroje dat | Všechny datové sady s odkazy a licencemi, včetně ŘSD a Policie | ✅ (doplnit nové) | MVP |
 | API dokumentace | Česky: endpointy, licence, příklad | ❌ | MVP (★3) |
 
@@ -123,14 +123,12 @@ Stav k ránu **15. 10. 2026**. ✅ = uživatel to má v aplikaci, ◉ = výpoče
 |---|---|---|---|
 | Žebříček + mapa | Top N, filtry, 4 třídy priority, štítek stability (v Top N při jakýchkoli rozumných vahách) | ◐ (žebříček v aplikaci; 4 třídy jen v jádru; stabilita chybí) | MVP |
 | Váhy | Posuvníky pro svůj pohled. **Váhy z textu přes AI**: AI navrhne, úředník potvrdí. | ◐ (posuvníky) | V2 (AI) |
-| Scénář s rozpočtem | Zadám X km nebo Y mil. Kč. Dostanu seznam úseků, které se vejdou, a kolik havarijních km zůstane. Cena za km je **předpoklad**. | ❌ | V2 |
+| Rozpočtový asistent | Zadám rozpočet v Kč. Dostanu souvislé stavby, které se vejdou, a kolik havarijních km zůstane. Cena za km je **předpoklad**. Podrobně v [NAPADY.md](NAPADY.md), č. 1. | ❌ | V2 |
 | Detail úseku | Rozpad skóre, třída, AI zdůvodnění, historie, opravy, intenzita (nebo „odhad“), hlášení, hlasy | ◐ | MVP |
 | Připíchnutí | Priorita ručně + důvod (rychlé volby nebo text). Má přednost před modelem a zapisuje se. | ◉ (pořadí v jádru, obrazovka, důvod a zápis chybí) | MVP |
 | Stav práce | Navrženo → Schváleno → Naplánováno (termín) → Probíhá → Hotovo. Od „Schváleno“ to vidí veřejnost. | ◐ (zveřejnění opravy v prohlížeči, workflow chybí) | MVP |
 | **Simulátor uzavírky** | Vyberu úsek a termín. Uvidím objížďku na mapě, +km a +min, auta za den, kolik občanů má úsek na trase. Varování: škola ve školním roce, nemocnice a IZS, zaručené přípoje, zima, objížďka přes havarijní úsek. AI napíše návrh oznámení. Tlačítko „Potvrdit uzavírku“ pošle upozornění. | ◐ varování, šablona oznámení a zveřejnění opravy v aplikaci; ◉ objížďka v jádru, na mapě ne | **MVP (★1)** |
-| Srovnání A vs B | Dva úseky vedle sebe, které faktory rozhodly (Matouš M2.1) | ❌ | V3 |
 | Fronta hlášení | Hlášení od občanů, AI roztřídění, sloučení k úseku, vyřízení | ❌ | V2 |
-| Ověření modelu | Volitelně: měly úseky opravené v letech 2018–2024 vysoké skóre už před opravou? (Matouš M2.4) | ❌ | V3 |
 
 ### D) Admin
 | Obrazovka | Obsah | Stav | Priorita |
@@ -161,8 +159,6 @@ Snímek dat je v repu (`public/data/*.json`, ověřeno), demo tedy nezávisí na
 | **ŘSD sčítání 2025** (XLSX, [rsd.cz](https://www.rsd.cz/silnice-a-dalnice/scitani-dopravy)) | CC BY‑SA 4.0 | auta za den na úseku, objížďka, export | párování podle čísla silnice a názvů míst, ~1 418 z 3 192 km. Zbytek odhadneme podle třídy silnice a linek, štítek „odhad“. |
 | **ŘSD SRTI** ([NKOD](https://data.gov.cz/datová-sada?iri=https://data.gov.cz/zdroj/datové-sady/65993390/1087749998)) | CC BY 4.0 | skutečné uzavírky a stavby na mapě, varování pro občany | ~140 záznamů v KHK, hlavně silnice I. třídy |
 | **Silnice I. třídy** (OSM, nebo ŘSD) | ODbL (OSM) | doplnění grafu pro objížďky a trasy | nutné, jinak graf nebude spojitý. OSM uvést ve Zdrojích (ODbL = uvést autora a sdílet za stejných podmínek). |
-| **Nehody Policie ČR** ([2025](https://policie.gov.cz/statistiky-dopravni-nehodovosti-za-rok-2025)) | bez omezení | faktor bezpečnosti, export nehod na úsecích | **ověřit do čtvrtka**, jinak škrtáme (Matouš M3.7) |
-| Hranice obcí a ORP | otevřená | „moje obec“, statistiky v API | V2 |
 
 **Pravidla:**
 - Každý zdroj na stránce Zdroje dat s odkazem.
@@ -177,8 +173,8 @@ Snímek dat je v repu (`public/data/*.json`, ověřeno), demo tedy nezávisí na
 1. **Skóre 0–100.** Faktory z v1 (`src/lib/priority.ts`). Nové faktory:
    - **intenzita** (auta za den),
    - **délka objížďky**,
-   - **hlasy** (slabá váha, strop),
-   - **nehody** (jen pokud je ověříme).
+   - **hlasy** (slabá váha, strop).
+   - Nehody jsou v [NAPADY.md](NAPADY.md).
 2. Oprava započítání bodů (kap. 1, č. 4).
 3. **4 třídy:** Kritická, Vysoká, Střední, Nízká, podle percentilů.
 4. **Pořadí pravidel:** připíchnutí úředníkem > váhy úředníka (jeho pohled) > trvalé váhy admina > výchozí váhy.
@@ -258,22 +254,16 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 
 **V2:**
 - AI: zdůvodnění, oznámení, váhy z textu.
-- Scénář s rozpočtem.
+- Rozpočtový asistent ([NAPADY.md](NAPADY.md), č. 1).
 - Hlášení s AI tříděním.
 - Hlasování.
-- Moje obec a statistiky.
 
-**V3:**
-- Srovnání A vs B.
-- Ověření modelu.
-- Nehody.
-- Widget.
-- Skutečný e‑mail.
+**V3 a další nápady:** v [NAPADY.md](NAPADY.md). Nedělají se, dokud nejede MVP a V2.
 
 **Pořadí škrtů, když nestíháme** (rozhodnout v 12:00, ne v panice):
-1. V3 celé.
+1. Všechno z NAPADY.md.
 2. Hlasování.
-3. Scénář s rozpočtem.
+3. Rozpočtový asistent.
 4. AI váhy z textu (posuvníky zůstanou).
 5. Push nahradí seznam upozornění na webu + náhled e‑mailu.
 
@@ -281,19 +271,9 @@ Přehled po funkcích a výhodách pro uživatele je v [docs/funkce.html](docs/f
 
 ---
 
-## 9. Příprava před čtvrtkem (bez nových funkcí)
+## 9. Příprava před čtvrtkem
 
-Kód funkcí vzniká na soutěži (rozhodnutí 13. 10.). Před soutěží jen připravit prostředí a podklady.
-
-- [x] `LICENSE` (EUPL‑1.2).
-- [ ] E‑mail organizátorům: co je připravené předem a jestli to vadí. Odpověď uložit.
-- [ ] Ověřit přístup k AI (Azure for Students nebo jiný klíč) a mít plán, když nebude.
-- [ ] Vyzkoušet tunel + HTTPS + Web Push na vlastním telefonu (prázdná stránka „hello push“).
-- [ ] Stáhnout podklady: XLSX sčítání ŘSD 2025, snímek SRTI, data nehod. Ověřit obsah sady KŘP KHK.
-- [ ] Zjistit, odkud vzít **cenu za km opravy** pro scénář s rozpočtem (zpráva kraje, zpravodaj). Jinak označit jako předpoklad.
-- [ ] Připravit 2–3 ukázkové uzavírky: obec, úsek, proč je zajímavá (škola, linka, sanitka).
-- [ ] Pitch nanečisto se stopkami, scénář dema, plán záložního videa (Matouš M4).
-- [ ] Večerní sync: projít tento plán, Šimon rozdělí role.
+**NEAKTIVNÍ (15. 10.):** přípravná fáze skončila, `LICENSE` je hotový. Otevřené body (odpověď organizátorů, AI klíč, Web Push na telefonu, ukázkové uzavírky, pitch) jsou v kap. 11 a v [docs/STAV_A_DOPORUCENI.md](docs/STAV_A_DOPORUCENI.md). Sčítání ŘSD je úkol T7, nehody jsou v [NAPADY.md](NAPADY.md).
 
 ---
 
@@ -316,8 +296,8 @@ Kód funkcí vzniká na soutěži (rozhodnutí 13. 10.). Před soutěží jen p�
 ## 11. Otevřené otázky
 
 1. **Název aplikace.**
-2. **Nehody:** co přesně je v sadě KŘP KHK a v ročním RAR (GPS? KHK?). Kdo ověří?
-3. **Cena za km opravy** pro scénář: odkud ji vezmeme?
+2. ~~**Nehody**~~ přesunuto do [NAPADY.md](NAPADY.md).
+3. ~~**Cena za km opravy**~~ vyřešeno 15. 10.: předpoklad podle stavu se zdroji, viz [NAPADY.md](NAPADY.md), č. 1.
 4. **Odpověď organizátorů** ke kódu připravenému předem.
 5. **Poskytovatel AI** a jestli klíč funguje už teď.
 6. Kdo po soutěži pohlídá odevzdání na `github.com/krhk`?
@@ -345,21 +325,19 @@ Kód funkcí vzniká na soutěži (rozhodnutí 13. 10.). Před soutěží jen p�
 |---|---|---|---|
 | `Dojížďka_do_středních_škol` | 12 013 | obec bydliště studenta → škola (souřadnice), počet žáků | Toky pustíme po grafu silnic. Ke každému úseku dostaneme **počet středoškoláků, kteří po něm denně jedou**. Měřená data, ne odhad. |
 | `Obce` | 448 | kód obce, počet obyvatel, věkové skupiny | Které obce uzavírka **odřízne** a kolik v nich žije lidí. Napojení toků studentů na obce. „Moje obec“. |
-| `Záplavové_území_{pětileté,dvacetileté,stoleté}_vody` | 78 / 77 / 65 | polygony Q5, Q20, Q100 | **Povodňový scénář:** zavřít všechny zatopené úseky a ukázat odříznuté obce, lidi, studenty a dostupnost IZS. |
-| `Plánované_opravy_silniční_infrastruktury_na_rok_2022_liniové` | 23 | typ uzavírky (úplná/částečná), termín omezení, číslo silnice | **Skutečné uzavírky** jako ukázky pro demo. Malé ověření modelu: měly plány 2022 vysoké skóre? |
+| `Plánované_opravy_silniční_infrastruktury_na_rok_2022_liniové` | 23 | typ uzavírky (úplná/částečná), termín omezení, číslo silnice | **Skutečné uzavírky** jako ukázky pro demo. |
 
 Vynecháváme `Omezení_v_autobusové_dopravě` (4 záznamy) a `Výluky_v_železniční_dopravě` (1 záznam). Jsou staré (2022–23) a je jich málo.
 
 ### Co to přidá
 - **★1 karta uzavírky:** navíc „zasaženo N středoškoláků denně“ a „odříznuté obce: X obyvatel“.
-- **Nové: „Povodeň Q100“** (tlačítko u úředníka). Mapa zatopených silnic, odříznuté obce, lidé, studenti. Sedí to porotě z veřejné správy a krizového řízení.
+- Povodeň Q100 a ověření modelu na plánech 2022 jsou v [NAPADY.md](NAPADY.md).
 - **Demo:** 2–3 ukázkové uzavírky vybrat ze skutečných úplných uzavírek 2022.
 - **Pitch:** „22 sad z Data KHK a 3 externí. Z dat kraje víme, kolik středoškoláků denně jede přes každý úsek.“
 
 ### Poctivě (říct na dotaz)
 - Toky jsou jen středoškoláci, ne všichni lidé.
 - Start je střed obce bydliště, cesta je nejkratší po grafu, ne skutečná trasa autobusu.
-- Povodeň zavře úsek, jakmile část úseku leží v záplavovém území.
 
 ### Priorita
-Až po MVP (kap. 8). Pořadí: toky studentů → odříznuté obce → povodeň → ukázky 2022 → ověření modelu. Když nestíháme, škrtá se **před** V2. Úkoly: Tomáš T13–T16, Šimon S12–S13 v `docs/BACKEND.md`, kap. 7.
+Pořadí: toky studentů → odříznuté obce → ukázky 2022 (rozhodnuto 15. 10.: Tomáš dělá hned, je to datový základ ★1). Když nestíháme, škrtá se **před** V2. Úkoly: Tomáš T13–T16, Šimon S12–S13 v `docs/BACKEND.md`, kap. 7.
