@@ -72,3 +72,31 @@ export function saveRegionWeights(weights: Weights) {
     // úložiště není dostupné
   }
 }
+
+// Filtry a vrstvy úředníka (pohodlí, jen v tomto prohlížeči).
+const OFFICE_PREFS_KEY = "cesty-khk-office-prefs";
+export type OfficePrefs = {
+  okres: string;
+  stav: string;
+  showPois: boolean;
+  showCondition: boolean;
+  cls: "kriticka" | "vysoka" | "stredni" | "nizka" | "vše";
+};
+const OFFICE_DEFAULTS: OfficePrefs = { okres: "vše", stav: "vše", showPois: true, showCondition: true, cls: "vše" };
+
+export function loadOfficePrefs(): OfficePrefs {
+  try {
+    const raw = localStorage.getItem(OFFICE_PREFS_KEY);
+    return raw ? { ...OFFICE_DEFAULTS, ...(JSON.parse(raw) as Partial<OfficePrefs>) } : OFFICE_DEFAULTS;
+  } catch {
+    return OFFICE_DEFAULTS;
+  }
+}
+
+export function saveOfficePrefs(prefs: OfficePrefs) {
+  try {
+    localStorage.setItem(OFFICE_PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // úložiště není dostupné
+  }
+}

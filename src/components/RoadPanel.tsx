@@ -7,6 +7,7 @@ import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, type RankRow } from "../lib/rank
 import type { Pin, PriorityClass } from "../lib/api";
 import ClosureCard from "./ClosureCard";
 import Fold from "./Fold";
+import { toast } from "./Toaster";
 
 type Props = {
   road: Road;
@@ -203,6 +204,7 @@ export default function RoadPanel({
               onClick={async () => {
                 await navigator.clipboard.writeText(text);
                 setCopied(true);
+                toast("Oznámení zkopírováno");
                 setTimeout(() => setCopied(false), 1500);
               }}
             >

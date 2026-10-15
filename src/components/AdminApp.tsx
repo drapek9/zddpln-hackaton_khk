@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import Fold from "./Fold";
@@ -16,7 +16,8 @@ import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatSil, stavLabel } from "../lib/geo";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
 import { DEMO_CLOSURES } from "../lib/closure";
-import { loadPins, loadRegionWeights, savePins, saveRegionWeights } from "../lib/store";
+import { loadOfficePrefs, loadPins, loadRegionWeights, saveOfficePrefs, savePins, saveRegionWeights } from "../lib/store";
+import { toast } from "./Toaster";
 import type { Pin, PriorityClass } from "../lib/api";
 
 type Props = {
@@ -63,6 +64,11 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     setView((v) => (role === "admin" ? "system" : v === "system" ? "map" : v));
   }, [role]);
   const live = !!user && user.role === "admin";
+  const [systemDirty, setSystemDirty] = useState(false);
+  const goView = (next: View) => {
+    if (view === "system" && next !== "system" && systemDirty && !window.confirm("Máte neuložené váhy kraje. Odejít bez uložení?")) return;
+    setView(next);
+  };
   const { theme } = useTheme();
   const mapTheme = theme === "dark" ? "dark" : "office";
   // Výchozí jsou trvalé váhy kraje od admina. Úředník je mění jen pro sebe, admin je může uložit trvale.
@@ -96,12 +102,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     setSelectedIdState(id);
     if (id != null && isNarrow()) setSheet("map");
   };
-  const [okres, setOkres] = useState("vše");
-  const [stav, setStav] = useState("vše");
+  // Filtry a vrstvy si úředník nastaví jednou, pamatují se v tomto prohlížeči.
+  const prefs = useMemo(loadOfficePrefs, []);
+  const [okres, setOkres] = useState(prefs.okres);
+  const [stav, setStav] = useState(prefs.stav);
   const [query, setQuery] = useState("");
-  const [showPois, setShowPois] = useState(true);
-  const [showCondition, setShowCondition] = useState(true);
-  const [cls, setCls] = useState<PriorityClass | "vše">("vše");
+  const [showPois, setShowPois] = useState(prefs.showPois);
+  const [showCondition, setShowCondition] = useState(prefs.showCondition);
+  const [cls, setCls] = useState<PriorityClass | "vše">(prefs.cls);
+  useEffect(() => saveOfficePrefs({ okres, stav, showPois, showCondition, cls }), [okres, stav, showPois, showCondition, cls]);
+  const [hoverId, setHoverId] = useState<number | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const [pins, setPins] = useState<Pin[]>(loadPins);
   const [rows, setRows] = useState<RankRow[]>([]);
   const [source, setSource] = useState<RankingSource>("local");
@@ -130,8 +142,10 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   const updatePins = (next: Pin[]) => {
+    const added = next.length >= pins.length;
     setPins(next);
     savePins(next);
+    toast(added ? "Priorita připíchnuta" : "Připíchnutí zrušeno");
   };
 
   const okresy = useMemo(
@@ -155,6 +169,46 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
       .filter((row) => visible.has(row.id) && (cls === "vše" || row.priority === cls))
       .map((row) => ({ r: roadsById.get(row.id)!, row }));
   }, [rows, filtered, cls, roadsById]);
+
+  // Vybraný úsek (i kliknutím v mapě) se v žebříčku posune do zorného pole.
+  useEffect(() => {
+    if (selectedId == null) return;
+    const idx = ranked.findIndex((x) => x.r.id === selectedId);
+    if (idx >= listLimit) setListLimit(Math.ceil((idx + 1) / 50) * 50);
+    requestAnimationFrame(() =>
+      listRef.current?.querySelector(`[data-road="${selectedId}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Klávesy: / hledat, ↑ ↓ další úsek v žebříčku, Esc zavřít detail a parametry.
+  useEffect(() => {
+    if (view !== "map") return;
+    const onKey = (e: KeyboardEvent) => {
+      const typing = (e.target as HTMLElement)?.closest("input, textarea, select, [contenteditable]");
+      if (e.key === "Escape") {
+        if (paramsOpen) setParamsOpen(false);
+        else if (selectedId != null) setSelectedId(null);
+        (e.target as HTMLElement)?.blur?.();
+        return;
+      }
+      if (typing) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "j" || e.key === "k") {
+        if (!ranked.length) return;
+        e.preventDefault();
+        const idx = ranked.findIndex((x) => x.r.id === selectedId);
+        const down = e.key === "ArrowDown" || e.key === "j";
+        const nextIdx = idx < 0 ? 0 : Math.min(ranked.length - 1, Math.max(0, idx + (down ? 1 : -1)));
+        setSelectedId(ranked[nextIdx].r.id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, ranked, selectedId, paramsOpen]);
 
   const classKm = useMemo(() => {
     const out: Record<string, number> = {};
@@ -192,7 +246,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         <div className="tb-center">
           <nav className="top-nav">
             {VIEWS.filter((v) => !v.adminOnly || role === "admin").map((v) => (
-              <button key={v.key} className={view === v.key ? "active" : ""} onClick={() => setView(v.key)}>
+              <button key={v.key} className={view === v.key ? "active" : ""} onClick={() => goView(v.key)}>
                 {v.label}
                 {v.soon && <small>návrh</small>}
               </button>
@@ -217,7 +271,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
       </header>
       {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
       {view === "system" && (
-        <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} />
+        <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} onDirty={setSystemDirty} />
       )}
       {view === "map" && (
       <div className={`workspace no-right view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
@@ -225,7 +279,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         <aside className="side left">
           <label className="search">
             <input
-              placeholder="Číslo silnice nebo úsek"
+              ref={searchRef}
+              placeholder="Hledat silnici nebo úsek   /"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -265,10 +320,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               )}{" "}
               Horních 10 % sítě je kritická, 20 % vysoká, 30 % střední, zbytek nízká.
             </p>
-            <ul className="rank">
+            <ul className="rank" ref={listRef}>
               {ranked.slice(0, listLimit).map(({ r, row }) => (
                 <li key={r.id}>
-                  <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
+                  <button
+                    data-road={r.id}
+                    className={r.id === selectedId ? "active" : ""}
+                    onClick={() => setSelectedId(r.id)}
+                    onMouseEnter={() => setHoverId(r.id)}
+                    onMouseLeave={() => setHoverId(null)}
+                    onFocus={() => setHoverId(r.id)}
+                    onBlur={() => setHoverId(null)}
+                  >
                     <span className="rank-sil">
                       <i style={{ background: STAV_COLOR[r.stav] }} />
                       {formatSil(r.sil, r.trida)}
@@ -290,6 +353,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               ))}
               {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
             </ul>
+            <p className="kbd-hint">
+              <kbd>↑</kbd> <kbd>↓</kbd> další úsek · <kbd>/</kbd> hledat · <kbd>Esc</kbd> zavřít
+            </p>
             {ranked.length > LIST_STEP && (
               <div className="row-actions list-more">
                 {listLimit < ranked.length && (
@@ -340,6 +406,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         </aside>
         <div className="map-wrap">
           <MapView
+            hoverId={hoverId}
             roads={filtered}
             repairs={repairs}
             selectedId={selectedId}
@@ -434,6 +501,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 onPlan={(repair) => {
                   const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
                   onRepairs(next);
+                  toast(repair.restriction.includes("uzavírka") ? "Uzavírka potvrzena a je v mapě" : "Oprava zveřejněna v mapě");
                 }}
               />
             </DetailSheet>

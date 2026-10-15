@@ -20,6 +20,8 @@ type Props = {
   highlight?: number[];
   /** Moje místa a spojnice mezi nimi (veřejnost, Moje cesty). */
   places?: { kind: "home" | "work"; x: number; y: number }[];
+  /** Úsek pod myší v seznamu (náhled před kliknutím). */
+  hoverId?: number | null;
 };
 
 // Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
@@ -103,6 +105,7 @@ function MapInner({
   detour = null,
   highlight = EMPTY,
   places = EMPTY_PLACES,
+  hoverId = null,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -144,7 +147,16 @@ function MapInner({
     );
     mapRef.current = map;
     // Mapa se přizpůsobí, když si uživatel roztáhne boční panel.
-    const ro = new ResizeObserver(() => map.resize());
+    // Jednou za snímek a hned překreslit, jinak plátno na snímek zčerná (blikání).
+    let resizeFrame = 0;
+    const ro = new ResizeObserver(() => {
+      if (resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+        map.resize();
+        map.redraw();
+      });
+    });
     ro.observe(ref.current);
 
     map.on("load", () => {
@@ -199,9 +211,9 @@ function MapInner({
             ["linear"],
             ["zoom"],
             7,
-            ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 1.2],
+            ["case", ["boolean", ["feature-state", "selected"], false], 3.5, ["boolean", ["feature-state", "hover"], false], 3, 1.2],
             12,
-            ["case", ["boolean", ["feature-state", "selected"], false], 8, 3.2],
+            ["case", ["boolean", ["feature-state", "selected"], false], 8, ["boolean", ["feature-state", "hover"], false], 7, 3.2],
           ],
           "line-opacity": showConditionRef.current ? 0.95 : 0.18,
         },
@@ -325,6 +337,7 @@ function MapInner({
 
     return () => {
       ro.disconnect();
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
       map.remove();
       mapRef.current = null;
     };
@@ -412,6 +425,17 @@ function MapInner({
       }
     }
   }, [selectedId, roads]);
+
+  // Náhled úseku pod myší v žebříčku.
+  const prevHoverRef = useRef<number | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getSource("roads")) return;
+    const prev = prevHoverRef.current;
+    if (prev != null && prev !== hoverId) map.setFeatureState({ source: "roads", id: prev }, { hover: false });
+    if (hoverId != null) map.setFeatureState({ source: "roads", id: hoverId }, { hover: true });
+    prevHoverRef.current = hoverId;
+  }, [hoverId]);
 
   const toggleTilt = () => {
     const map = mapRef.current;

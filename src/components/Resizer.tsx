@@ -72,24 +72,38 @@ export default function Resizer({ side, sizes, onChange }: Props) {
     let moved = false;
     setDragging(true);
     document.body.classList.add("is-resizing");
+    // Během tažení se mění jen CSS proměnná na .workspace (bez překreslení Reactu).
+    // Stav a uložení až po puštění myši, jinak by se při každém pohybu překreslila celá aplikace.
+    const ws = (e.currentTarget as HTMLElement).closest(".workspace") as HTMLElement | null;
+    let next: Sizes = sizes;
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      if (!ws) return;
+      const isHidden = next[hiddenKey(side)];
+      ws.style.setProperty(`--${side}-w`, isHidden ? "0px" : `${next[side]}px`);
+      ws.classList.toggle(`${side}-hidden`, isHidden);
+    };
     const move = (ev: PointerEvent) => {
       const dx = ev.clientX - startX;
       if (Math.abs(dx) > 3) moved = true;
       if (!moved) return;
       const raw = side === "left" ? start + dx : start - dx;
-      onChange(
+      next =
         raw < COLLAPSE_AT
           ? { ...sizes, [hiddenKey(side)]: true }
-          : { ...sizes, [side]: clamp(raw), [hiddenKey(side)]: false },
-      );
+          : { ...sizes, [side]: clamp(raw), [hiddenKey(side)]: false };
+      if (!frame) frame = requestAnimationFrame(apply);
     };
     const up = () => {
+      if (frame) cancelAnimationFrame(frame);
       setDragging(false);
       document.body.classList.remove("is-resizing");
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      if (moved) onChange(next);
       // Klik na jazýček bez tažení panel vysune na poslední šířku.
-      if (!moved && hidden) onChange({ ...sizes, [hiddenKey(side)]: false });
+      else if (hidden) onChange({ ...sizes, [hiddenKey(side)]: false });
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
