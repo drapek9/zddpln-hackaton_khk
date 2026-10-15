@@ -569,6 +569,8 @@ Pořadí: **S21 → S22 → S23 → S24** (jakmile je T21) → S25 → S26. Pak 
 
 Pořadí: **T21 → T22 → T23**, T24 až po D1 a D6.
 
+**Stav ~14:00 (větev `tomas`):** T21 ✅ `Engine.warmup()` (asi 9 s při startu, pak první žebříček s vahami T20 0,16 s místo 5 s). T22 ✅ 22 úseků bez duplicitních obcí, skóre beze změny. T23 ✅ `scripts/smoke_api.sh`, na `main` 24/24 volání OK. T24 čeká na D1 a D6. Navíc: štítky tří doporučených uzavírek 2022 už netvrdí „nejvíc“, když to není pravda, a mají čísla. **Šimon (S24):** v lifespanu nahradit `engine.people` a `engine.demo_closures()` jedním `engine.warmup()` (vrací sekundy po krocích, hodí se do logu).
+
 ### 19.5 Kdy je hotovo
 - Úředník v prohlížeči vidí žebříček z API (štítek „živá data“), piny přežijí obnovení stránky.
 - Simulátor ukáže objížďku, auta za den, studenty, odříznuté obce a dojezd ZZS z `POST /api/closures/preview`.
@@ -869,3 +871,48 @@ Do `User` jen přidat sloupce (`status`, `email_verified_at`, `organization`, `j
 **Frontend (Matouš):** formulář žádosti na `/sprava`, stránka ověření, v `/admin` záložka „Žádosti“ s počtem. Vzhled podle 25.8 (formulář správy, ne občana).
 
 **Priorita:** fáze 2 (po freeze). Do 16:00 jen když budou hotové body 1–6 z TODO TEĎ. Pro pitch stačí věta: „Úředník o přístup požádá, admin ho schválí a účet se ověří e‑mailem.“
+
+## 26. Rozhodnutí o nápadech a kdo co dělá do freeze (15. 10., ~14:20, Tomáš)
+
+Tomáš rozhodl o všech nápadech, které ještě byly otevřené ([NAPADY.md](NAPADY.md)). Kap. 19 a 20 platí dál. Tahle kapitola k nim přidává dvě nové věci do plánu a jednu tabulku: kdo co dělá a v jakém pořadí. Pořadí v každém řádku = priorita, škrtá se odspodu (kap. 20, „Škrty“).
+
+### 26.1 Rozhodnutí
+| Nápad | Rozhodnutí | Proč |
+|---|---|---|
+| **F‑c** Rozpad skóre z API (`/api/useky/{id}`, pole `breakdown`) | **do plánu**, Matouš | Detail ukáže stejná čísla jako žebříček a export, včetně nových faktorů T20. |
+| **F‑d** Aktuální uzavírky ŘSD na mapě (`/api/closures`, pole `srti`) | **do plánu**, Matouš | Živá data na mapě (E4). Backend je hotový. |
+| F‑f Hlasování a hlášení občana | v nápadech | Do 16:00 mají přednost ★1 a ★2. |
+| F‑g Odznak stability pořadí | v nápadech | V pitchi stačí věta. **S25 se proto nedělá.** |
+| č. 16 PDF pro zastupitelstvo, č. 14 časová osa | v nápadech | Až po rozpočtu z API. Do freeze to nestihneme. |
+| č. 9 A vs B, č. 12 widget, č. 13 e‑maily | v nápadech | V pitchi jako rozvoj po hackathonu. |
+| E1–E8 | uzavřeno v nápadech | Vlastníci a pořadí jsou v kap. 20. |
+
+### 26.2 Kdo co dělá (do zkušebních sloučení 15:00, 15:30, 16:00)
+| Kdo | Pořadí úkolů | Kde je zadání |
+|---|---|---|
+| **Matouš** | 1. D1 + D3 + D4 → 2. D2 + karta uzavírky (F‑b) a 3 doporučené uzavírky 2022 (E4) → 3. D7 → 4. ★2 seznam upozornění (E1) → 5. rozpočet z API (E3) a tlačítko „Zdůvodnit“ (E5) → 6. D5, D8, štítek „živá data“ (F‑a), chyby (F‑e) → 7. **F‑c** → 8. **F‑d** → 9. D6 posuvníky nových vah | [docs/FRONTEND.md](docs/FRONTEND.md), „NEJVYŠŠÍ PRIORITA“, kap. 20 |
+| **Šimon** | 1. S21 hesla demo účtů z `.env` → 2. S22 gzip → 3. S24 `engine.warmup()` v lifespanu (T21 je na větvi `tomas`, na `main` přijde v 15:00) → 4. ověřit AI klíč (E5) → 5. ★2 upozornění s Matoušem (E1) → 6. S23 malý žebříček → 7. S14, S15, S18 (kap. 17.3). S25 se nedělá, S26 jen když zbude čas. | kap. 19.3, 20 |
+| **Tomáš** | 1. sloučit `tomas` do `main` v 15:00 (T21–T23 a opravy z review) → 2. `scripts/smoke_api.sh` na Šimonově Macu přes tunel po každém sloučení → 3. T24 výchozí váhy T20 na 50, až Matouš udělá D1 a D6 → 4. pitch: čísla (sekce 4 ověřená), sekce 9 za jádro a data, snímek karty II/303 pro slajd 4 | kap. 19.4, [docs/PITCH.md](docs/PITCH.md) |
+| **Přemek** | Pitch, PDF/PPTX, záložní video, GitHub Pages, test mobilu 375 px (kap. 20.1). Na průchod ukázkou v 15:30 počítat se stavem z `main`. | kap. 20.1, [docs/PITCH.md](docs/PITCH.md) |
+
+**Riziko:** Matouš má nejvíc práce. Když do 15:30 nebude hotové D1 + D2 + karta uzavírky, škrtá se odspodu (F‑d, F‑c, D6) a ★2 se ukáže jen jako seznam upozornění.
+
+**Stav 14:45 (Tomáš):** body Tomáše z kap. 21.3 jsou hotové. **Překryv s kap. 22:** `start-server.command` už řeší část S28 (hesla jednou do `.env`), S29 (klíč krátký, prázdný i výchozí se přegeneruje), S30 (banner) a S31 (VAPID se vygeneruje sám). Šimon v kap. 22 dělá jen to, co zbývá v `backend/` (S27 načtení `.env`, S28 hesla jen při zakládání, S29 odmítnutí startu se slabým klíčem, S32 cookie `Secure`); při úpravě `start-server.command` vychází z verze na `tomas`, ať nevzniknou dvě různé. Na větvi `tomas`: `start-server.command` sám zajistí `CESTY_SECRET_KEY` s 64 znaky (F11), náhodná hesla demo účtů `CESTY_SEED_*_PASSWORD` (pro S21) a VAPID klíče pro push (F12). Vše jde jen do `.env` a nic se nevypisuje. Když `backend/cesty.db` vznikla se starými veřejnými hesly, skript varuje a `RESET_DB=1 ./start-server.command` ji zazálohuje a založí znovu. `scripts/smoke_api.sh` bere heslo úředníka z `.env` (účet `urednik@cesty-khk.test`).
+
+## 27. Provoz: server pro tým teď, hosting a doména po hackathonu (15. 10., ~14:45, Tomáš)
+
+### 27.1 Dnes: Šimonův Mac jako server (platí hned)
+- **Šimon spustí `./start-server.command` hned po sloučení S21 do `main`.** Bez S21 by v databázi byla veřejná hesla ze `seed.py`. Pokud už `backend/cesty.db` existuje, spustí to jednou s `RESET_DB=1`.
+- Skript vypíše adresu `https://….trycloudflare.com`. Šimon ji pošle do týmového chatu. Platí pro všechny: telefony, porotu, push (potřebuje HTTPS).
+- Matouš a Přemek vyvíjí proti němu: `CESTY_API_TARGET=https://….trycloudflare.com npm run dev`. Tomáš po každém sloučení: `scripts/smoke_api.sh https://….trycloudflare.com`.
+- **Pozor:** adresa quick tunelu se mění při každém restartu skriptu. Mac nesmí usnout (napájení, `caffeinate -dims` v druhém terminálu). Záloha pro porotu: odkaz na GitHub Pages s offline štítkem (Přemek) a záložní video.
+
+### 27.2 Po hackathonu: stálá adresa a hosting (nápad do budoucna, dnes se nedělá)
+| Varianta | Cena | Co dá | Na co pozor |
+|---|---|---|---|
+| **A. Cloudflare named tunnel + vlastní doména** (doporučeno jako první krok) | tunel zdarma, doména asi 10 USD za rok (např. `cesty-khk.cz` nebo `.eu`) | stálá HTTPS adresa, žádná změna kódu, běží dál na jednom počítači | počítač musí běžet pořád; `cloudflared tunnel create cesty-khk` + DNS záznam v Cloudflare |
+| **B. Backend na free hostingu** (Render, Fly.io, Railway, Oracle Cloud Free VM) | zdarma až levně | běží bez našeho počítače | SQLite potřebuje trvalý disk (Fly volume, Oracle VM); Render free usíná a disk nemá. Start jádra trvá asi 10 s (warmup). |
+| **C. Frontend zvlášť** (Cloudflare Pages nebo GitHub Pages) | zdarma | rychlý statický web, CDN | `/api` musí jít na backend z B nebo A (CORS `CESTY_CORS_ORIGINS`, cookie `SameSite`). |
+| **D. Kraj** (server nebo cloud KHK) | podle kraje | skutečný provoz pro úředníky | jednání s krajem, správa uživatelů a GDPR (místa občanů). |
+
+Doporučené pořadí po hackathonu: A hned (stálý odkaz pro porotu a partnery), pak B + C, když má aplikace běžet bez našeho počítače. Tajné hodnoty (`.env`) zůstávají na serveru, nikdy v gitu.

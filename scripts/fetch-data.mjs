@@ -358,6 +358,27 @@ async function main() {
   addPoi(railStopsRaw, "rail", ["nazev"]);
   addPoi(busStopsRaw, "stop", ["nazev"]);
 
+  // Vrstvy píšou název obce různě ("Hradec Králové" i "Hradec králové"). Sjednotit na
+  // nejčastější zápis, jinak má úsek stejnou obec dvakrát (T22).
+  const spellings = {};
+  for (const p of pois) {
+    if (!p.obec) continue;
+    const key = p.obec.toLocaleLowerCase("cs");
+    (spellings[key] ??= {})[p.obec] = (spellings[key][p.obec] || 0) + 1;
+  }
+  const canonObec = (name) => {
+    const s = spellings[String(name).toLocaleLowerCase("cs")];
+    return s ? Object.entries(s).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "cs"))[0][0] : name;
+  };
+  for (const p of pois) if (p.obec) p.obec = canonObec(p.obec);
+  for (const name of Object.keys(threatened)) {
+    const canon = canonObec(name);
+    if (canon !== name) {
+      threatened[canon] ??= threatened[name];
+      delete threatened[name];
+    }
+  }
+
   const poiGrid = buildGrid(pois);
 
   const lines = busLinesRaw.map((f) => {

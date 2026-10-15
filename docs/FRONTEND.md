@@ -150,6 +150,11 @@ Ověřeno na `main` (`7ea72fc`) přes `curl`. Pořadí v tabulce = pořadí prá
 
 **Až potom rozšiřování:** M-c (uzavírky 2022), M-d (rozpočet přes API), M-e (Moje cesty), M-f (povodeň, Moje obec) a nápady F‑c, F‑d, F‑f, F‑g z `NAPADY.md`.
 
+**Doplněno 14:20 (rozhodnutí Tomáše, kap. 26 v `PLAN_FINAL.md`):** z nápadů jdou do plánu jen dva, oba až po D a ★2:
+- **F‑c rozpad skóre z API:** v detailu úseku brát `breakdown` z `GET /api/useky/{id}` (seznam `{key, label, points}`) místo `src/lib/priority.ts`. Lokální výpočet nechat jen pro režim bez serveru. Asi 20 min.
+- **F‑d aktuální uzavírky ŘSD:** šedá vrstva na mapě z `GET /api/closures`, pole `srti` (`lon`, `lat`, `label`, `full_closure`, `active`, `road_label`). Do Zdrojů dat přidat NDIC SRTI (CC BY 4.0). Asi 30 min.
+- F‑f a F‑g zůstávají v nápadech.
+
 **Hotovo, když:** úředník vidí štítek „živá data“, pin přežije obnovení stránky, simulátor ukáže dojezd ZZS z backendu a posuvník přes `start-server.command` (tunel) reaguje do 1 s.
 
 ## Kontrola 15. 10. ~14:30

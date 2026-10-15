@@ -190,7 +190,7 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Kdo:** Tomáš T16 (`backtest_2022()`).
 
 ### 9. Srovnání dvou úseků A vs B
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 26).
 
 - Dva úseky vedle sebe: rozpad skóre, objížďka, dopady. Zvýrazní faktor, který rozhodl.
 - **Proč:** úředník musí obhájit, proč A a ne B. Matouš M2.1.
@@ -213,13 +213,13 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Kdo:** Šimon S13, Matouš obrazovka.
 
 ### 12. Widget pro weby obcí
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 26).
 
 - Malá vložitelná mapka (`iframe`) se stavem silnic a uzavírkami v obci. Obec ji dá na svůj web.
 - **Závisí na:** Moje obec (nápad 11).
 
 ### 13. Skutečné odesílání e‑mailů
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 26).
 
 - Dnes je v plánu jen testovací SMTP (Mailpit) a náhled na webu. Skutečný e‑mail potřebuje SMTP účet a ochranu proti spamu.
 - **Kdo:** Šimon, až po Web Push.
@@ -231,7 +231,7 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho se hned nedělá.
 
 ### 14. Časová osa uzavírek na mapě
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 26).
 
 - Posuvník s datem nad mapou. Mapa ukáže uzavírky a opravy platné v ten den (dnes, za týden, v listopadu).
 - **Proč:** úředník hned vidí souběh uzavírek (navazuje na č. 3), občan vidí, kdy ho to potká.
@@ -245,7 +245,7 @@ Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho
 - **Kdo:** Matouš (obrazovka), výpočet je stejný jako č. 1.
 
 ### 16. Plán staveb jako PDF pro zastupitelstvo
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá.
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 26).
 
 - Tlačítko „Tisk / PDF“: mapa staveb, tabulka, předpoklady ceny a štítek „návrh, ne rozhodnutí“.
 - **Kdo:** Matouš (tiskový styl v CSS, bez backendu).
@@ -332,11 +332,11 @@ Shrnutí: frontend dnes běží skoro celý z lokálních JSON v `public/data` (
 
 - **F‑a. Štítek zdroje dat v hlavičce:** „živá data ze serveru“ nebo „offline snímek“ podle `/api/health`. Porota uvidí, že běží backend, a my uvidíme, když spadne fallback.
 - **F‑b. Karta uzavírky z `/closures/preview`:** auta za den s kvalitou (`csd2025` / `odhad`), středoškoláci denně, odříznuté obce, dojezd ZZS a HZS (`rescue.obce` s časem před a po, limit 20 min), kolize s jinými uzavírkami. Rozšiřuje M-b o T18.
-- **F‑c. Rozpad skóre z API:** `GET /api/useky/{id}` vrací `breakdown` po faktorech, včetně T20. Nahradí výpočet v `priority.ts` a čísla budou stejná jako v exportu.
-- **F‑d. Aktuální uzavírky ŘSD na mapě:** `GET /api/closures` vrací i `srti` (NDIC, CC BY 4.0). Šedá vrstva „právě teď zavřeno“ vedle simulace.
+- **F‑c. → Přesunuto do plánu (14:20, kap. 26).** **Rozpad skóre z API:** `GET /api/useky/{id}` vrací `breakdown` po faktorech, včetně T20. Nahradí výpočet v `priority.ts` a čísla budou stejná jako v exportu.
+- **F‑d. → Přesunuto do plánu (14:20, kap. 26).** **Aktuální uzavírky ŘSD na mapě:** `GET /api/closures` vrací i `srti` (NDIC, CC BY 4.0). Šedá vrstva „právě teď zavřeno“ vedle simulace.
 - **F‑e. Načítání a chyby:** skeleton nebo spinner při čekání a krátká hláška při chybě 5xx. Teď se chyba schová do `console.warn` a tiše se přepne na lokální výpočet.
-- **F‑f. Hlasování a hlášení občana:** endpointy `votes` a `reports` existují, UI chybí. Tlačítko „Tahle silnice je špatná“ u úseku, u úředníka fronta hlášení.
-- **F‑g. Odznak stability pořadí:** „jisté“ / „citlivé na váhy“ u úseku v top 100. Potřebuje B2.
+- **F‑f. Zůstává v nápadech (14:20).** **Hlasování a hlášení občana:** endpointy `votes` a `reports` existují, UI chybí. Tlačítko „Tahle silnice je špatná“ u úseku, u úředníka fronta hlášení.
+- **F‑g. Zůstává v nápadech (14:20), S25 se nedělá.** **Odznak stability pořadí:** „jisté“ / „citlivé na váhy“ u úseku v top 100. Potřebuje B2.
 
 ### Návrhy: backend
 
@@ -364,6 +364,8 @@ Doplněk k části D. D je o tom, jak spolu mluví frontend a backend. E je o to
 **Shrnutí:** jádro a API jsou hotové a silné. Porota ale uvidí hlavně frontend, a ten skoro všechno počítá lokálně. Na `main` je přihlášení, rozpočtový plánovač, Moje cesty, patička a nový design. Největší rizika jsou tři: **★2 nejde ukázat**, **pitch a PDF nemá nikdo** a **silná data z jádra nejsou na obrazovce**.
 
 ### Důležité nedostatky
+**→ Přesunuto do plánu (14:20):** E1–E8 mají vlastníky a pořadí v [PLAN_FINAL.md](PLAN_FINAL.md), kap. 20 a 21. Tady jsou jen jako hodnocení.
+
 **E1. ★2 Web Push ve frontendu chybí úplně.** Není service worker ani `PushManager`. V Moje cesty je jen zaškrtávátko „Poslat upozornění“. Backend (`notify/`, `/api/me/push-subscription`, VAPID) je hotový. Příběh „úředník potvrdí uzavírku → občanovi pípne telefon“ je druhý pilíř pitche. Bez něj ukázat aspoň seznam upozornění v aplikaci (`GET /api/me/notifications`). (Matouš, Šimon.)
 
 **E2. Pitch, PDF/PPTX a záložní video nemá nikdo.** Odevzdání 17:15, freeze 16:00. Pitch je 5 minut a rozhoduje víc než kterákoli funkce. (Tým, hned.)
