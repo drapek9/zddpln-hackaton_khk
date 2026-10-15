@@ -89,6 +89,7 @@ Před každým blokem práce: `git fetch`, přečíst změny v `PLAN_FINAL.md` a
 
 - **15. 10., ~9:45 (Tomáš):** T6 `closure_impact` je hotové a pushnuté na větev `tomas` (`990270c`), 10/10 testů. Šimon ho může volat z S5 hned, viz `docs/BACKEND.md`, „Stav 15. 10.“. Další podle kap. 4: T13 data → T14 toky studentů → T7 → T16.
 - **15. 10., 9:45 (Tomáš):** Upřesnění: pracují všichni, jen jejich práce ještě není pushnutá. Matouš a Přemek dělají spolu na jednom počítači. Šimonova HTML stránka pro záznam práce zatím na `main` není. Do té doby se stav zapisuje sem.
+- **15. 10., 10:00 (Matouš):** Frontend v0, v1, v2 ★1 a Zdroje dat jsou pushnuté na větev `matous` (`073b493`). Simulátor ★1 jede end-to-end nad snímkem objížděk z jádra a čeká jen na S4/S5 od Šimona. Detaily a požadavky na API jsou v `docs/FRONTEND.md`, „Stav 15. 10.“. `CESTY_API_TARGET` ve `vite.config.ts` je hotové (kap. 6, bod 2).
 
 ---
 
