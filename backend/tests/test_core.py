@@ -88,3 +88,51 @@ def test_osm_roads_connect_the_network(engine: Engine):
     khk_in_biggest = {d["road_id"] for _, _, d in g.subgraph(biggest).edges(data=True) if d["road_id"] > 0}
     # Other components are OSM-only roads outside the kraj (e.g. Poland).
     assert len(khk_in_biggest) / len(engine.data.roads) > 0.9
+
+
+def test_impact_alerts_match_frontend(engine: Engine):
+    """Python impact_alerts == src/lib/priority.ts impactAlerts (texts, order, levels)."""
+    from app.core import impact
+
+    fx = json.loads((FIXTURES / "ts_alerts.json").read_text(encoding="utf-8"))
+    mismatches = []
+    for road_id, k, ts_alerts in fx["rows"]:
+        rep = fx["repairs"][k]
+        py = impact.impact_alerts(
+            engine.road(road_id),
+            rep and rep["from"],
+            rep and rep["to"],
+            rep and rep["restriction"],
+            engine.data.connections,
+            has_repair=rep is not None,
+        )
+        if [a.model_dump() for a in py] != ts_alerts:
+            mismatches.append((road_id, k))
+    assert not mismatches, mismatches[:10]
+
+
+def test_school_year_and_winter():
+    from app.core.impact import in_school_year, in_winter
+
+    assert not in_school_year("2026-07-01", "2026-08-31")
+    assert in_school_year("2026-08-15", "2026-09-05")
+    assert in_school_year("2026-12-20", "2027-01-10")
+    assert in_school_year(None, None)
+    assert in_winter("2026-03-20", "2026-04-10")
+    assert not in_winter("2026-04-01", "2026-10-31")
+    assert in_winter("2026-10-20", "2026-11-02")
+
+
+def test_closure_impact_adds_detour_alerts(engine: Engine):
+    found = next(r["id"] for r in engine.data.roads if engine.detour(r["id"]).found)
+    missing = next(r["id"] for r in engine.data.roads if not engine.detour(r["id"]).found)
+
+    full = engine.closure_impact(found, "2026-07-01", "2026-08-20", "úplná uzavírka")
+    assert any(a.title.startswith("Objížďka +") for a in full)
+    partial = engine.closure_impact(found, "2026-07-01", "2026-08-20", "částečné omezení")
+    assert not any(a.title.startswith("Objížďka") for a in partial)
+
+    cut = engine.closure_impact(missing, restriction="úplná uzavírka")
+    assert any(a.title == "Objížďka nenalezena" and a.level == "critical" for a in cut)
+    # No term and no restriction = no closure yet: no detour alerts (TS repair = null).
+    assert not any(a.title.startswith("Objížďka") for a in engine.closure_impact(found))

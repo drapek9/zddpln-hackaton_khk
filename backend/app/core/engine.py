@@ -9,10 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable
 
-from . import scoring
+from . import impact, scoring
 from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph
-from .schemas import DetourResult, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .schemas import Alert, DetourResult, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -54,6 +54,28 @@ class Engine:
     def detour(self, road_id: int) -> DetourResult:
         self._require(road_id)
         return self.graph.detour(road_id)
+
+    def closure_impact(
+        self,
+        road_id: int,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        restriction: str | None = None,
+    ) -> list[Alert]:
+        """Alerts for closing a road in a term (ISO dates). Port of TS impactAlerts.
+
+        A full closure ("uzavírka" in `restriction`) also adds detour alerts.
+        No dates and no restriction = no closure planned yet (TS `repair = null`):
+        only the generic alerts for the road.
+        """
+        road = self._require(road_id)
+        has_repair = date_from is not None or date_to is not None or restriction is not None
+        alerts = impact.impact_alerts(road, date_from, date_to, restriction, self.data.connections, has_repair)
+        if has_repair and impact.is_full_closure(restriction):
+            d = self.graph.detour(road_id)
+            via = [self.data.by_id[i] for i in dict.fromkeys(d.via_road_ids) if i in self.data.by_id]
+            alerts += impact.detour_alerts(road, d, via, impact.in_school_year(date_from, date_to))
+        return alerts
 
     def route(self, home: LonLat, work: LonLat, closed: Iterable[int] = ()) -> RouteResult:
         """Fastest route between two points. `closed` = road ids to avoid."""

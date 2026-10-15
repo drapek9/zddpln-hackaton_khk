@@ -65,6 +65,14 @@ Stav, který se mění (piny, uzavírky, hlasy, váhy admina), drží **Šimon v
   - Napojení na sebe navazujících úseků: p95 36 m. Uzly OSM se spojují jen ve sdílených bodech, ne v toleranci 25 m.
 - `Engine` pracuje s kusy úseků (`road.id`), stejně jako frontend a opravy ve v1.
 
+**Stav 15. 10. (Tomáš):**
+- **T6 hotovo:** `Engine.closure_impact(road_id, date_from, date_to, restriction)` vrací `list[Alert]`.
+  - Varování jsou přesný port `impactAlerts` z frontendu (texty, pořadí, úrovně). Hlídá to test nad 2 028 případy (`tests/fixtures/ts_alerts.json`).
+  - Úplná uzavírka (`"uzavírka"` v `restriction`) přidá varování k objížďce: +km/+min, autobusy objížďkou, havarijní úseky na objížďce, silnice I. třídy (ŘSD), školy kolem objížďky, „Objížďka nenalezena“.
+  - Bez termínu i omezení (`None`) = obecná varování k úseku, jako `repair = null` ve frontendu.
+  - Pro Šimona (S5): `POST /api/closures` volá `Engine.detour(id)` a `Engine.closure_impact(id, od, do, omezeni)`. Data ve formátu `RRRR-MM-DD`.
+  - Počet škol u objížďky je zatím nadsazený: bod se počítá ke všem úsekům do 450 m. Opraví T11.
+
 ## 3. Co dělá Šimon (platforma)
 
 | # | Úkol | Endpointy / soubory | Pro hvězdu |
