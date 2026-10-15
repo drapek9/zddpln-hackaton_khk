@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
+import Fold from "./Fold";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STAV_COLOR, STAV_ORDER, formatKm, formatSil } from "../lib/geo";
@@ -15,6 +16,9 @@ type Props = {
   onRepairs: (next: Repair[]) => void;
   onHome: () => void;
 };
+
+// Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
+const LIST_STEP = 15;
 
 const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "stav", label: "Stav povrchu" },
@@ -44,6 +48,9 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
   const [detour, setDetour] = useState<[number, number][] | null>(null);
   // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
   const [demoId, setDemoId] = useState<number | null>(null);
+  const [paramsOpen, setParamsOpen] = useState(false);
+  const [listLimit, setListLimit] = useState(LIST_STEP);
+  const weightsChanged = WEIGHT_LABELS.some((w) => weights[w.key] !== DEFAULT_WEIGHTS[w.key]);
 
   const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
 
@@ -139,59 +146,6 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
               ))}
             </select>
           </div>
-          <label className="check">
-            <input type="checkbox" checked={showCondition} onChange={(e) => setShowCondition(e.target.checked)} />
-            Stav povrchu
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
-            Školy, IZS, nemocnice
-          </label>
-          <h3>Simulátor uzavírky</h3>
-          <p className="muted">Vyberte úsek v mapě nebo ukázku. Vpravo uvidíte objížďku a dopady.</p>
-          <div className="demo-closures">
-            {DEMO_CLOSURES.map((d) => (
-              <button
-                key={d.roadId}
-                className={d.roadId === selectedId ? "active" : ""}
-                onClick={() => {
-                  setDemoId(d.roadId);
-                  setSelectedId(d.roadId);
-                }}
-              >
-                <strong>{d.label}</strong>
-                <span>{d.story}</span>
-              </button>
-            ))}
-          </div>
-          <h3>Váhy priority</h3>
-          <p className="muted">Posuvníky mění pořadí úseků. Nic se neukládá do dat kraje.</p>
-          {WEIGHT_LABELS.map((w) => (
-            <label key={w.key} className="weight">
-              <span>
-                {w.label}
-                <b>{weights[w.key]}</b>
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={weights[w.key]}
-                onChange={(e) => setWeights({ ...weights, [w.key]: Number(e.target.value) })}
-              />
-            </label>
-          ))}
-          <h3>Žebříček priority</h3>
-          <p className="muted">
-            {source === "api" ? (
-              <span className="src-tag">z API</span>
-            ) : (
-              <span className="src-tag" title="GET /api/ranking zatím neběží, stejný algoritmus jako backend">
-                lokální výpočet
-              </span>
-            )}{" "}
-            Třída podle pořadí v síti: horních 10 % kritická, 20 % vysoká, 30 % střední, zbytek nízká.
-          </p>
           <div className="class-filter">
             {(["vše", ...CLASS_ORDER] as const).map((c) => (
               <button key={c} className={cls === c ? "on" : ""} onClick={() => setCls(c)}>
@@ -201,31 +155,89 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
               </button>
             ))}
           </div>
-          <ul className="rank">
-            {ranked.slice(0, 18).map(({ r, row }) => (
-              <li key={r.id}>
-                <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
-                  <span className="rank-sil">
-                    <i style={{ background: STAV_COLOR[r.stav] }} />
-                    {formatSil(r.sil, r.trida)}
-                    <span className="class-tag" style={{ background: CLASS_COLOR[row.priority] }}>
-                      {CLASS_LABEL[row.priority]}
-                    </span>
-                    {row.pinned && (
-                      <span className="pin-tag" title={row.pinReason || "připíchnuto úředníkem"}>
-                        📌
+          <Fold title="Žebříček priority" meta={`${ranked.length} úseků`} open>
+            <p className="muted">
+              {source === "api" ? (
+                <span className="src-tag">z API</span>
+              ) : (
+                <span className="src-tag" title="GET /api/ranking zatím neběží, stejný algoritmus jako backend">
+                  lokální výpočet
+                </span>
+              )}{" "}
+              Horních 10 % sítě je kritická, 20 % vysoká, 30 % střední, zbytek nízká.
+            </p>
+            <ul className="rank">
+              {ranked.slice(0, listLimit).map(({ r, row }) => (
+                <li key={r.id}>
+                  <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
+                    <span className="rank-sil">
+                      <i style={{ background: STAV_COLOR[r.stav] }} />
+                      {formatSil(r.sil, r.trida)}
+                      <span className="class-tag" style={{ background: CLASS_COLOR[row.priority] }}>
+                        {CLASS_LABEL[row.priority]}
                       </span>
-                    )}
-                  </span>
-                  <span className="rank-meta">
-                    #{row.rank} · {r.okres} · {formatKm(r.delka)}
-                  </span>
-                  <b>{row.score}</b>
+                      {row.pinned && (
+                        <span className="pin-tag" title={row.pinReason || "připíchnuto úředníkem"}>
+                          📌
+                        </span>
+                      )}
+                    </span>
+                    <span className="rank-meta">
+                      #{row.rank} · {r.okres} · {formatKm(r.delka)}
+                    </span>
+                    <b>{row.score}</b>
+                  </button>
+                </li>
+              ))}
+              {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
+            </ul>
+            {ranked.length > LIST_STEP && (
+              <div className="row-actions list-more">
+                {listLimit < ranked.length && (
+                  <button className="btn" onClick={() => setListLimit(listLimit + 50)}>
+                    Dalších 50
+                  </button>
+                )}
+                {listLimit < ranked.length ? (
+                  <button className="btn" onClick={() => setListLimit(ranked.length)}>
+                    Rozbalit vše ({ranked.length})
+                  </button>
+                ) : (
+                  <button className="btn" onClick={() => setListLimit(LIST_STEP)}>
+                    Sbalit
+                  </button>
+                )}
+              </div>
+            )}
+          </Fold>
+          <Fold title="Ukázkové uzavírky" meta={DEMO_CLOSURES.length}>
+            <p className="muted">Vyberte ukázku nebo úsek v mapě. Vpravo v záložce Uzavírka uvidíte objížďku a dopady.</p>
+            <div className="demo-closures">
+              {DEMO_CLOSURES.map((d) => (
+                <button
+                  key={d.roadId}
+                  className={d.roadId === selectedId ? "active" : ""}
+                  onClick={() => {
+                    setDemoId(d.roadId);
+                    setSelectedId(d.roadId);
+                  }}
+                >
+                  <strong>{d.label}</strong>
+                  <span>{d.story}</span>
                 </button>
-              </li>
-            ))}
-            {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
-          </ul>
+              ))}
+            </div>
+          </Fold>
+          <Fold title="Vrstvy mapy">
+            <label className="check">
+              <input type="checkbox" checked={showCondition} onChange={(e) => setShowCondition(e.target.checked)} />
+              Stav povrchu
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
+              Školy, IZS, nemocnice
+            </label>
+          </Fold>
         </aside>
         <div className="map-wrap">
           <MapView
@@ -240,6 +252,34 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             showPois={showPois}
             detour={detour}
           />
+          <div className={`params ${paramsOpen ? "open" : ""}`}>
+            <button className="params-toggle" onClick={() => setParamsOpen(!paramsOpen)} aria-expanded={paramsOpen}>
+              ⚙ Parametry priority{weightsChanged ? " · upraveno" : ""} {paramsOpen ? "▴" : "▾"}
+            </button>
+            {paramsOpen && (
+              <div className="params-body">
+                <p className="muted">Váhy mění pořadí úseků jen pro vás. Do dat kraje se nic neukládá.</p>
+                {WEIGHT_LABELS.map((w) => (
+                  <label key={w.key} className="weight">
+                    <span>
+                      {w.label}
+                      <b>{weights[w.key]}</b>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={weights[w.key]}
+                      onChange={(e) => setWeights({ ...weights, [w.key]: Number(e.target.value) })}
+                    />
+                  </label>
+                ))}
+                <button className="btn" disabled={!weightsChanged} onClick={() => setWeights(DEFAULT_WEIGHTS)}>
+                  Vrátit výchozí váhy
+                </button>
+              </div>
+            )}
+          </div>
           <div className="legend">
             {STAV_ORDER.map((s) => (
               <span key={s}>

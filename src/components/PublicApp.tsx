@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
+import Fold from "./Fold";
 import type { Dataset, Repair, Report } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import { STATUS_LABEL, STAV_COLOR, formatPeriod } from "../lib/geo";
@@ -59,7 +60,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
           Cesty KHK
         </button>
         <span className="mode-tag light">Veřejnost</span>
-        <label className="search grow">
+        <label className="search top-search">
           <input
             placeholder="Hledat okres, silnici nebo opravu"
             value={place}
@@ -90,40 +91,44 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                   <option value="done">dokončeno</option>
                 </select>
               </div>
-              <ul className="rank">
-                {(placeHits.length ? placeHits : visibleRepairs).map((r) => {
-                  const road = data.roads.find((x) => x.id === r.roadId);
-                  return (
-                    <li key={r.id}>
-                      <button className={r.roadId === selectedId ? "active" : ""} onClick={() => setSelectedId(r.roadId)}>
-                        <span className="rank-sil">
-                          <i className={r.status} />
-                          {r.title}
-                        </span>
-                        <span className="rank-meta">
-                          {STATUS_LABEL[r.status]} · {formatPeriod(r)}
-                          {road ? ` · ${road.okres}` : ""}
-                          {r.simulated ? " · simulace" : ""}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              <label className="sub">
-                Odebírat upozornění na okres
-                <input
-                  placeholder="např. Náchod"
-                  value={subscribed}
-                  onChange={(e) => setSubscribed(e.target.value)}
-                />
-              </label>
-              {subscribed && (
-                <p className="hint">
-                  Demo: upozornění pro {subscribed} se uloží v tomto prohlížeči. V ostré verzi by odešly
-                  e-mailem nebo do kalendáře.
-                </p>
-              )}
+              <Fold title="Seznam oprav" meta={(placeHits.length ? placeHits : visibleRepairs).length} open>
+                <ul className="rank">
+                  {(placeHits.length ? placeHits : visibleRepairs).map((r) => {
+                    const road = data.roads.find((x) => x.id === r.roadId);
+                    return (
+                      <li key={r.id}>
+                        <button className={r.roadId === selectedId ? "active" : ""} onClick={() => setSelectedId(r.roadId)}>
+                          <span className="rank-sil">
+                            <i className={r.status} />
+                            {r.title}
+                          </span>
+                          <span className="rank-meta">
+                            {STATUS_LABEL[r.status]} · {formatPeriod(r)}
+                            {road ? ` · ${road.okres}` : ""}
+                            {r.simulated ? " · simulace" : ""}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Fold>
+              <Fold title="Odebírat upozornění">
+                <label className="sub">
+                  Okres
+                  <input
+                    placeholder="např. Náchod"
+                    value={subscribed}
+                    onChange={(e) => setSubscribed(e.target.value)}
+                  />
+                </label>
+                {subscribed && (
+                  <p className="hint">
+                    Demo: upozornění pro {subscribed} se uloží v tomto prohlížeči. V ostré verzi by odešly
+                    e-mailem nebo do kalendáře.
+                  </p>
+                )}
+              </Fold>
             </>
           )}
           {tab === "bus" && (
@@ -205,14 +210,18 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome }: 
                 {clickPoint ? "Odeslat správě" : "Nejdřív klikněte do mapy"}
               </button>
               <p className="muted">Demo: hlášení se ukládá jen v tomto prohlížeči.</p>
-              <ul className="plain">
-                {reports.slice(0, 6).map((r) => (
-                  <li key={r.id}>
-                    {r.obec || "Kraj"} · {r.note}
-                    <em>{r.created.slice(0, 10)}</em>
-                  </li>
-                ))}
-              </ul>
+              {reports.length > 0 && (
+                <Fold title="Moje hlášení" meta={reports.length}>
+                  <ul className="plain">
+                    {reports.slice(0, 6).map((r) => (
+                      <li key={r.id}>
+                        {r.obec || "Kraj"} · {r.note}
+                        <em>{r.created.slice(0, 10)}</em>
+                      </li>
+                    ))}
+                  </ul>
+                </Fold>
+              )}
             </form>
           )}
         </aside>

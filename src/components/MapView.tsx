@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { Poi, Repair, Road, Stop } from "../lib/types";
 import { KIND_COLOR, STAV_COLOR, midpoint } from "../lib/geo";
@@ -16,6 +16,9 @@ type Props = {
   /** Objížďka uzavřeného úseku ([lon, lat]), simulátor uzavírky. */
   detour?: [number, number][] | null;
 };
+
+// Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
+const HOME_VIEW = { center: [15.83, 50.35] as [number, number], zoom: 8.4, bearing: 0, pitch: 0 };
 
 const STYLES = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
@@ -81,16 +84,21 @@ export default function MapView({
   detourRef.current = detour;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  // Otáčení a náklon (3D) je ve výchozím stavu vypnuté, aby se mapa omylem nepřetočila.
+  const [tilt, setTilt] = useState(false);
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: ref.current,
       style: STYLES[theme],
-      center: [15.83, 50.35],
-      zoom: 8.4,
+      center: HOME_VIEW.center,
+      zoom: HOME_VIEW.zoom,
       attributionControl: false,
+      dragRotate: false,
     });
+    map.touchZoomRotate.disableRotation();
+    map.touchPitch.disable();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(
       new maplibregl.AttributionControl({
@@ -318,5 +326,41 @@ export default function MapView({
     }
   }, [theme]);
 
-  return <div ref={ref} className="map" />;
+  const toggleTilt = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !tilt;
+    setTilt(next);
+    if (next) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      map.touchPitch.enable();
+      map.easeTo({ pitch: 50, duration: 500 });
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      map.touchPitch.disable();
+      map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+    }
+  };
+
+  const goHome = () => mapRef.current?.flyTo({ ...HOME_VIEW, pitch: tilt ? 50 : 0, duration: 900 });
+
+  return (
+    <>
+      <div ref={ref} className="map" />
+      <div className="map-tools">
+        <button
+          className={tilt ? "on" : ""}
+          onClick={toggleTilt}
+          title={tilt ? "Vypnout otáčení a náklon" : "Zapnout otáčení a náklon (pravé tlačítko myši nebo dva prsty)"}
+        >
+          3D {tilt ? "zap." : "vyp."}
+        </button>
+        <button onClick={goHome} title="Vrátit mapu na celý kraj">
+          ⌂ Celý kraj
+        </button>
+      </div>
+    </>
+  );
 }

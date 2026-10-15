@@ -6,6 +6,7 @@ import { buildAnnouncement } from "../lib/announce";
 import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, type RankRow } from "../lib/ranking";
 import type { Pin, PriorityClass } from "../lib/api";
 import ClosureCard from "./ClosureCard";
+import Fold from "./Fold";
 
 type Props = {
   road: Road;
@@ -60,6 +61,8 @@ export default function RoadPanel({
   const [copied, setCopied] = useState(false);
   const [pinClass, setPinClass] = useState<PriorityClass>(pin?.priority || "kriticka");
   const [pinReason, setPinReason] = useState(pin?.reason || "");
+  // Úředník: obsah rozdělený do záložek, simulace uzavírky zvlášť od přehledu a priority.
+  const [tab, setTab] = useState<"prehled" | "uzavirka" | "priorita">(simulate ? "uzavirka" : "prehled");
 
   const draft: Repair = {
     id: existing?.id || `plan-${road.id}-${Date.now()}`,
@@ -133,29 +136,34 @@ export default function RoadPanel({
         </p>
       </div>
 
-      <div className="chips">
-        {Object.entries(road.counts)
-          .filter(([, n]) => n)
-          .map(([k, n]) => (
-            <span key={k} className="chip">
-              {KIND_LABEL[k] || k} {n}
-            </span>
+      {mode === "admin" && (
+        <div className="tabs panel-tabs" role="tablist">
+          {(
+            [
+              ["prehled", "Přehled"],
+              ["uzavirka", "Uzavírka"],
+              ["priorita", "Priorita"],
+            ] as const
+          ).map(([key, label]) => (
+            <button key={key} role="tab" aria-selected={tab === key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
+              {label}
+            </button>
           ))}
-        {road.lines.length > 0 && <span className="chip">{road.lines.length} linek</span>}
-        {road.hsoo?.length > 0 && <span className="chip">ohrožená oblast</span>}
-      </div>
+        </div>
+      )}
 
-      {mode === "admin" && onPlan && (
+      {tab === "uzavirka" && mode === "admin" && onPlan && (
         <section className="plan-form">
-          <h3>Simulace uzavírky</h3>
-          <label>
-            Od
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label>
-            Do
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
+          <div className="form-grid">
+            <label>
+              Od
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </label>
+            <label>
+              Do
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+          </div>
           <label>
             Omezení
             <select value={restriction} onChange={(e) => setRestriction(e.target.value)}>
@@ -198,13 +206,19 @@ export default function RoadPanel({
                 setTimeout(() => setCopied(false), 1500);
               }}
             >
-              {copied ? "Zkopírováno" : "Oznámení pro obce"}
+              {copied ? "Zkopírováno" : "Kopírovat oznámení"}
             </button>
           </div>
-          <pre className="announce">{text}</pre>
+          <Fold title="Upozornění pro tento termín" meta={liveAlerts.length} open>
+            <AlertList alerts={liveAlerts} />
+          </Fold>
+          <Fold title="Návrh oznámení pro obce">
+            <pre className="announce">{text}</pre>
+          </Fold>
         </section>
       )}
-      {mode === "admin" && onPin && (
+
+      {tab === "priorita" && mode === "admin" && onPin && (
         <section className="pin-form">
           <h3>Připíchnout prioritu</h3>
           <p className="muted">Volba úředníka má přednost před modelem. Třída modelu zůstane vidět.</p>
@@ -233,71 +247,96 @@ export default function RoadPanel({
             )}
           </div>
           <p className="fine">Ukládá se zatím jen v tomto prohlížeči (backend S2/S4 ještě není).</p>
+          <h3>Proč právě tento úsek</h3>
+          <Breakdown road={road} weights={weights} />
         </section>
       )}
 
-      <section>
-        <h3>Upozornění při opravě</h3>
-        <div className="alerts">
-          {(mode === "admin" ? liveAlerts : alerts).map((a) => (
-            <article key={a.title} className={`alert ${a.level}`}>
-              <strong>{a.title}</strong>
-              <p>{a.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {road.lines.length > 0 && (
-        <section>
-          <h3>Linky, které se budou muset změnit</h3>
-          <ul className="plain">
-            {road.lines.map((l) => (
-              <li key={l.linka}>
-                <b>{l.linka}</b> {l.trasa}
-                {l.jr && (
-                  <a href={l.jr} target="_blank" rel="noreferrer">
-                    jízdní řád
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {["school", "hospital", "zzs", "hzs", "stop", "social", "industry"].map((kind) => {
-        const rows = uniqueSamples(road.samples[kind]);
-        if (!rows?.length) return null;
-        return (
-          <section key={kind}>
-            <h3>{KIND_LABEL[kind]}</h3>
-            <ul className="plain">
-              {rows.map((s) => (
-                <li key={s.name + s.dist}>
-                  {s.name}
-                  <em>
-                    {s.dist} m{s.obec ? ` · ${s.obec}` : ""}
-                  </em>
-                </li>
+      {tab === "prehled" && (
+        <>
+          <div className="chips">
+            {Object.entries(road.counts)
+              .filter(([, n]) => n)
+              .map(([k, n]) => (
+                <span key={k} className="chip">
+                  {KIND_LABEL[k] || k} {n}
+                </span>
               ))}
-            </ul>
-          </section>
-        );
-      })}
+            {road.lines.length > 0 && <span className="chip">{road.lines.length} linek</span>}
+            {road.hsoo?.length > 0 && <span className="chip">ohrožená oblast</span>}
+          </div>
 
-      <section>
-        <h3>Proč právě tento úsek</h3>
-        <ul className="plain">
-          {scoreBreakdown(road, weights).map((row) => (
-            <li key={row.key}>
-              {row.key}
-              <em>{row.value}</em>
-            </li>
-          ))}
-        </ul>
-      </section>
+          <Fold title="Upozornění při opravě" meta={alerts.length} open>
+            <AlertList alerts={alerts} />
+          </Fold>
 
+          {road.lines.length > 0 && (
+            <Fold title="Linky, které se budou muset změnit" meta={road.lines.length}>
+              <ul className="plain">
+                {road.lines.map((l) => (
+                  <li key={l.linka}>
+                    <b>{l.linka}</b> {l.trasa}
+                    {l.jr && (
+                      <a href={l.jr} target="_blank" rel="noreferrer">
+                        jízdní řád
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Fold>
+          )}
+
+          {["school", "hospital", "zzs", "hzs", "stop", "social", "industry"].map((kind) => {
+            const rows = uniqueSamples(road.samples[kind]);
+            if (!rows?.length) return null;
+            return (
+              <Fold key={kind} title={KIND_LABEL[kind]} meta={rows.length}>
+                <ul className="plain">
+                  {rows.map((s) => (
+                    <li key={s.name + s.dist}>
+                      {s.name}
+                      <em>
+                        {s.dist} m{s.obec ? ` · ${s.obec}` : ""}
+                      </em>
+                    </li>
+                  ))}
+                </ul>
+              </Fold>
+            );
+          })}
+
+          <Fold title="Proč právě tento úsek">
+            <Breakdown road={road} weights={weights} />
+          </Fold>
+        </>
+      )}
     </div>
+  );
+}
+
+function AlertList({ alerts }: { alerts: ReturnType<typeof impactAlerts> }) {
+  return (
+    <div className="alerts">
+      {alerts.map((a) => (
+        <article key={a.title} className={`alert ${a.level}`}>
+          <strong>{a.title}</strong>
+          <p>{a.detail}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function Breakdown({ road, weights }: { road: Road; weights: Weights }) {
+  return (
+    <ul className="plain">
+      {scoreBreakdown(road, weights).map((row) => (
+        <li key={row.key}>
+          {row.key}
+          <em>{row.value}</em>
+        </li>
+      ))}
+    </ul>
   );
 }
