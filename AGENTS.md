@@ -12,6 +12,7 @@ Read these documents first:
 - `PLAN_FINAL.md`: product plan, in Czech.
 - `docs/BACKEND.md`: backend split, API contract and milestones, in Czech.
 - `docs/FRONTEND.md`: frontend plan; it also lists the questions an agent must ask Matouš first.
+- `NAPADY.md`: backlog of approved ideas that are **not tasks yet**, in Czech. Do not implement anything from it unless it was moved into `PLAN_FINAL.md`.
 - `docs/STAV_A_DOPORUCENI.md`: project status on 15 Oct, risks and the recommended order of work for the hackathon day, in Czech. It changes priorities, not ownership.
 
 Before each block of work, run `git fetch` and read new changes to these plans on `origin/main`. Only add to the plans; mark outdated parts **NEAKTIVNÍ** instead of deleting them.
