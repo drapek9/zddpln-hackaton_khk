@@ -177,3 +177,24 @@ Navazuje na kap. 21 v `PLAN_FINAL.md`. Priorita je veřejnost (rozhodnutí týmu
 - Uzavírky: dialog „Potvrdit a upozornit N občanů“ (z `/api/closures/preview`), po potvrzení návrh oznámení z `/api/ai/announcement`, seznam uzavírek a oprav s filtrem termínu.
 - Rozpočet: porovnání dvou částek, export CSV (v prohlížeči), tisk.
 - Nedodělané (po freeze): hledání obce přes `/api/obce`, manifest a robots, verze v patičce (health ji nevrací). Na backend čeká B‑1 až B‑4, B‑7, B‑10, B‑11 a žádosti o přístup (25.10). /admin má podle plánu být bez mapy; mini mapa v rohu zůstala na přání Matouše.
+
+---
+
+## Úkoly pro Matouše (a jeho agenta) po dokončení backendu, 15. 10. ~16:30, do prezentace
+
+> Written in English for the agent. **Start only after Šimon's backend items are done** (`docs/TODO_BACKEND.md`: B‑AI‑1 `GET /api/ranking?mode=ai`, B‑W‑1 `GET /api/weights/schema`) and after the P0 items in `docs/TODO_FRONTEND.md`. Owner: **Matouš**. Do not edit Šimon's files (`backend/app/api|ai|db`, `main.py`). Tomáš allows Matouš's agent to edit `backend/app/core/` for item 2 only. Goal: a complete, safe demo.
+
+Do these in order. Stop each one when its "done when" holds.
+
+1. **Keep `main` green.** After the last pushes from `matous` and `simon`: `git fetch`, merge into `main` (no force push), run `cd backend && uv run pytest`, `npm run build`, `bash scripts/smoke_api.sh`. If a backend test fails, tell Šimon; do not fix his files. Tell Šimon to `git pull` and restart `./start-server.command`.
+   **Last merge: 20 minutes before the presentation.** After that, `main` is frozen.
+   Done when: `main` builds and tests pass at the freeze.
+2. **B‑W‑2 (core).** Check that the weights `students`, `intensity` and `detour` in `backend/app/core/` really change the ranking when they are above 0 (sensible normalization, non-zero effect). Add a test in `backend/tests/`: weight 100 on `students` moves a road with a school route up. Then check in the UI with Playwright that moving these sliders changes the ranking.
+   Done when: the test passes and the new sliders have a visible effect.
+3. **Demo script.** In `docs/DEMO.md`, add the exact click path for `/sprava` (★1), `/` (★2), `/admin` (★3). Pick 2–3 concrete roads with the most impact (`engine.demo_closures()` with `recommended=True`: detour, students, cut-off obce). Show the "Parametry + AI" toggle; if B‑AI‑1 is not ready, demo AI with the closure announcement and the road explanation instead.
+   Done when: anyone can run the demo from the document in 3 minutes.
+4. **Backup.** Run `main` locally as a fallback if the tunnel fails (`.env` with local demo passwords). Remind the team to record a 2–3 minute backup video (Win+G, OBS or QuickTime); the agent cannot do that.
+5. **Submission (`docs/ODEVZDANI.md`).** `bash scripts/package_submission.sh` → `odevzdani/cesty-khk-src.zip`, verify no `.env` inside. Check that the "Zdroje dat" page lists every dataset in use (Data KHK, ŘSD, OSM, SRTI).
+
+**Do not do now:** B‑R‑1 (other roads from OSM): new data, too risky before the presentation.
+Rules: secrets only in `.env`, never in git or chat. No AI co-author trailers. Log each finished step in `docs/funkce.html` (`ol.log`, newest first).
