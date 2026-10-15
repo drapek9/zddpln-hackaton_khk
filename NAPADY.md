@@ -275,6 +275,8 @@ Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho
 
 ## Část D: kontrola propojení frontendu a backendu (15. 10. ~13:00, Tomáš)
 
+**→ Přesunuto do plánu (15. 10., 13:15):** chyby D1–D8 a nápady F‑a, F‑b, F‑e do [docs/FRONTEND.md](docs/FRONTEND.md), sekce „NEJVYŠŠÍ PRIORITA“. D9, D10 a B1–B7 do [PLAN_FINAL.md](PLAN_FINAL.md), kap. 19 (S21–S26, T21–T24). V nápadech zůstávají F‑c, F‑d, F‑f a F‑g.
+
 Kontrola na sloučeném `main` (`ae75d6e`): backend a Vite proxy spuštěné lokálně, každé volání ověřené přes `curl`, frontend přečtený v `src/lib/`. Nic se tím nemění samo, o pořadí rozhodne tým. **Chyby D1–D10 mají přednost před novými funkcemi.** D1 až D3 je potřeba udělat najednou, jinak se rozbijí piny.
 
 ### Jak frontend dnes mluví s backendem
