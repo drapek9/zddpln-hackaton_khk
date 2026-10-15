@@ -18,6 +18,28 @@ export const STAV_COLOR: Record<string, string> = {
   výborný: "#0f766e",
 };
 
+// Názvy stavů pro lidi. V datech kraje zůstávají původní hodnoty (např. „SUPERhavarijní“).
+export const STAV_LABEL: Record<string, string> = {
+  SUPERhavarijní: "Rozpadlá vozovka",
+  havarijní: "Havarijní",
+  nevyhovující: "Opotřebovaná",
+  vyhovující: "Ucházející",
+  dobrý: "Dobrá",
+  výborný: "Výborná",
+};
+
+// Co stav znamená v praxi (tooltip a legenda).
+export const STAV_HINT: Record<string, string> = {
+  SUPERhavarijní: "Nejhorší stupeň v datech kraje. Vozovka se rozpadá, je potřeba obnovit celou konstrukci.",
+  havarijní: "Hluboké výtluky a trhliny. Oprava krytu i podkladních vrstev.",
+  nevyhovující: "Povrch je opotřebovaný a praská. Stačí nový kryt, dokud se nezhorší.",
+  vyhovující: "Drobné vady, zatím bez opravy. Sledovat při dalším měření.",
+  dobrý: "Bez větších vad.",
+  výborný: "Nový nebo nedávno opravený povrch.",
+};
+
+export const stavLabel = (stav: string) => STAV_LABEL[stav] || stav;
+
 export function formatSil(sil: string, trida?: string) {
   const n = String(sil || "").replace(/^0+/, "") || sil;
   if (trida?.includes("2")) return `II/${n}`;

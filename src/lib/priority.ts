@@ -1,5 +1,5 @@
 import type { Connection, Repair, Road, Weights } from "./types";
-import { inSchoolYear, inWinter } from "./geo";
+import { inSchoolYear, inWinter, stavLabel } from "./geo";
 
 const STAV_SCORE: Record<string, number> = {
   SUPERhavarijní: 100,
@@ -82,10 +82,9 @@ export function impactAlerts(
     });
   }
 
-  const stopNames = (road.samples.stop || []).map((s) => s.name);
-  const broken = connections
-    .filter((cn) => stopNames.some((name) => sameStop(name, cn.stop)))
-    .slice(0, 8);
+  const stopNames = (road.samples.stop || []).map((s) => normStop(s.name));
+  const normalized = normalizedStops(connections);
+  const broken = connections.filter((_, i) => stopNames.some((na) => sameNorm(na, normalized[i]))).slice(0, 8);
   if (broken.length) {
     alerts.push({
       level: "critical",
@@ -138,17 +137,29 @@ function plural(n: number, one: string, few: string, many: string) {
   return `${n} ${many}`;
 }
 
-function sameStop(a: string, b: string) {
-  const norm = (s: string) => s.toLowerCase().replace(/,+/g, ",").replace(/\s+/g, " ").trim();
-  const na = norm(a);
-  const nb = norm(b);
+function normStop(s: string) {
+  return s.toLowerCase().replace(/,+/g, ",").replace(/\s+/g, " ").trim();
+}
+
+// Normalizované názvy zastávek přípojů, jednou na pole (~3 500 přípojů).
+const normCache = new WeakMap<Connection[], string[]>();
+function normalizedStops(connections: Connection[]) {
+  let out = normCache.get(connections);
+  if (!out) {
+    out = connections.map((cn) => normStop(cn.stop));
+    normCache.set(connections, out);
+  }
+  return out;
+}
+
+function sameNorm(na: string, nb: string) {
   return na === nb || (na.length > 8 && nb.includes(na)) || (nb.length > 8 && na.includes(nb));
 }
 
 export function scoreBreakdown(road: Road, weights: Weights) {
   const total = roadScore(road, weights);
   return [
-    { key: "Stav povrchu", value: `${road.stav}`, share: weights.stav },
+    { key: "Stav povrchu", value: stavLabel(road.stav), share: weights.stav },
     { key: "Zhoršování", value: road.worse ? "ano" : "ne", share: weights.worse },
     { key: "Třída silnice", value: road.trida, share: weights.trida },
     { key: "Školy", value: String(road.counts.school || 0), share: weights.schools },

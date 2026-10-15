@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import type { Poi, Repair, Road, Stop } from "../lib/types";
 import { KIND_COLOR, STAV_COLOR, midpoint } from "../lib/geo";
@@ -8,17 +8,49 @@ type Props = {
   repairs: Repair[];
   selectedId: number | null;
   onSelect: (id: number | null, lngLat?: { lng: number; lat: number }) => void;
-  theme: "dark" | "light";
+  /** Podklad mapy: světlý režim (positron), tmavý režim (dark matter). */
+  theme: MapTheme;
   showCondition: boolean;
   pois?: Poi[];
   stops?: Stop[];
   showPois?: boolean;
+  /** Objížďka uzavřeného úseku ([lon, lat]), simulátor uzavírky. */
+  detour?: [number, number][] | null;
+  /** Zvýrazněné úseky (rozpočtový plán, komplikace na mé cestě). */
+  highlight?: number[];
+  /** Moje místa a spojnice mezi nimi (veřejnost, Moje cesty). */
+  places?: { kind: "home" | "work"; x: number; y: number }[];
 };
 
-const STYLES = {
+// Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
+const HOME_VIEW = { center: [15.83, 50.35] as [number, number], zoom: 8.4, bearing: 0, pitch: 0 };
+
+const EMPTY: number[] = [];
+const EMPTY_PLACES: NonNullable<Props["places"]> = [];
+
+function placesToGeo(places: NonNullable<Props["places"]>) {
+  const pts = places.map((p) => ({
+    type: "Feature" as const,
+    properties: { kind: p.kind, label: p.kind === "home" ? "Domov" : "Práce" },
+    geometry: { type: "Point" as const, coordinates: [p.x, p.y] },
+  }));
+  const line =
+    places.length === 2
+      ? [{ type: "Feature" as const, properties: { kind: "link", label: "" }, geometry: { type: "LineString" as const, coordinates: places.map((p) => [p.x, p.y]) } }]
+      : [];
+  return { type: "FeatureCollection" as const, features: [...line, ...pts] };
+}
+
+export type MapTheme = "dark" | "light" | "office";
+
+const STYLES: Record<MapTheme, string> = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  office: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
 };
+
+/** Barva zvýrazněných úseků podle podkladu (stejná v legendě). */
+export const HIGHLIGHT_COLOR: Record<MapTheme, string> = { dark: "#2bb3b1", light: "#0e7c7b", office: "#0e7c7b" };
 
 function roadsToGeo(roads: Road[], repairs: Repair[]) {
   const byRoad = new Map(repairs.map((r) => [r.roadId, r.status]));
@@ -38,6 +70,15 @@ function roadsToGeo(roads: Road[], repairs: Repair[]) {
   };
 }
 
+function detourToGeo(detour: [number, number][] | null | undefined) {
+  return {
+    type: "FeatureCollection" as const,
+    features: detour?.length
+      ? [{ type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: detour } }]
+      : [],
+  };
+}
+
 function pointsToGeo(points: { id: string; x: number; y: number; name: string; kind?: string }[]) {
   return {
     type: "FeatureCollection" as const,
@@ -49,7 +90,7 @@ function pointsToGeo(points: { id: string; x: number; y: number; name: string; k
   };
 }
 
-export default function MapView({
+function MapInner({
   roads,
   repairs,
   selectedId,
@@ -59,27 +100,52 @@ export default function MapView({
   pois = [],
   stops = [],
   showPois = false,
+  detour = null,
+  highlight = EMPTY,
+  places = EMPTY_PLACES,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const prevSelectedRef = useRef<number | null>(null);
+  const selectedRef = useRef(selectedId);
+  selectedRef.current = selectedId;
+  const detourRef = useRef(detour);
+  detourRef.current = detour;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const showConditionRef = useRef(showCondition);
+  showConditionRef.current = showCondition;
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+  const placesRef = useRef(places);
+  placesRef.current = places;
+  // Otáčení a náklon (3D) je ve výchozím stavu vypnuté, aby se mapa omylem nepřetočila.
+  const [tilt, setTilt] = useState(false);
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: ref.current,
       style: STYLES[theme],
-      center: [15.83, 50.35],
-      zoom: 8.4,
+      center: HOME_VIEW.center,
+      zoom: HOME_VIEW.zoom,
       attributionControl: false,
+      dragRotate: false,
     });
+    map.touchZoomRotate.disableRotation();
+    map.touchPitch.disable();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
+      new maplibregl.AttributionControl({
+        compact: true,
+        customAttribution: "Silnice I. třídy pro objížďky © přispěvatelé OpenStreetMap (ODbL)",
+      }),
       "bottom-left",
     );
     mapRef.current = map;
+    // Mapa se přizpůsobí, když si uživatel roztáhne boční panel.
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(ref.current);
 
     map.on("load", () => {
       map.addSource("roads", { type: "geojson", data: roadsToGeo(roads, repairs), promoteId: "id" });
@@ -137,8 +203,39 @@ export default function MapView({
             12,
             ["case", ["boolean", ["feature-state", "selected"], false], 8, 3.2],
           ],
-          "line-opacity": 0.95,
+          "line-opacity": showConditionRef.current ? 0.95 : 0.18,
         },
+      });
+      map.addLayer(
+        {
+          id: "roads-highlight",
+          type: "line",
+          source: "roads",
+          filter: ["in", ["get", "id"], ["literal", highlightRef.current]],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": HIGHLIGHT_COLOR[theme],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4, 12, 10],
+            "line-opacity": 0.85,
+          },
+        },
+        "roads-line",
+      );
+      map.addSource("places", { type: "geojson", data: placesToGeo(placesRef.current) });
+      map.addSource("detour", { type: "geojson", data: detourToGeo(detourRef.current) });
+      map.addLayer({
+        id: "detour-casing",
+        type: "line",
+        source: "detour",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#0b1220", "line-width": 8, "line-opacity": 0.6 },
+      });
+      map.addLayer({
+        id: "detour-line",
+        type: "line",
+        source: "detour",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#a78bfa", "line-width": 4, "line-dasharray": [1.5, 1] },
       });
       map.addLayer({
         id: "poi-circles",
@@ -185,9 +282,34 @@ export default function MapView({
         },
       });
 
+      map.addLayer({
+        id: "places-link",
+        type: "line",
+        source: "places",
+        filter: ["==", ["get", "kind"], "link"],
+        paint: { "line-color": theme === "dark" ? "#93c5fd" : "#1e3a5f", "line-width": 3, "line-dasharray": [2, 1.5], "line-opacity": 0.8 },
+      });
+      map.addLayer({
+        id: "places-dot",
+        type: "circle",
+        source: "places",
+        filter: ["!=", ["get", "kind"], "link"],
+        paint: {
+          "circle-radius": 9,
+          "circle-color": ["match", ["get", "kind"], "home", "#0f6b5c", theme === "dark" ? "#3b82f6" : "#1e3a5f"],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#fff",
+        },
+      });
+
+      if (selectedRef.current != null) {
+        map.setFeatureState({ source: "roads", id: selectedRef.current }, { selected: true });
+        prevSelectedRef.current = selectedRef.current;
+      }
+
       map.on("click", "roads-line", (e) => {
         const id = e.features?.[0]?.properties?.id;
-        if (id != null) onSelectRef.current(Number(id));
+        if (id != null) onSelectRef.current(Number(id), e.lngLat);
       });
       map.on("click", (e) => {
         const hits = map.queryRenderedFeatures(e.point, { layers: ["roads-line"] });
@@ -202,6 +324,7 @@ export default function MapView({
     });
 
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -226,6 +349,44 @@ export default function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      (map.getSource("detour") as GeoJSONSource | undefined)?.setData(detourToGeo(detour));
+      if (!detour?.length) return;
+      const bounds = new maplibregl.LngLatBounds(detour[0], detour[0]);
+      detour.forEach((p) => bounds.extend(p));
+      map.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 700 });
+    };
+    if (map.getSource("detour")) apply();
+    else map.once("load", apply);
+  }, [detour]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (map.getLayer("roads-highlight")) map.setFilter("roads-highlight", ["in", ["get", "id"], ["literal", highlight]]);
+    };
+    if (map.getLayer("roads-highlight")) apply();
+    else map.once("load", apply);
+  }, [highlight]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      (map.getSource("places") as GeoJSONSource | undefined)?.setData(placesToGeo(places));
+      if (!places.length) return;
+      const bounds = new maplibregl.LngLatBounds([places[0].x, places[0].y], [places[0].x, places[0].y]);
+      places.forEach((p) => bounds.extend([p.x, p.y]));
+      map.fitBounds(bounds, { padding: 120, maxZoom: 12, duration: 700 });
+    };
+    if (map.getSource("places")) apply();
+    else map.once("load", apply);
+  }, [places]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map?.getLayer("roads-line")) return;
     map.setPaintProperty("roads-line", "line-opacity", showCondition ? 0.95 : 0.18);
     if (map.getLayer("poi-circles")) {
@@ -236,13 +397,13 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    roads.forEach((r) => {
-      try {
-        map.setFeatureState({ source: "roads", id: r.id }, { selected: r.id === selectedId });
-      } catch {
-        /* source may not be ready */
-      }
-    });
+    // Přepnout jen předchozí a nový výběr (dřív se procházelo všech ~4 700 úseků).
+    if (map.getSource("roads")) {
+      const prev = prevSelectedRef.current;
+      if (prev != null && prev !== selectedId) map.setFeatureState({ source: "roads", id: prev }, { selected: false });
+      if (selectedId != null) map.setFeatureState({ source: "roads", id: selectedId }, { selected: true });
+      prevSelectedRef.current = selectedId;
+    }
     if (selectedId) {
       const road = roads.find((r) => r.id === selectedId);
       if (road) {
@@ -252,17 +413,46 @@ export default function MapView({
     }
   }, [selectedId, roads]);
 
-  useEffect(() => {
+  const toggleTilt = () => {
     const map = mapRef.current;
     if (!map) return;
-    const current = map.getStyle()?.sprite;
-    if (theme === "dark" && String(current || "").includes("voyager")) {
-      map.setStyle(STYLES.dark);
+    const next = !tilt;
+    setTilt(next);
+    if (next) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      map.touchPitch.enable();
+      map.easeTo({ pitch: 50, duration: 500 });
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      map.touchPitch.disable();
+      map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
     }
-    if (theme === "light" && String(current || "").includes("dark")) {
-      map.setStyle(STYLES.light);
-    }
-  }, [theme]);
+  };
 
-  return <div ref={ref} className="map" />;
+  const goHome = () => mapRef.current?.flyTo({ ...HOME_VIEW, pitch: tilt ? 50 : 0, duration: 900 });
+
+  return (
+    <>
+      <div ref={ref} className="map" />
+      <div className="map-tools">
+        <button
+          className={tilt ? "on" : ""}
+          onClick={toggleTilt}
+          title={tilt ? "Vypnout otáčení a náklon" : "Zapnout otáčení a náklon (pravé tlačítko myši nebo dva prsty)"}
+        >
+          3D {tilt ? "zap." : "vyp."}
+        </button>
+        <button onClick={goHome} title="Vrátit mapu na celý kraj">
+          ⌂ Celý kraj
+        </button>
+      </div>
+    </>
+  );
+}
+
+// Při změně režimu se mapa vytvoří znovu (setStyle by smazal naše vrstvy).
+export default function MapView(props: Props) {
+  return <MapInner key={props.theme} {...props} />;
 }

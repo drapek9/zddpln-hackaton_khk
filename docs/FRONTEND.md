@@ -82,3 +82,42 @@ Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i v
 
 Podrobně v [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 17.4. Pořadí = priorita:
 F1 login (kap. 15) → F2 ★1 přes API + karta uzavírky → F3 Moje cesty po silnicích + ranní souhrn → F4 povodeň → F5 rozpočtový asistent → F6 Moje obec → F7 patička a souhlas.
+
+## Stav 15. 10. po poledni (Matouš, větev `matous`): design a přihlášení
+
+**Design (podle zadání Přemka):** jeden design systém pro veřejnost i úřad, jedna akcentová barva (petrolejová), světlý a tmavý režim (tokeny v `src/styles.css`, volba v prohlížeči, jinak `prefers-color-scheme`), kompaktní hlavička, roztahovací a sbalitelné boční panely, na mobilu mapa a vysouvací panely zdola. Srozumitelné názvy stavů (`STAV_LABEL` v `src/lib/geo.ts`), data kraje beze změny.
+
+**F1 Login (kap. 15) ✅ ve frontendu, ověřeno proti backendu z větve `simon`:**
+- `src/lib/auth.ts`: `me`, `login`, `register`, `logout`, vše s `credentials: "same-origin"`. Token se neukládá, jen e-mail a role.
+- Úvod: „Pokračovat bez přihlášení“ (veřejnost) a „Přihlásit se do správy“. Vpravo nahoře „Přihlásit se“.
+- Po přihlášení podle role: `citizen` → veřejná mapa se štítkem Občan, `official` → správa, `admin` → správa + Správa systému. V hlavičce e-mail, role a „Odhlásit“.
+- Přihlášení přežije obnovení stránky (`GET /api/auth/me`). Při 401 z API zpět na přihlášení.
+- Když backend neběží, přihlášení nabídne „Jako úředník / admin (demo)“ a v aplikaci je přepínač rolí se štítkem „demo“.
+
+**F7 Patička ✅:** zásady ochrany údajů (nová stránka), souhlas při registraci občana (bez něj účet nevznikne), odkaz na Zdroje dat.
+
+**Další (kap. 17.4):** F2 simulátor přes API a uzavírky 2022, F4 povodeň, F5 rozpočet přes `/api/budget`, F6 Moje obec, F3 trasa po silnicích. Rozpočet a Moje cesty mají ve frontendu náhled, který se přepne na API.
+
+## Rozhodnutí týmu k rozhraní (15. 10. odpoledne, Matouš)
+
+Platí pro všechny další obrazovky. Hotové je v commitu `c3fc242` na větvi `matous`.
+
+| # | Rozhodnutí | Stav |
+|---|---|---|
+| R1 | **Úvod = přihlášení.** Vlevo název Cesty KHK a krátký popis, vpravo přihlášení, registrace občana a „Pokračovat bez přihlášení“. Přihlášený vidí vpravo e‑mail, roli a pokračování podle role. Nahrazuje karty z kap. 15.1 bod 1. | ✅ |
+| R2 | **Role:** veřejnost bez účtu, občan s účtem, úředník a admin s účtem od kraje. Co vidí úředník, veřejnost nevidí. Úředník mění váhy jen pro sebe, admin je ukládá trvale pro celý kraj. Role se přiřadí podle účtu (`/api/auth/me`), přepínač rolí je jen v demu bez serveru. | ✅ |
+| R3 | **Detail úseku jako v mapových aplikacích:** dole nad mapou pruh s náhledem (silnice, stav, skóre). Kolečkem dolů, tahem prstem nahoru nebo klikem na úchyt se vysune celý detail, kolečkem nahoru na začátku obsahu se stáhne. Pravý boční panel u úředníka a veřejnosti není. | ✅ |
+| R4 | **Boční panely:** výchozí šířka je nejmenší možná (260 px). Na okraji je šipka pro schování, schovaný panel vysune jazýček. Tažením jde panel roztáhnout (260–620 px), šířky se pamatují v prohlížeči. | ✅ |
+| R5 | **Admin nemá na prvním místě mapu.** Začíná na „Správě systému“: přehled (počty úředníků, adminů, občanů, pinů), trvalé váhy kraje, uživatelé a role (změna role, blokace), záznam změn, export. Mapa a rozpočet jsou v dalších záložkách. Data z `/api/admin/users`, `/api/admin/weights`, `/api/admin/audit`; bez serveru demo data se štítkem. | ✅ (se serverem neověřeno) |
+| R6 | **Jeden design pro všechny role** (zadání Přemka): petrolejový akcent, světlý a tmavý režim, barvy červená až zelená jen pro stav a varování, na mobilu mapa a vysouvací panely. | ✅ |
+
+### Úkoly pro Matouše po sloučení (navazuje na kap. 17.4 a 18 v `PLAN_FINAL.md`)
+| Úkol | Co | Stav |
+|---|---|---|
+| M-a | Ověřit stránku admina (R5) proti backendu na `main`: seznam uživatelů, změna role, uložení vah, audit. | ❌ |
+| M-b | **F2:** žebříček číst z `items` v odpovědi `/api/ranking`. Náhled uzavírky přes `POST /api/closures/preview`, `POST /api/closures` až u „Potvrdit uzavírku“. Karta uzavírky: auta za den, studenti, odříznuté obce, dojezd IZS. | ❌ |
+| M-c | Skutečné uzavírky 2022 z `/api/demo-closures` v levém panelu úředníka (3 doporučené nahoře). | ❌ |
+| M-d | **F5:** plán podle rozpočtu přepnout z náhledu ve frontendu na `/api/budget` (stavby z `Engine.budget_plan`). | ❌ |
+| M-e | **F3:** Moje cesty přes `GET /api/route` místo pásu 1,5 km, ranní souhrn nahoře. | ❌ |
+| M-f | **F4** povodeň Q5/Q20/Q100, **F6** Moje obec. | ❌ |
+| M-g | Sloučit `matous` do `main` až po Šimonovi (kap. 18). | ❌ |

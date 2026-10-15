@@ -7,8 +7,9 @@ export default defineConfig({
     port: 5173,
     host: true,
     // Backend (FastAPI) běží na :8000, viz docs/BACKEND.md.
+    // Jiný port backendu: CESTY_API_TARGET=http://localhost:8001 npm run dev
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": process.env.CESTY_API_TARGET ?? "http://localhost:8000",
     },
   },
 });

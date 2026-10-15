@@ -1,17 +1,47 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
+import Fold from "./Fold";
+import { ThemeToggle, useTheme } from "../lib/theme";
+import BudgetPlanner from "./BudgetPlanner";
+import AdminSystem from "./AdminSystem";
+import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import Resizer, { usePanelSizes } from "./Resizer";
+import UserMenu from "./UserMenu";
+import DetailSheet from "./DetailSheet";
+import { adminApi } from "../lib/adminApi";
+import type { User } from "../lib/auth";
 import type { Dataset, Repair, Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
-import { STAV_COLOR, STAV_ORDER, formatKm, formatSil } from "../lib/geo";
-import { roadScore } from "../lib/priority";
+import { STAV_COLOR, STAV_HINT, STAV_ORDER, formatKm, formatSil, stavLabel } from "../lib/geo";
+import { CLASS_COLOR, CLASS_LABEL, CLASS_ORDER, fetchRanking, type RankRow, type RankingSource } from "../lib/ranking";
+import { DEMO_CLOSURES } from "../lib/closure";
+import { loadPins, loadRegionWeights, savePins, saveRegionWeights } from "../lib/store";
+import type { Pin, PriorityClass } from "../lib/api";
 
 type Props = {
   data: Dataset;
   repairs: Repair[];
   onRepairs: (next: Repair[]) => void;
   onHome: () => void;
+  role: "official" | "admin";
+  /** Přihlášený uživatel (kap. 15). Bez něj jde o demo bez serveru. */
+  user: User | null;
+  /** Demo bez serveru: přepnutí mezi úředníkem a adminem. S přihlášením roli dává účet. */
+  onRole?: (role: "official" | "admin") => void;
+  onLogout: () => void;
 };
+
+type View = "map" | "budget" | "system";
+// Admin začíná na Správě systému (nastavení je pro něj hlavní), úředník na mapě.
+const VIEWS: { key: View; label: string; adminOnly?: boolean; soon?: boolean }[] = [
+  { key: "system", label: "Správa systému", adminOnly: true },
+  { key: "map", label: "Priority a uzavírky" },
+  { key: "budget", label: "Plán podle rozpočtu" },
+];
+
+// Kolik úseků žebříčku je vidět, než si je úředník rozbalí.
+const LIST_STEP = 15;
 
 const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "stav", label: "Stav povrchu" },
@@ -26,14 +56,83 @@ const WEIGHT_LABELS: { key: keyof Weights; label: string }[] = [
   { key: "age", label: "Stáří opravy" },
 ];
 
-export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
-  const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+export default function AdminApp({ data, repairs, onRepairs, onHome, role, user, onRole, onLogout }: Props) {
+  const [view, setView] = useState<View>(role === "admin" ? "system" : "map");
+  // Demo přepínač rolí: admin jde na Správu systému, úředník ji nemá.
+  useEffect(() => {
+    setView((v) => (role === "admin" ? "system" : v === "system" ? "map" : v));
+  }, [role]);
+  const live = !!user && user.role === "admin";
+  const { theme } = useTheme();
+  const mapTheme = theme === "dark" ? "dark" : "office";
+  // Výchozí jsou trvalé váhy kraje od admina. Úředník je mění jen pro sebe, admin je může uložit trvale.
+  const [regionWeights, setRegionWeights] = useState<Weights>(() => loadRegionWeights(DEFAULT_WEIGHTS));
+  const [weights, setWeights] = useState<Weights>(regionWeights);
+  const [savedNote, setSavedNote] = useState(false);
+
+  // Přihlášený admin: trvalé váhy ze serveru (GET /api/admin/weights).
+  useEffect(() => {
+    if (!live) return;
+    adminApi
+      .weights()
+      .then(({ weights: w }) => {
+        const next = { ...DEFAULT_WEIGHTS, ...w };
+        setRegionWeights(next);
+        setWeights(next);
+      })
+      .catch(() => {});
+  }, [live]);
+
+  const saveRegion = async (next: Weights) => {
+    if (live) await adminApi.saveWeights(next);
+    else saveRegionWeights(next);
+    setRegionWeights(next);
+    setWeights(next);
+  };
+  const [selectedId, setSelectedIdState] = useState<number | null>(null);
+  const [sheet, setSheet] = useState<Sheet>("map");
+  const panels = usePanelSizes();
+  const setSelectedId = (id: number | null) => {
+    setSelectedIdState(id);
+    if (id != null && isNarrow()) setSheet("map");
+  };
   const [okres, setOkres] = useState("vše");
   const [stav, setStav] = useState("vše");
   const [query, setQuery] = useState("");
   const [showPois, setShowPois] = useState(true);
   const [showCondition, setShowCondition] = useState(true);
+  const [cls, setCls] = useState<PriorityClass | "vše">("vše");
+  const [pins, setPins] = useState<Pin[]>(loadPins);
+  const [rows, setRows] = useState<RankRow[]>([]);
+  const [source, setSource] = useState<RankingSource>("local");
+  const [detour, setDetour] = useState<[number, number][] | null>(null);
+  // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
+  const [demoId, setDemoId] = useState<number | null>(null);
+  const [paramsOpen, setParamsOpen] = useState(false);
+  const [listLimit, setListLimit] = useState(LIST_STEP);
+  const weightsChanged = WEIGHT_LABELS.some((w) => weights[w.key] !== regionWeights[w.key]);
+
+  const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
+
+  // Žebříček se počítá nad celou sítí (třídy jsou podíly sítě), filtry jen zužují výpis.
+  useEffect(() => {
+    let alive = true;
+    fetchRanking(data.roads, weights, pins).then((res) => {
+      if (!alive) return;
+      setRows(res.rows);
+      setSource(res.source);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [data.roads, weights, pins]);
+
+  const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+
+  const updatePins = (next: Pin[]) => {
+    setPins(next);
+    savePins(next);
+  };
 
   const okresy = useMemo(
     () => ["vše", ...Array.from(new Set(data.roads.map((r) => r.okres))).sort()],
@@ -50,13 +149,18 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
     });
   }, [data.roads, okres, stav, query]);
 
-  const ranked = useMemo(
-    () =>
-      [...filtered]
-        .map((r) => ({ r, score: roadScore(r, weights) }))
-        .sort((a, b) => b.score - a.score),
-    [filtered, weights],
-  );
+  const ranked = useMemo(() => {
+    const visible = new Set(filtered.map((r) => r.id));
+    return rows
+      .filter((row) => visible.has(row.id) && (cls === "vše" || row.priority === cls))
+      .map((row) => ({ r: roadsById.get(row.id)!, row }));
+  }, [rows, filtered, cls, roadsById]);
+
+  const classKm = useMemo(() => {
+    const out: Record<string, number> = {};
+    rows.forEach((row) => (out[row.priority] = (out[row.priority] || 0) + (roadsById.get(row.id)?.delka || 0)));
+    return out;
+  }, [rows, roadsById]);
 
   const selected = data.roads.find((r) => r.id === selectedId) || null;
   const existing = repairs.find((r) => r.roadId === selectedId);
@@ -66,21 +170,58 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
     .reduce((s, r) => s + r.delka, 0);
 
   return (
-    <div className="app-shell admin-theme">
+    <div className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={onHome}>
-          Cesty KHK
-        </button>
-        <span className="mode-tag">Správa silnic</span>
-        <div className="top-stats">
-          <b>{data.stats.km} km</b> sítě
-          <b>{Math.round(kmBad / 1000)} km</b> havarijních
-          <b>{repairs.filter((r) => r.status === "active").length}</b> probíhá
-          <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
-          {repairs.some((r) => r.simulated) && <span className="sim-tag">plán a probíhající = simulace</span>}
+        <div className="tb-left">
+          <button className="brand" onClick={onHome}>
+            Cesty KHK
+          </button>
+          {onRole ? (
+            <div className="role-switch" role="group" aria-label="Pohled (demo bez serveru)" title="Demo bez serveru: přepnutí role">
+              <button className={role === "official" ? "on" : ""} onClick={() => onRole("official")}>
+                Úředník
+              </button>
+              <button className={role === "admin" ? "on" : ""} onClick={() => onRole("admin")}>
+                Admin
+              </button>
+            </div>
+          ) : (
+            <span className="mode-tag">{role === "admin" ? "Admin" : "Úředník"}</span>
+          )}
+        </div>
+        <div className="tb-center">
+          <nav className="top-nav">
+            {VIEWS.filter((v) => !v.adminOnly || role === "admin").map((v) => (
+              <button key={v.key} className={view === v.key ? "active" : ""} onClick={() => setView(v.key)}>
+                {v.label}
+                {v.soon && <small>návrh</small>}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="tb-right">
+          <div className="top-stats" title={repairs.some((r) => r.simulated) ? "Plánované a probíhající opravy jsou simulace" : undefined}>
+            <span>
+              <b>{Math.round(kmBad / 1000)} km</b> havarijních
+            </span>
+            <span>
+              <b>{repairs.filter((r) => r.status === "active").length}</b> probíhá
+            </span>
+            <span>
+              <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
+            </span>
+          </div>
+          <ThemeToggle />
+          {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Server s přihlášením neběží">demo</span>}
         </div>
       </header>
-      <div className="workspace">
+      {view === "budget" && <BudgetPlanner key="budget" data={data} weights={weights} />}
+      {view === "system" && (
+        <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} />
+      )}
+      {view === "map" && (
+      <div className={`workspace no-right view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
+        <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
           <label className="search">
             <input
@@ -98,52 +239,104 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             <select value={stav} onChange={(e) => setStav(e.target.value)}>
               <option value="vše">všechny stavy</option>
               {STAV_ORDER.map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>
+                  {stavLabel(s)}
+                </option>
               ))}
             </select>
           </div>
-          <label className="check">
-            <input type="checkbox" checked={showCondition} onChange={(e) => setShowCondition(e.target.checked)} />
-            Stav povrchu
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
-            Školy, IZS, nemocnice
-          </label>
-          <h3>Váhy priority</h3>
-          <p className="muted">Posuvníky mění pořadí úseků. Nic se neukládá do dat kraje.</p>
-          {WEIGHT_LABELS.map((w) => (
-            <label key={w.key} className="weight">
-              <span>
-                {w.label}
-                <b>{weights[w.key]}</b>
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={weights[w.key]}
-                onChange={(e) => setWeights({ ...weights, [w.key]: Number(e.target.value) })}
-              />
-            </label>
-          ))}
-          <h3>Nejvyšší priorita</h3>
-          <ul className="rank">
-            {ranked.slice(0, 18).map(({ r, score }) => (
-              <li key={r.id}>
-                <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
-                  <span className="rank-sil">
-                    <i style={{ background: STAV_COLOR[r.stav] }} />
-                    {formatSil(r.sil, r.trida)}
-                  </span>
-                  <span className="rank-meta">
-                    {r.okres} · {formatKm(r.delka)}
-                  </span>
-                  <b>{score}</b>
-                </button>
-              </li>
+          <div className="class-filter">
+            {(["vše", ...CLASS_ORDER] as const).map((c) => (
+              <button key={c} className={cls === c ? "on" : ""} onClick={() => setCls(c)}>
+                {c !== "vše" && <i style={{ background: CLASS_COLOR[c] }} />}
+                {c === "vše" ? "vše" : CLASS_LABEL[c]}
+                {c !== "vše" && <small>{Math.round((classKm[c] || 0) / 1000)} km</small>}
+              </button>
             ))}
-          </ul>
+          </div>
+          <Fold title="Žebříček priority" meta={`${ranked.length} úseků`} open>
+            <p className="muted">
+              {source === "api" ? (
+                <span className="src-tag">z API</span>
+              ) : (
+                <span className="src-tag" title="GET /api/ranking zatím neběží, stejný algoritmus jako backend">
+                  lokální výpočet
+                </span>
+              )}{" "}
+              Horních 10 % sítě je kritická, 20 % vysoká, 30 % střední, zbytek nízká.
+            </p>
+            <ul className="rank">
+              {ranked.slice(0, listLimit).map(({ r, row }) => (
+                <li key={r.id}>
+                  <button className={r.id === selectedId ? "active" : ""} onClick={() => setSelectedId(r.id)}>
+                    <span className="rank-sil">
+                      <i style={{ background: STAV_COLOR[r.stav] }} />
+                      {formatSil(r.sil, r.trida)}
+                      <span className="class-tag" style={{ "--cls": CLASS_COLOR[row.priority] } as CSSProperties}>
+                        {CLASS_LABEL[row.priority]}
+                      </span>
+                      {row.pinned && (
+                        <span className="pin-tag" title={row.pinReason || "připíchnuto úředníkem"}>
+                          📌
+                        </span>
+                      )}
+                    </span>
+                    <span className="rank-meta">
+                      #{row.rank} · {r.okres} · {formatKm(r.delka)}
+                    </span>
+                    <b>{row.score}</b>
+                  </button>
+                </li>
+              ))}
+              {!ranked.length && <li className="muted">Filtrům neodpovídá žádný úsek.</li>}
+            </ul>
+            {ranked.length > LIST_STEP && (
+              <div className="row-actions list-more">
+                {listLimit < ranked.length && (
+                  <button className="btn" onClick={() => setListLimit(listLimit + 50)}>
+                    Dalších 50
+                  </button>
+                )}
+                {listLimit < ranked.length ? (
+                  <button className="btn" onClick={() => setListLimit(ranked.length)}>
+                    Rozbalit vše ({ranked.length})
+                  </button>
+                ) : (
+                  <button className="btn" onClick={() => setListLimit(LIST_STEP)}>
+                    Sbalit
+                  </button>
+                )}
+              </div>
+            )}
+          </Fold>
+          <Fold title="Ukázkové uzavírky" meta={DEMO_CLOSURES.length}>
+            <p className="muted">Vyberte ukázku nebo úsek v mapě. Vpravo v záložce Uzavírka uvidíte objížďku a dopady.</p>
+            <div className="demo-closures">
+              {DEMO_CLOSURES.map((d) => (
+                <button
+                  key={d.roadId}
+                  className={d.roadId === selectedId ? "active" : ""}
+                  onClick={() => {
+                    setDemoId(d.roadId);
+                    setSelectedId(d.roadId);
+                  }}
+                >
+                  <strong>{d.label}</strong>
+                  <span>{d.story}</span>
+                </button>
+              ))}
+            </div>
+          </Fold>
+          <Fold title="Vrstvy mapy">
+            <label className="check">
+              <input type="checkbox" checked={showCondition} onChange={(e) => setShowCondition(e.target.checked)} />
+              Stav povrchu
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
+              Školy, IZS, nemocnice
+            </label>
+          </Fold>
         </aside>
         <div className="map-wrap">
           <MapView
@@ -151,57 +344,105 @@ export default function AdminApp({ data, repairs, onRepairs, onHome }: Props) {
             repairs={repairs}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            theme="dark"
+            theme={mapTheme}
             showCondition={showCondition}
             pois={data.pois}
             stops={data.stops}
             showPois={showPois}
+            detour={detour}
           />
+          <div className={`params ${paramsOpen ? "open" : ""}`}>
+            <button className="params-toggle" onClick={() => setParamsOpen(!paramsOpen)} aria-expanded={paramsOpen}>
+              <span>Parametry priority</span>
+              {weightsChanged && <span className="chip">upraveno</span>}
+              <span className="muted" style={{ marginLeft: "auto" }}>{paramsOpen ? "▴" : "▾"}</span>
+            </button>
+            {paramsOpen && (
+              <div className="params-body">
+                <p className="params-scope">
+                  {role === "admin" ? (
+                    <>
+                      Admin: můžete uložit <b>trvale pro celý kraj</b>.
+                    </>
+                  ) : (
+                    <>
+                      Změny platí <b>jen pro vás</b>. Trvalé váhy kraje mění admin.
+                    </>
+                  )}
+                </p>
+                {WEIGHT_LABELS.map((w) => (
+                  <label key={w.key} className="weight">
+                    <span>
+                      {w.label}
+                      <b>{weights[w.key]}</b>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={weights[w.key]}
+                      onChange={(e) => setWeights({ ...weights, [w.key]: Number(e.target.value) })}
+                    />
+                  </label>
+                ))}
+                <div className="row-actions">
+                  <button className="btn" disabled={!weightsChanged} onClick={() => setWeights(regionWeights)}>
+                    Vrátit váhy kraje
+                  </button>
+                  {role === "admin" && (
+                    <button
+                      className="btn primary"
+                      disabled={!weightsChanged}
+                      onClick={async () => {
+                        await saveRegion(weights);
+                        setSavedNote(true);
+                        setTimeout(() => setSavedNote(false), 2000);
+                      }}
+                    >
+                      {savedNote ? "Uloženo" : "Uložit pro celý kraj"}
+                    </button>
+                  )}
+                </div>
+                {role === "admin" && !live && <p className="fine">Demo: ukládá se jen v tomto prohlížeči.</p>}
+              </div>
+            )}
+          </div>
+          <SheetBar value={sheet} onChange={setSheet} left="Žebříček" />
           <div className="legend">
             {STAV_ORDER.map((s) => (
               <span key={s}>
                 <i style={{ background: STAV_COLOR[s] }} />
-                {s}
+                <span title={STAV_HINT[s]}>{stavLabel(s)}</span>
               </span>
             ))}
           </div>
-        </div>
-        <aside className="side right">
           {selected ? (
-            <RoadPanel
-              key={selected.id}
-              road={selected}
-              weights={weights}
-              connections={data.connections}
-              existing={existing}
-              mode="admin"
-              onPlan={(repair) => {
-                const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
-                onRepairs(next);
-              }}
-            />
+            <DetailSheet id={`${selected.id}-${demoId === selected.id}`} onClose={() => setSelectedId(null)}>
+              <RoadPanel
+                key={`${selected.id}-${demoId === selected.id}`}
+                simulate={demoId === selected.id}
+                road={selected}
+                weights={weights}
+                connections={data.connections}
+                existing={existing}
+                mode="admin"
+                rank={rowById.get(selected.id)}
+                pin={pins.find((p) => p.road_id === selected.id)}
+                onPin={(pin) => updatePins([...pins.filter((p) => p.road_id !== selected.id), ...(pin ? [pin] : [])])}
+                roadsById={roadsById}
+                onDetour={setDetour}
+                onPlan={(repair) => {
+                  const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
+                  onRepairs(next);
+                }}
+              />
+            </DetailSheet>
           ) : (
-            <div className="empty">
-              <h2>Vyberte úsek</h2>
-              <p>
-                Klikněte na silnici v mapě nebo v žebříčku. Uvidíte školy, zastávky, linky a
-                zaručené přípoje, které uzavírka ohrozí.
-              </p>
-              <ul className="legend-repairs">
-                <li>
-                  <i className="active" /> probíhající oprava
-                </li>
-                <li>
-                  <i className="planned" /> plán
-                </li>
-                <li>
-                  <i className="done" /> dokončeno
-                </li>
-              </ul>
-            </div>
+            <div className="map-hint">Klikněte na silnici v mapě nebo v žebříčku, detail se ukáže tady dole.</div>
           )}
-        </aside>
+        </div>
       </div>
+      )}
     </div>
   );
 }
