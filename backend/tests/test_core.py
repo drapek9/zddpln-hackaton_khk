@@ -309,3 +309,32 @@ def test_stability(engine: Engine) -> None:
     ][:50]
     same = engine.stability(top_n=50, samples=5, spread=0)
     assert all(i.share == 1 for i in same.items)
+
+
+def test_rescue_impact(engine: Engine) -> None:
+    from app.core import rescue
+
+    assert engine.rescue.bases["zzs"] and engine.rescue.bases["hzs"]
+    assert engine.rescue_impact([]).obce == []
+    demo = {c.silnice: c for c in engine.demo_closures()}
+    r = engine.rescue_impact(demo["II/327"].road_ids)
+    assert r.obce and r.src == "estimate"
+    assert all(o.extra_min is None or o.extra_min >= rescue.MIN_EXTRA for o in r.obce)
+    assert all(not o.over_limit or (o.service == "zzs" and o.before_min <= rescue.LIMIT_MIN) for o in r.obce)
+    assert r.zzs_over_limit == sum(o.over_limit for o in r.obce)
+    assert demo["II/327"].rescue is not None
+    assert any(a.title.startswith("Záchranka přes") for a in demo["II/327"].alerts) == (r.zzs_over_limit > 0)
+
+
+def test_t20_factors_off_by_default_and_on_when_weighted(engine: Engine) -> None:
+    keys = [p.key for p in engine.breakdown(2773)]
+    assert not {"intensity", "detour", "students"} & set(keys)
+    w = Weights(intensity=50, detour=50, students=50)
+    parts = {p.key: p.points for p in engine.breakdown(2773, w)}
+    assert {"intensity", "detour", "students"} <= set(parts)
+    assert all(0 <= parts[k] <= 12 for k in ("intensity", "detour", "students"))
+    road = engine.road(2773)
+    assert "students" in road["factors"] and "detour_min" in road["factors"]
+    top = engine.ranking(w)
+    assert top[0].score >= top[-1].score
+    assert engine.score(2773, w) >= engine.score(2773)

@@ -66,8 +66,12 @@ def rescue_for_closure(engine: Engine, road_id: int) -> tuple[dict[str, Any] | N
     if not isinstance(data, dict):
         return None, []
     items = _rescue_items(data)
-    alerts = [_rescue_alert(item) for item in items]
-    alerts = [alert for alert in alerts if alert is not None]
+    if isinstance(data.get("alerts"), list):
+        # Engine.rescue_impact (T18) already sums the obce into a few alerts.
+        alerts = _coerce_alerts(data["alerts"])
+    else:
+        alerts = [_rescue_alert(item) for item in items]
+        alerts = [alert for alert in alerts if alert is not None]
     payload = {
         "items": items,
         "label": "estimate",
@@ -125,8 +129,10 @@ def _rescue_items(data: dict[str, Any]) -> list[dict[str, Any]]:
                 "nazev": row.get("nazev") or row.get("obec") or "",
                 "sluzba": row.get("sluzba") or row.get("service") or "zzs",
                 "extra_min": extra,
-                "nad_20_min": bool(row.get("nad_20_min") or row.get("over_20")),
+                "nad_20_min": bool(row.get("nad_20_min") or row.get("over_20") or row.get("over_limit")),
                 "obyvatel": row.get("obyvatel"),
+                "pred_min": row.get("before_min"),
+                "po_min": row.get("after_min"),
             }
         )
     hzs = data.get("hzs")

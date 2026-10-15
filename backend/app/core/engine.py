@@ -18,7 +18,8 @@ from . import budget, demo, impact, scoring
 from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph, to_xy
 from .people import People
-from .schemas import Alert, BudgetPlan, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
+from .rescue import Rescue
+from .schemas import Alert, BudgetPlan, RescueImpact, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
 class Engine:
@@ -32,6 +33,10 @@ class Engine:
         self._road_grid: dict[tuple[int, int], list[tuple[float, float, int]]] | None = None
         self._stavby: list[Stavba] | None = None
         self._stavby_lock = threading.Lock()
+        self._rescue: Rescue | None = None
+        self._rescue_lock = threading.Lock()
+        self._factors_ready = False
+        self._factors_lock = threading.Lock()
 
     @property
     def people(self) -> People:
@@ -60,10 +65,12 @@ class Engine:
     # ---- priority -------------------------------------------------------
 
     def score(self, road_id: int, weights: Weights | None = None, votes: int = 0) -> int:
-        return scoring.score(self._require(road_id), weights or Weights(), votes)
+        w = self._ensure_factors(weights)
+        return scoring.score(self._require(road_id), w, votes)
 
     def breakdown(self, road_id: int, weights: Weights | None = None, votes: int = 0) -> list[ScorePart]:
-        return scoring.score_parts(self._require(road_id), weights or Weights(), votes)
+        w = self._ensure_factors(weights)
+        return scoring.score_parts(self._require(road_id), w, votes)
 
     def ranking(
         self,
@@ -71,7 +78,28 @@ class Engine:
         pins: Iterable[Pin] = (),
         votes: dict[int, int] | None = None,
     ) -> list[RankedRoad]:
-        return scoring.ranking(self.data.roads, weights or Weights(), pins, votes)
+        return scoring.ranking(self.data.roads, self._ensure_factors(weights), pins, votes)
+
+    def _ensure_factors(self, weights: Weights | None) -> Weights:
+        """Attach T20 values to the road dicts (road["factors"]) when a T20 weight is on.
+
+        detour_min = extra minutes of the single-úsek detour (None = no detour, the
+        closure cuts the network), students = students per day (Data KHK flows).
+        First call ~10 s (all detours and student flows), then cached.
+        """
+        w = weights or Weights()
+        if (w.detour or w.students) and not self._factors_ready:
+            people = self.people
+            with self._factors_lock:
+                if not self._factors_ready:
+                    for road in self.data.roads:
+                        d = self.graph.detour(road["id"]) if road["id"] in self.graph.road_ends else None
+                        road["factors"] = {
+                            "detour_min": d.extra_min if d is not None and d.found else None,
+                            "students": people.students_on(road["id"]),
+                        }
+                    self._factors_ready = True
+        return w
 
     def stability(
         self, weights: Weights | None = None, top_n: int = 100, samples: int = 50, spread: float = 0.5, seed: int = 0
@@ -81,7 +109,7 @@ class Engine:
         Each part of the score is linear in its weight, so the parts are computed
         once at weight 100 and rescaled for each random weight set.
         """
-        w = weights or Weights()
+        w = self._ensure_factors(weights)
         samples = max(1, samples)
         keys = list(Weights.model_fields)
         full = Weights(**{k: 100 for k in keys})
@@ -142,7 +170,7 @@ class Engine:
         with_detours: bool = True,
     ) -> BudgetPlan:
         """Stavby a budget buys (T17). Prices are an estimate; the plan is deterministic."""
-        w = weights or Weights()
+        w = self._ensure_factors(weights)
         p = {**budget.PRICES_KC_PER_KM, **(prices or {})}
         by_id = self.data.by_id
         cands = [s for s in self.stavby() if okres is None or s.okres == okres]
@@ -218,6 +246,23 @@ class Engine:
         for rid in ids:
             self._require(rid)
         return self.people.impact(ids)
+
+    @property
+    def rescue(self) -> Rescue:
+        """ZZS and HZS drive times (T18). Built on first use after `people`."""
+        if self._rescue is None:
+            people = self.people
+            with self._rescue_lock:
+                if self._rescue is None:
+                    self._rescue = Rescue(people, self.data.pois)
+        return self._rescue
+
+    def rescue_impact(self, road_ids: Iterable[int]) -> RescueImpact:
+        """Obce where the ambulance or fire brigade drives longer when these roads close (T18)."""
+        ids = list(road_ids)
+        for rid in ids:
+            self._require(rid)
+        return self.rescue.impact(ids)
 
     def obce(self) -> list[dict[str, Any]]:
         """Obce of the kraj (Data KHK: Obce): kod, nazev, obyvatel, deti, senioru, lon, lat, bbox."""
@@ -327,6 +372,8 @@ class Engine:
                     item.alerts += impact.detour_alerts(
                         main, item.detour, via, impact.in_school_year(date_from, date_to)
                     )
+                    item.rescue = self.rescue.impact(ids)
+                    item.alerts += item.rescue.alerts
             out.append(item)
 
         # Three different stories for the demo: most students, most vehicles, longest detour.
