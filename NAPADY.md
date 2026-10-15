@@ -190,7 +190,7 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Kdo:** Tomáš T16 (`backtest_2022()`).
 
 ### 9. Srovnání dvou úseků A vs B
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 22).
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 23).
 
 - Dva úseky vedle sebe: rozpad skóre, objížďka, dopady. Zvýrazní faktor, který rozhodl.
 - **Proč:** úředník musí obhájit, proč A a ne B. Matouš M2.1.
@@ -213,13 +213,13 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 - **Kdo:** Šimon S13, Matouš obrazovka.
 
 ### 12. Widget pro weby obcí
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 22).
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 23).
 
 - Malá vložitelná mapka (`iframe`) se stavem silnic a uzavírkami v obci. Obec ji dá na svůj web.
 - **Závisí na:** Moje obec (nápad 11).
 
 ### 13. Skutečné odesílání e‑mailů
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 22).
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 23).
 
 - Dnes je v plánu jen testovací SMTP (Mailpit) a náhled na webu. Skutečný e‑mail potřebuje SMTP účet a ochranu proti spamu.
 - **Kdo:** Šimon, až po Web Push.
@@ -231,7 +231,7 @@ Bylo v plánu jako V2, V3 nebo „po MVP“. Nic z toho se dnes nedělá, dokud 
 Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho se hned nedělá.
 
 ### 14. Časová osa uzavírek na mapě
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 22).
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 23).
 
 - Posuvník s datem nad mapou. Mapa ukáže uzavírky a opravy platné v ten den (dnes, za týden, v listopadu).
 - **Proč:** úředník hned vidí souběh uzavírek (navazuje na č. 3), občan vidí, kdy ho to potká.
@@ -245,7 +245,7 @@ Ze stavby nového designu (úvodní stránka, rozpočet, Moje cesty). Nic z toho
 - **Kdo:** Matouš (obrazovka), výpočet je stejný jako č. 1.
 
 ### 16. Plán staveb jako PDF pro zastupitelstvo
-**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 22).
+**Zůstává v nápadech** (rozhodnuto 15. 10.), dnes se nedělá. Znovu potvrzeno 14:20 (kap. 23).
 
 - Tlačítko „Tisk / PDF“: mapa staveb, tabulka, předpoklady ceny a štítek „návrh, ne rozhodnutí“.
 - **Kdo:** Matouš (tiskový styl v CSS, bez backendu).
@@ -332,8 +332,8 @@ Shrnutí: frontend dnes běží skoro celý z lokálních JSON v `public/data` (
 
 - **F‑a. Štítek zdroje dat v hlavičce:** „živá data ze serveru“ nebo „offline snímek“ podle `/api/health`. Porota uvidí, že běží backend, a my uvidíme, když spadne fallback.
 - **F‑b. Karta uzavírky z `/closures/preview`:** auta za den s kvalitou (`csd2025` / `odhad`), středoškoláci denně, odříznuté obce, dojezd ZZS a HZS (`rescue.obce` s časem před a po, limit 20 min), kolize s jinými uzavírkami. Rozšiřuje M-b o T18.
-- **F‑c. → Přesunuto do plánu (14:20, kap. 22).** **Rozpad skóre z API:** `GET /api/useky/{id}` vrací `breakdown` po faktorech, včetně T20. Nahradí výpočet v `priority.ts` a čísla budou stejná jako v exportu.
-- **F‑d. → Přesunuto do plánu (14:20, kap. 22).** **Aktuální uzavírky ŘSD na mapě:** `GET /api/closures` vrací i `srti` (NDIC, CC BY 4.0). Šedá vrstva „právě teď zavřeno“ vedle simulace.
+- **F‑c. → Přesunuto do plánu (14:20, kap. 23).** **Rozpad skóre z API:** `GET /api/useky/{id}` vrací `breakdown` po faktorech, včetně T20. Nahradí výpočet v `priority.ts` a čísla budou stejná jako v exportu.
+- **F‑d. → Přesunuto do plánu (14:20, kap. 23).** **Aktuální uzavírky ŘSD na mapě:** `GET /api/closures` vrací i `srti` (NDIC, CC BY 4.0). Šedá vrstva „právě teď zavřeno“ vedle simulace.
 - **F‑e. Načítání a chyby:** skeleton nebo spinner při čekání a krátká hláška při chybě 5xx. Teď se chyba schová do `console.warn` a tiše se přepne na lokální výpočet.
 - **F‑f. Zůstává v nápadech (14:20).** **Hlasování a hlášení občana:** endpointy `votes` a `reports` existují, UI chybí. Tlačítko „Tahle silnice je špatná“ u úseku, u úředníka fronta hlášení.
 - **F‑g. Zůstává v nápadech (14:20), S25 se nedělá.** **Odznak stability pořadí:** „jisté“ / „citlivé na váhy“ u úseku v top 100. Potřebuje B2.
@@ -387,6 +387,61 @@ Doplněk k části D. D je o tom, jak spolu mluví frontend a backend. E je o to
 - Objížďka po grafu pro 81,5 % úseků, auta za den ze sčítání ŘSD 2025 (měřeno 1 343 km, zbytek označený „odhad“).
 - Z dat kraje: středoškoláci na úseku, odříznuté obce, dojezd záchranky a hasičů, povodeň Q5/Q20/Q100, skutečné plány 2022.
 - Přihlášení se 3 rolemi, otevřené API, export CSV/GeoJSON s metadaty DCAT‑AP‑CZ.
+
+---
+
+## Část F: co chybí ve frontendu k prvnímu místu (15. 10. 14:30, Matouš)
+
+Rozbor stavu `matous` (`ec81fc4` + rozpracované změny v `MyTrip`, `MapView`, `PublicApp`, `commute.ts`) proti `main` (`f4c30f0`) a kap. 21. Kód se tím nemění. Do freeze 16:00 zbývá asi 90 minut a frontend dělá hlavně Matouš (Přemek má pitch). Proto je tu pořadí podle toho, **co porota uvidí za minutu práce**, ne podle toho, co je technicky hezké. Co se začne dělat, přesune se do `PLAN_FINAL.md`.
+
+### Kde jsme (frontend ↔ API)
+| Oblast | Stav |
+|---|---|
+| Žebříček, piny, náhled uzavírky, potvrzení, ukázkové uzavírky 2022, SRTI, upozornění, místa občana | **z API** (kap. 19, 21) |
+| Rozpočet | lokální odhad (`budget.ts`), `/api/budget` se nevolá (F8) |
+| AI | nevolá se nic z `/api/ai/*` (F7). `announcement` z náhledu uzavírky se nezobrazuje, karta bere šablonu `announce.ts` |
+| Váhy T20 (intenzita, objížďka, studenti) | v typu `Weights` chybí, posuvníky nejsou (D6) |
+| Rozpad skóre v detailu | počítá `priority.ts`, ne `/api/useky/{id}` (F‑c) |
+| Povodeň, stabilita, hlasování, hlášení | UI chybí, hlášení jen v `localStorage` |
+| Proklik ★1 → ★2 v UI | **neověřený** (kap. 21: ověřeno jen přes API) |
+
+### Co rozhoduje o prvním místu
+Porota hodnotí 5 minut ukázky, ne počet funkcí. Konkurence bude mít mapu stavu silnic (RoadMapper 2022). Vyhrajeme, když porota uvidí tři věci, které nikdo jiný nemá, a každá bude **bez zaváhání a s ověřitelným číslem**:
+1. **Dopad uzavírky na lidi** (auta, studenti, odříznuté obce, záchranka) → máme v API, karta to už ukazuje.
+2. **Občan se to dozví sám** (★2) → kód je, proklik ne.
+3. **Peníze → stavby** (rozpočet pro MF/NKÚ) → v UI jen odhad.
+
+Plus tichý dojem: AI je vidět, ale nerozhoduje; každé číslo má zdroj.
+
+### Návrhy v pořadí (Matouš, do 16:00)
+| # | Co | Proč pro porotu | Čas | Riziko |
+|---|---|---|---|---|
+| **G1** | **Commitnout rozpracované změny a projít ★1 → ★2 v prohlížeči** (úředník potvrdí II/303, občan ve druhém okně vidí upozornění v Moje cesty). Co nekliká, opravit, nic nového. | Bez toho padá druhý pilíř pitche. Kap. 21: „neověřeno v UI“. | 20 min | nízké |
+| **G2** | **Hlavní věta na kartě uzavírky:** nahoře velkým písmem „Denně zasáhne 8 246 aut a 589 středoškoláků · objížďka +0,8 km“ a pod tím štítky zdroje (ŘSD 2025 / odhad / Data KHK). Zbytek karty pod tím beze změny. | Porota si zapamatuje jedno číslo. Teď je rozházené v řádcích. Sedí na první větu pitche. | 15 min | nízké, jen JSX/CSS |
+| **G3** | **Oznámení z náhledu:** v kartě zobrazit `announcement` z `/closures/preview` se štítkem „návrh, upravte před odesláním“ (textarea). Tlačítko „Přepsat s AI“ → `POST /api/ai/announcement`, štítek „návrh AI“. Bez AI klíče tlačítko schovat. | AI vidět na nejsilnějším místě ukázky, člověk potvrzuje (výtka 10). | 20 min | střední: ověřit klíč (E5) |
+| **G4** | **„Proč je úsek nahoře?“** v `RoadPanel`: `POST /api/ai/explain`, text se štítkem „návrh AI“ vedle skutečných faktorů. Při vypnuté AI tlačítko nezobrazit. | NKÚ/MF: deterministické skóre + srozumitelné vysvětlení. | 15 min | stejné jako G3 |
+| **G5** | **Rozpočet z `/api/budget`** (`amount`, `amount2`): dvě částky vedle sebe (km, zbylé havarijní km, počet staveb), seznam staveb z API, štítek „výpočet serveru“, lokální odhad jen jako záloha se štítkem „odhad“. | Ekonomická gesce (Dědeček, Brigant). Teď vidí slabší verzi (E3). | 30 min | střední: jiný tvar dat než `budget.ts` |
+| **G6** | **Posuvníky T20** (intenzita, objížďka, studenti) v typu `Weights` a v dotazu žebříčku. Pak T24 (výchozí 50). | Skóre pak přímo počítá s auty a studenty, tedy s tím, co ukazuje karta. Uzavírá příběh „pořadí ↔ dopad“. | 20 min | první dotaz pomalý bez T21/S24 |
+| G7 | Mobil 375 px: Moje cesty, karta uzavírky, upozornění. Jen opravy přetékání. | Rejthar (použitelnost), ★2 na telefonu. | 15 min | nízké |
+| G8 | **Přímé odkazy pro ukázku:** `?view=closure&demo=II/303`, `?road=<id>`. Přemek je má v záložkách. | Když se na pódiu něco zasekne, jeden klik zpět do scény. | 15 min | nízké |
+
+**Řez v 15:30:** co z G1–G5 není hotové, se nezačíná. G6–G8 jen když zbude čas. G1 a G2 jsou povinné.
+
+### Co do 16:00 nedělat
+Povodeň (E7), hlasování a hlášení na serveru (F‑f), stabilita (F‑g), rozpad skóre z API (F‑c), časová osa (č. 14), PDF pro zastupitelstvo (č. 16), typy z OpenAPI (S26). Jsou to dobré věty do pitche („co dál“), ne obrazovky. Každá nová obrazovka po 15:30 je riziko pádu ukázky.
+
+### Kontrola v 16:00 (Matouš + Přemek, 10 min)
+- [ ] ★1, ★2, ★3 proklikané v čistém prohlížeči podle `docs/PITCH.md`, kap. 3, bez jediného „offline režim“.
+- [ ] U každého čísla na kartě uzavírky je zdroj nebo štítek „odhad“.
+- [ ] Každý AI text má štítek „návrh AI“ a vedle je tlačítko pro člověka.
+- [ ] Žádný `console.error` při ukázce.
+- [ ] Telefon 375 px: Moje cesty a upozornění.
+- [ ] Záložní build bez serveru otevře mapu se štítkem „offline“.
+
+### Potřebuji od ostatních
+- **Šimon:** potvrdit AI klíč (E5) a tvar odpovědí `/ai/explain`, `/ai/announcement` a `/budget` (jeden příklad JSON stačí). Sjednotit `rescue` (F13).
+- **Tomáš:** T21 + S24 před G6, jinak první posuvník čeká 5 s. VAPID (F12), jinak ★2 ukazujeme jen jako seznam upozornění.
+- **Přemek:** do pitche přepsat hlavní moment podle G2 (jedna věta s čísly) a přímé odkazy z G8.
 
 ---
 
