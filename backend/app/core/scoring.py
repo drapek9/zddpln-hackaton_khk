@@ -33,6 +33,11 @@ CLASS_SHARES: list[tuple[PriorityClass, float]] = [
 VOTE_POINTS = 2
 VOTE_CAP = 10
 
+# T20 scales: about the same range as the other parts (max 20-24 points).
+INTENSITY_PER_POINT = 400  # vehicles/day; 8 000 = 20 points
+STUDENTS_PER_POINT = 20  # students/day; 480 = 24 points
+DETOUR_CUT_OFF_POINTS = 24  # no detour at all (closing cuts the network)
+
 
 def js_round(x: float) -> int:
     """Math.round from JavaScript (half up), not Python banker's rounding."""
@@ -64,6 +69,18 @@ def _raw_parts(road: dict[str, Any], w: Weights, votes: int, this_year: int | No
         ("age", "Roky od opravy", min(years_ago * 4, 32) * (w.age / 100)),
         ("votes", "Hlasy občanů", min(votes * VOTE_POINTS, VOTE_CAP) * (w.votes / 100)),
     ]
+    # T20 factors. The values come from the engine (road["factors"], see Engine._ensure_factors);
+    # the TS port does not have them, so they are skipped when their weight is 0 (TS parity).
+    f = road.get("factors") or {}
+    if w.intensity:
+        sv = (road.get("intensity") or {}).get("sv") or 0
+        parts.append(("intensity", "Intenzita dopravy", min(sv / INTENSITY_PER_POINT, 20) * w.intensity / 100))
+    if w.detour:
+        extra = f.get("detour_min")
+        pts = DETOUR_CUT_OFF_POINTS if extra is None and "detour_min" in f else min(extra or 0, 30) * 0.8
+        parts.append(("detour", "Délka objížďky", pts * w.detour / 100))
+    if w.students:
+        parts.append(("students", "Středoškoláci denně", min(f.get("students", 0) / STUDENTS_PER_POINT, 24) * w.students / 100))
     return parts
 
 

@@ -31,6 +31,12 @@ class Weights(BaseModel):
     age: float = 50
     votes: float = 0
     """Weak citizen-vote factor. Admin sets it; 0 = off."""
+    intensity: float = 0
+    """Added 15 Oct (T20): vehicles per day (ŘSD 2025 / estimate). 0 = off until the frontend ranks via the API."""
+    detour: float = 0
+    """Added 15 Oct (T20): how long the detour is when the úsek closes for repair."""
+    students: float = 0
+    """Added 15 Oct (T20): high-school students per day on the úsek (Data KHK)."""
 
 
 class Pin(BaseModel):
@@ -185,6 +191,8 @@ class DemoClosure(BaseModel):
     note: str = ""
     """Honest caveats about the match, e.g. the plan has a different road number than Stav povrchu."""
     source: str = "Data KHK: Plánované opravy silniční infrastruktury na rok 2022 (liniové)"
+    rescue: RescueImpact | None = None
+    """Added 15 Oct (T18): ZZS and HZS drive times; its alerts are also in `alerts`."""
 
 
 # ---- added 15 Oct (T8): current closures from ŘSD / NDIC SRTI ------------------
@@ -281,3 +289,38 @@ class StabilityResult(BaseModel):
     items: list[StableRoad] = Field(default_factory=list)
     """Roads in the top N with the given weights, in rank order."""
     note: str = ""
+
+
+# ---- added 15 Oct (T18): ambulance (ZZS) and fire brigade (HZS) response times ---
+
+
+class RescueObec(BaseModel):
+    kod: str
+    nazev: str
+    obyvatel: int = 0
+    service: Literal["zzs", "hzs"]
+    """zzs = ambulance base (Data KHK), hzs = fire station."""
+    before_min: float
+    """Drive time from the nearest base before the closure (estimate, graph speeds)."""
+    after_min: float | None = None
+    """None = no road connection from any base after the closure."""
+    extra_min: float | None = None
+    over_limit: bool = False
+    """ZZS only: the time goes over 20 min (Act on ZZS) because of the closure."""
+
+
+class RescueImpact(BaseModel):
+    closed_road_ids: list[int] = Field(default_factory=list)
+    obce: list[RescueObec] = Field(default_factory=list)
+    """Obce with a longer drive (at least 1 min), cut-off and longest delay first."""
+    people_slower: int = 0
+    """Inhabitants of obce where the ambulance drives longer."""
+    zzs_over_limit: int = 0
+    """Obce where the ambulance goes over 20 min only because of the closure."""
+    limit_min: float = 20
+    alerts: list[Alert] = Field(default_factory=list)
+    src: Literal["estimate"] = "estimate"
+    note: str = ""
+
+
+DemoClosure.model_rebuild()  # `rescue` refers to RescueImpact defined below DemoClosure

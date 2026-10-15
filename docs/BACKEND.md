@@ -269,3 +269,20 @@ Nová pole do `schemas.py` se **jen přidají** a domluvíme je spolu, až bude 
   - Skóre a pořadí se změnily stejně ve frontendu i v Pythonu (oba čtou `roads.json`). Testy shody s `priority.ts` přegenerované, 19/19 zelených.
   - `repairs.json` (simulované plánované opravy) se při přegenerování vybraly znovu podle nového skóre.
   - Poznámka výše „Počet škol u objížďky je zatím nadsazený … Opraví T11“ je tím **NEAKTIVNÍ**.
+
+### Stav 15. 10., ~11:35 (Tomáš): T17, T10, T18, T20 v jádře, T19 nejde
+Všechno na větvi `tomas-next`, jen přidaná pole a nové modely. Testy 25/25.
+- **T17 rozpočtový asistent:** `Engine.budget_plan(amount_kc, weights=None, okres=None, prices=None, order="per_kc", with_detours=True) -> BudgetPlan`. `Engine.stavby()` = všechny možné stavby (1 044).
+  - Stavba = navazující špatné úseky (nevyhovující, havarijní, SUPERhavarijní) stejné silnice v jednom okrese. Dobrá mezera do 300 m se přibere. Nejvýš ~5 km. Na křižovatce téže silnice se stavba dělí.
+  - Ceny 2,5 / 12 / 17 mil. Kč/km jsou **předpoklad** (`price_src = "estimate"`), `prices` je přepíše.
+  - `order="per_kc"` (podle plánu): přínos na korunu, kupuje hlavně levné nevyhovující km. Za 100 mil. Kč 40 km, havarijních km neubude. `order="score"`: nejnaléhavější první, za 100 mil. Kč 9,5 km, z toho 6,9 km havarijních. **Doporučení pro F5: ukázat obě.**
+  - Plán za 100 mil. Kč ~0,2 s, za 1,9 mld. Kč ~2 s (objížďky všech staveb). Pro porovnání dvou částek (S17) zavolat dvakrát.
+- **T10 stabilita:** `Engine.stability(weights=None, top_n=100, samples=50, spread=0.5, seed=0) -> StabilityResult`. Štítek `jisté` (v top N aspoň v 90 % náhodných sad vah), `pravděpodobné` (50 %+), `nejisté`. ~0,3 s. Výchozí váhy: 61 / 37 / 2.
+- **T18 dojezd ZZS a HZS:** `Engine.rescue_impact(road_ids) -> RescueImpact`. Obce s dojezdem delším aspoň o 1 min, `over_limit` = ZZS přes 20 min kvůli uzavírce, varování v `alerts`. Vše `estimate`. Dotaz ~0,03 s, první sestavení ~3 s.
+  - `DemoClosure.rescue` + varování v `DemoClosure.alerts` (II/327 Chlumec: 4 obce přes 20 min, II/302 Broumov: 2).
+  - Obec ležící přímo na uzavřeném průtahu dostane dojezd k nejbližšímu okraji uzavírky.
+  - Pro Šimona (S18): v odpovědi uzavírky zavolat `engine.rescue_impact(road_ids)`.
+- **T20 nové faktory ve skóre:** `Weights.intensity`, `Weights.detour`, `Weights.students`, **výchozí 0**. Při 0 je skóre beze změny a sedí s `priority.ts`. Když je váha > 0, `breakdown` ukáže řádky „Intenzita dopravy“, „Délka objížďky“, „Středoškoláci denně“. První výpočet ~8 s (objížďky všech úseků), pak z cache.
+  - Výchozí hodnoty přepnout na 50 až ve chvíli, kdy frontend bere žebříček z API (F2). Do té doby by se Python a `priority.ts` rozešly.
+  - Při všech třech na 50 se top 100 změní o 15 úseků.
+- **T19 NEAKTIVNÍ:** poctivě nejde. Stav povrchu má u 98 % úseků jediný průzkum (2022–2024), většinou až po opravě. Průzkum před opravou mají jen 3 úseky. Číslo by nic neříkalo, do pitche nedávat.
