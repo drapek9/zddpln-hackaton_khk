@@ -31,6 +31,12 @@ class Weights(BaseModel):
     age: float = 50
     votes: float = 0
     """Weak citizen-vote factor. Admin sets it; 0 = off."""
+    intensity: float = 0
+    """Added 15 Oct (T20): vehicles per day (ŘSD 2025 / estimate). 0 = off until the frontend ranks via the API."""
+    detour: float = 0
+    """Added 15 Oct (T20): how long the detour is when the úsek closes for repair."""
+    students: float = 0
+    """Added 15 Oct (T20): high-school students per day on the úsek (Data KHK)."""
 
 
 class Pin(BaseModel):

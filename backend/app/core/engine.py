@@ -35,6 +35,8 @@ class Engine:
         self._stavby_lock = threading.Lock()
         self._rescue: Rescue | None = None
         self._rescue_lock = threading.Lock()
+        self._factors_ready = False
+        self._factors_lock = threading.Lock()
 
     @property
     def people(self) -> People:
@@ -63,10 +65,12 @@ class Engine:
     # ---- priority -------------------------------------------------------
 
     def score(self, road_id: int, weights: Weights | None = None, votes: int = 0) -> int:
-        return scoring.score(self._require(road_id), weights or Weights(), votes)
+        w = self._ensure_factors(weights)
+        return scoring.score(self._require(road_id), w, votes)
 
     def breakdown(self, road_id: int, weights: Weights | None = None, votes: int = 0) -> list[ScorePart]:
-        return scoring.score_parts(self._require(road_id), weights or Weights(), votes)
+        w = self._ensure_factors(weights)
+        return scoring.score_parts(self._require(road_id), w, votes)
 
     def ranking(
         self,
@@ -74,7 +78,28 @@ class Engine:
         pins: Iterable[Pin] = (),
         votes: dict[int, int] | None = None,
     ) -> list[RankedRoad]:
-        return scoring.ranking(self.data.roads, weights or Weights(), pins, votes)
+        return scoring.ranking(self.data.roads, self._ensure_factors(weights), pins, votes)
+
+    def _ensure_factors(self, weights: Weights | None) -> Weights:
+        """Attach T20 values to the road dicts (road["factors"]) when a T20 weight is on.
+
+        detour_min = extra minutes of the single-úsek detour (None = no detour, the
+        closure cuts the network), students = students per day (Data KHK flows).
+        First call ~10 s (all detours and student flows), then cached.
+        """
+        w = weights or Weights()
+        if (w.detour or w.students) and not self._factors_ready:
+            people = self.people
+            with self._factors_lock:
+                if not self._factors_ready:
+                    for road in self.data.roads:
+                        d = self.graph.detour(road["id"]) if road["id"] in self.graph.road_ends else None
+                        road["factors"] = {
+                            "detour_min": d.extra_min if d is not None and d.found else None,
+                            "students": people.students_on(road["id"]),
+                        }
+                    self._factors_ready = True
+        return w
 
     def stability(
         self, weights: Weights | None = None, top_n: int = 100, samples: int = 50, spread: float = 0.5, seed: int = 0
@@ -84,7 +109,7 @@ class Engine:
         Each part of the score is linear in its weight, so the parts are computed
         once at weight 100 and rescaled for each random weight set.
         """
-        w = weights or Weights()
+        w = self._ensure_factors(weights)
         samples = max(1, samples)
         keys = list(Weights.model_fields)
         full = Weights(**{k: 100 for k in keys})
@@ -145,7 +170,7 @@ class Engine:
         with_detours: bool = True,
     ) -> BudgetPlan:
         """Stavby a budget buys (T17). Prices are an estimate; the plan is deterministic."""
-        w = weights or Weights()
+        w = self._ensure_factors(weights)
         p = {**budget.PRICES_KC_PER_KM, **(prices or {})}
         by_id = self.data.by_id
         cands = [s for s in self.stavby() if okres is None or s.okres == okres]
