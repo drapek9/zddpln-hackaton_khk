@@ -377,6 +377,8 @@ Každý řádek obou tabulek musí být na stránce „Zdroje dat“ (Matouš) s
 
 ### 14.2 AI: co, kde, kdo
 
+**NEAKTIVNÍ (15. 10., 10:45):** Šimon má AI hotovou po svém na větvi `simon` (`backend/app/ai/service.py`, `/api/ai/explain|announcement|weights`, šablona jako záloha, `nearest_road_id`). Návrh níže je jen pro srovnání, neimplementovat.
+
 **Doporučený poskytovatel:** Anthropic Claude přes oficiální SDK `anthropic` (Python).
 - Model `claude-haiku-5-5` pro všechno (rychlý a levný, stačí na krátké texty a JSON). `claude-sonnet-5-5` jen když bude oznámení znít špatně.
 - Záloha: Azure OpenAI, pokud partner Microsoft na místě dá kredit. Díky jednomu rozhraní se mění jen `.env`.
