@@ -46,3 +46,34 @@ Důvod: [PLAN_FINAL.md](../PLAN_FINAL.md), kap. 13. Až po MVP, nic výše se ne
 - **Povodeň Q100:** tlačítko u úředníka. Mapa zatopených silnic, odříznuté obce, lidé, studenti. Úroveň Q5/Q20/Q100.
 - **Ukázkové uzavírky** ze skutečných plánů 2022 (výběr v simulátoru).
 - **Zdroje dat:** doplnit 4 sady Data KHK: Dojížďka do středních škol, Obce, Záplavová území (Q5/Q20/Q100), Plánované opravy 2022.
+
+## Stav 15. 10. (Matouš, větev `matous`, commit `073b493`)
+
+| Milník | Stav | Poznámka |
+|---|---|---|
+| v0 | ✅ | `/api/health` přes Vite funguje. Cíl proxy jde změnit: `CESTY_API_TARGET=http://server:8000 npm run dev` (kap. 6 v `STAV_A_DOPORUCENI.md`). |
+| v1 | ✅ (zatím bez API) | Žebříček se 4 třídami a připíchnutím s důvodem. Volá `GET /api/ranking`. Dokud vrací 404, počítá lokálně stejným algoritmem jako `core/scoring.py` (4 726 úseků, 0 rozdílů v pořadí, skóre i třídě, i s pinem). Piny jsou zatím v localStorage. |
+| v2 ★1 | ✅ (zatím bez API) | Simulátor uzavírky v detailu úseku: objížďka na mapě, +km, +min, varování k objížďce, návrh oznámení, „Potvrdit uzavírku“. Volá `POST /api/closures`. Dokud vrací 404, bere snímek `public/demo/detours.json` spočítaný jádrem (`Engine.detour` + `detour_alerts`, top 300 úseků, štítek „předpočítáno jádrem“). 3 ukázkové uzavírky: úseky 581, 2372, 1940. |
+| Zdroje dat | ✅ | OSM (ODbL), CARTO, ŘSD sčítání (CC BY‑SA), SRTI (CC BY) a 4 sady z kap. 13 jsou na stránce Zdroje dat se stavem „používáme / připravujeme“. Atribuce OSM je i v mapě. |
+
+**Co frontend čeká od backendu (požadavky, nic jsem v `backend/` neměnil):**
+- **Šimon, S4:** `GET /api/ranking` → `RankedRoad[]` (celá síť, seřazené). Váhy, které se liší od výchozích, posílám jako query (`?stav=30&schools=100`). Bez parametrů = výchozí nebo váhy úředníka.
+- **Šimon, S5:** `POST /api/closures` s tělem `{road_id, date_from, date_to, restriction}` → `{detour: DetourResult, alerts: Alert[]}`. V `alerts` stačí `detour_alerts` (obecná varování frontend zatím počítá sám). Jiný tvar je v pořádku, jen mi ho napište a upravím `src/lib/api.ts`.
+- **Tomáš, T7:** „aut za den“ na kartě uzavírky ukazuje „čeká na data“. Po T7 stačí přidat pole do `DetourResult`.
+- **Tomáš, T16:** až budou ukázkové uzavírky z plánů 2022, nahradím jimi `DEMO_CLOSURES` v `src/lib/closure.ts`.
+
+Další na řadě (podle kap. 4 `STAV_A_DOPORUCENI.md`): přepnout na API, jakmile pojedou S4 a S5. Pak řádek studentů a odříznutých obcí na kartě uzavírky (T14/T15).
+
+## Úprava rozhraní 15. 10. odpoledne (Matouš, větev `matous`, commit `4ce3552`)
+
+Podle připomínek Matouše k designu. Přemek, prosím, projdi (review designu).
+
+| Oblast | Co se změnilo |
+|---|---|
+| Mapa | Otáčení a náklon (3D) jde zapnout a vypnout (ve výchozím stavu vypnuto). Tlačítko „⌂ Celý kraj“ vrátí výchozí pohled. Legenda je nahoře vlevo. |
+| Správa silnic | Váhy jsou v panelu „Parametry priority“ vpravo nahoře nad mapou, odděleně od ostatního. Vlevo zůstalo hledání a filtry, pod nimi rozbalovací sekce: Žebříček priority (15 úseků, pak „Dalších 50“ / „Rozbalit vše“), Ukázkové uzavírky, Vrstvy mapy. |
+| Detail úseku (úředník) | Záložky **Přehled / Uzavírka / Priorita**. Simulace uzavírky je zvlášť od přehledu a od připíchnutí priority. Seznamy (linky, školy, IZS…) jsou rozbalovací. |
+| Veřejnost | Menší vyhledávání nahoře. Seznam oprav, odběr upozornění a moje hlášení jsou rozbalovací. |
+| Všude | Bez viditelných posuvníků v bočních panelech (scrollovat jde dál), větší písmo (základ 16 px). |
+
+Ověřeno: `npm run build` a kontrola typů prošly, v prohlížeči správa i veřejnost, čára objížďky se na mapě vykreslí. Neověřeno: mobilní šířka 375 px.
