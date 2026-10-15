@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Fold from "./Fold";
 import type { Place, TripImpact } from "../lib/commute";
-import { MIN_PLACES, isSet, newPlace, roundCoord, setPlaces } from "../lib/commute";
+import { MIN_PLACES, isSet, newPlace, placeLabel, roundCoord, setPlaces } from "../lib/commute";
 import { STATUS_LABEL, formatPeriod, formatSil } from "../lib/geo";
 import { enablePush, fetchNotices, markNoticeRead, pushSupported, type Notice } from "../lib/notifications";
 import type { User } from "../lib/auth";
@@ -16,7 +16,6 @@ type Props = {
   user: User | null;
 };
 
-const SUGGEST = ["Domov", "Práce", "Škola", "Lékař", "Nemocnice", "Nákupy"];
 
 // Veřejnost: „Moje cesty“. Ráno si zkontroluju, jestli mě cestou do práce něco nečeká.
 export default function MyTrip({ places, onPlaces, picking, onPicking, impact, onSelectRoad, user }: Props) {
@@ -43,12 +42,13 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
 
   const patch = (id: string, change: Partial<Place>) =>
     onPlaces(places.map((p) => (p.id === id ? { ...p, ...change } : p)));
+  // Nad minimem bod zmizí celý, u prvních dvou se jen vymaže výběr i název.
   const remove = (id: string) => {
     if (picking === id) onPicking(null);
-    onPlaces(places.filter((p) => p.id !== id));
+    if (places.length > MIN_PLACES) onPlaces(places.filter((p) => p.id !== id));
+    else patch(id, { name: "", x: null, y: null });
   };
-  const add = (name = "") => onPlaces([...places, newPlace(name)]);
-  const unused = SUGGEST.filter((s) => !places.some((p) => p.name.trim().toLowerCase() === s.toLowerCase()));
+  const add = () => onPlaces([...places, newPlace()]);
   const set = setPlaces(places);
 
   const locate = (id: string) => {
@@ -77,8 +77,7 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
   return (
     <div className="mytrip">
       <p className="muted">
-        Zadejte místa, mezi kterými jezdíte, třeba domov, práci nebo lékaře. Ukážeme opravy a uzavírky, které vás cestou
-        potkají.
+        Vyberte v mapě body, mezi kterými jezdíte. Pojmenovat je můžete, nemusíte. Ukážeme, co vás cestou čeká.
       </p>
 
       <ol className="place-list">
@@ -87,48 +86,48 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
           const active = picking === p.id;
           return (
             <li key={p.id} className={`place-row ${active ? "picking" : ""}`}>
-              <span className={`place-pin ${ok ? "set" : ""}`} aria-hidden="true">
-                {i + 1}
-              </span>
-              <div className="place-body">
-                <div className="place-head">
+              <div className="place-head">
+                <span className={`place-pin ${ok ? "set" : ""}`} aria-hidden="true">
+                  {i + 1}
+                </span>
+                <div className="place-title">
                   <input
                     className="place-name"
                     value={p.name}
-                    placeholder="Název, např. nemocnice"
-                    aria-label={`Název místa ${i + 1}`}
+                    placeholder={`Bod ${i + 1}`}
+                    aria-label={`Název bodu ${i + 1}`}
                     maxLength={40}
                     onChange={(e) => patch(p.id, { name: e.target.value })}
                   />
-                  {places.length > MIN_PLACES && (
-                    <button className="icon-btn" title="Odebrat místo" aria-label={`Odebrat ${p.name || `místo ${i + 1}`}`} onClick={() => remove(p.id)}>
-                      ×
-                    </button>
-                  )}
+                  <small>{active ? "klikněte do mapy…" : ok ? "vybráno na mapě" : "zatím nevybráno"}</small>
                 </div>
-                <small>{active ? "klikněte do mapy…" : ok ? "vybráno na mapě" : "zatím nevybráno"}</small>
-                <div className="place-actions">
+                {(ok || p.name || places.length > MIN_PLACES) && (
+                  <button
+                    className="icon-btn place-remove"
+                    title={places.length > MIN_PLACES ? "Odebrat bod" : "Vymazat bod"}
+                    aria-label={`Odebrat ${placeLabel(p, i)}`}
+                    onClick={() => remove(p.id)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <div className="place-actions">
                   <button className={`btn small ${!ok && !active ? "primary" : ""}`} onClick={() => onPicking(active ? null : p.id)}>
                     {active ? "Zrušit" : ok ? "Změnit" : "Vybrat v mapě"}
                   </button>
                   <button className="btn small" onClick={() => locate(p.id)} disabled={locating != null} title="Použít mou polohu">
                     {locating === p.id ? "Zjišťuji…" : "◎ Moje poloha"}
                   </button>
-                </div>
               </div>
             </li>
           );
         })}
       </ol>
       <div className="place-add">
-        <button className="btn small" onClick={() => add()}>
-          + Přidat místo
+        <button className="btn small place-add-btn" onClick={add}>
+          + Přidat bod
         </button>
-        {unused.slice(0, 4).map((s) => (
-          <button key={s} className="chip chip-btn" onClick={() => add(s)}>
-            + {s}
-          </button>
-        ))}
       </div>
       {geoError && <p className="hint">{geoError}</p>}
 
@@ -142,7 +141,7 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
                 : "Cesta je bez omezení"}
           </b>
           <span>
-            {set.length > 1 ? `vzdušně ${impact.directKm.toFixed(1)} km` : `okruh 3 km kolem místa ${set[0]?.name || ""}`.trim()} ·{" "}
+            {set.length > 1 ? `vzdušně ${impact.directKm.toFixed(1)} km` : `okruh 3 km kolem bodu ${placeLabel(set[0], places.indexOf(set[0]))}`} ·{" "}
             {impact.badKm.toFixed(1)} km havarijních silnic v okolí
           </span>
         </div>
@@ -203,11 +202,11 @@ export default function MyTrip({ places, onPlaces, picking, onPicking, impact, o
       </Fold>
 
       <p className="fine">
-        Odhad: bereme silnice v pásu 1,5 km kolem spojnic mezi místy v pořadí seznamu. Místa jsou v tomto prohlížeči,
-        zaokrouhlená na ~100 m. Přihlášenému občanovi pošleme první dvě na server kvůli upozornění na uzavírky.{" "}
+        Odhad: bereme silnice v pásu 1,5 km kolem spojnic mezi body v pořadí seznamu. Body jsou v tomto prohlížeči,
+        zaokrouhlená na ~100 m. Přihlášenému občanovi pošleme první dva na server kvůli upozornění na uzavírky.{" "}
         {set.length > 0 && (
           <button className="link" onClick={() => onPlaces(places.map((p) => ({ ...p, x: null, y: null })))}>
-            Smazat polohy míst
+            Smazat všechny body
           </button>
         )}
       </p>

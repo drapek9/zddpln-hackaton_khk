@@ -33,3 +33,12 @@ export default function SheetBar({ value, onChange, left, right }: Props) {
 
 /** Na mobilu po výběru úseku rovnou otevřít detail. */
 export const isNarrow = () => window.matchMedia?.("(max-width: 900px)").matches ?? false;
+
+/** Křížek, kterým se na mobilu vysunutý panel zase schová (na počítači není vidět). */
+export function SheetClose({ onClose }: { onClose: () => void }) {
+  return (
+    <button className="sheet-x" aria-label="Zavřít panel" title="Zavřít" onClick={onClose}>
+      ×
+    </button>
+  );
+}

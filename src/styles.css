@@ -213,6 +213,8 @@ a { color: var(--accent); }
 }
 .side::-webkit-scrollbar { display: none; }
 .left { border-right: 1px solid var(--line); }
+.side > *, .place-row .place-body { min-width: 0; }
+.place-row .place-body { flex: 1; }
 .right { border-left: 1px solid var(--line); }
 .map-wrap { position: relative; min-height: 0; background: var(--sunken); }
 .map { position: absolute; inset: 0; }
@@ -259,12 +261,12 @@ button.link { background: none; border: 0; padding: 0; color: var(--accent); fon
 .chip-btn:hover { border-color: var(--accent-line); }
 .chip-btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); font-weight: 600; }
 
-.tabs, .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-bottom: 14px; background: var(--sunken); padding: 3px; border-radius: var(--r); }
-.tabs.four { grid-template-columns: repeat(4, 1fr); }
+.tabs, .segmented { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-bottom: 14px; }
+.tabs.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .segmented { grid-template-columns: 1fr 1fr; margin-bottom: 6px; }
-.tabs button, .segmented button { border: 0; background: transparent; border-radius: 9px; padding: 7px 4px; cursor: pointer; color: var(--muted); font-size: 14px; }
+.tabs button, .segmented button { border: 1px solid transparent; background: var(--sunken); border-radius: var(--r-sm); min-width: 0; overflow-wrap: anywhere; line-height: 1.2; padding: 7px 4px; cursor: pointer; color: var(--muted); font-size: 14px; }
 .tabs button:hover, .segmented button:hover { color: var(--text); }
-.tabs button.active, .segmented button.on { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+.tabs button.active, .segmented button.on { background: var(--surface); border-color: var(--line-strong); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
 .panel-tabs { margin: 16px 0 4px; }
 
 /* ===== Štítky ===== */
@@ -353,6 +355,16 @@ i.done { background: #22c55e; }
 }
 .legend span, .legend-repairs li { display: flex; align-items: center; gap: 6px; }
 .legend-repairs { list-style: none; padding: 0; display: grid; gap: 6px; }
+.map-filter { align-items: center; padding: 5px 6px 5px 11px; }
+.map-filter-base { gap: 5px !important; flex-wrap: wrap; }
+.map-filter-base span { gap: 5px; }
+.map-filter-base i + i { margin-left: 6px; }
+.map-filter-sub { gap: 5px !important; color: var(--muted); }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; transition: background .15s var(--ease), border-color .15s var(--ease); }
+.filter-toggle:hover { border-color: var(--accent-line); }
+.filter-toggle.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); font-weight: 600; }
+.filter-toggle:not(.on) i { opacity: .45; }
+.legend i.srti { background: #fff; box-shadow: inset 0 0 0 2px #0b1220; width: 10px; height: 10px; }
 .maplibregl-ctrl-bottom-left { bottom: 0; left: auto; right: 0; }
 .maplibregl-ctrl-bottom-left .maplibregl-ctrl { margin: 0 52px 6px 0; }
 
@@ -578,12 +590,17 @@ i.done { background: #22c55e; }
 .place-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .place-list .place-row { align-items: flex-start; padding: 10px; }
 .place-body { flex: 1; min-width: 0; display: grid; gap: 4px; }
-.place-row .place-head { display: flex; align-items: center; gap: 6px; }
+.place-list .place-row { display: grid; gap: 8px; }
+.place-row .place-head { display: flex; align-items: center; gap: 10px; }
+.place-row .place-title { flex: 1; min-width: 0; display: grid; }
+.place-remove { align-self: flex-start; }
 .place-name { flex: 1; min-width: 0; width: auto; font: inherit; font-weight: 600; font-size: 15px; padding: 4px 8px; margin-left: -8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--text); }
 .place-name:hover { border-color: var(--line); }
 .place-name:focus { outline: none; border-color: var(--accent-line); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
 .place-name::placeholder { color: var(--muted); font-weight: 500; }
-.place-row .place-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin-top: 2px; }
+/* Tlačítka přes celou šířku karty, ne odsazená doprava za číslem bodu. */
+.place-row .place-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.place-row .place-actions .btn { justify-content: center; text-align: center; }
 .place-actions .btn { width: auto; }
 .place-add { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .icon-btn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: var(--r-sm); border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
@@ -827,10 +844,10 @@ body.is-resizing .workspace { transition: none; }
   place-items: center;
   padding: 0;
 }
-.panel-collapse.left { left: var(--left-w, 260px); border-left: 0; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.panel-collapse.right { right: var(--right-w, 260px); border-right: 0; border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.panel-collapse.left { left: var(--left-w, 360px); border-left: 0; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.panel-collapse.right { right: var(--right-w, 320px); border-right: 0; border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .panel-collapse:hover { color: var(--accent); border-color: var(--accent-line); }
-.workspace.no-right { grid-template-columns: var(--left-w, 260px) minmax(0, 1fr); }
+.workspace.no-right { grid-template-columns: var(--left-w, 360px) minmax(0, 1fr); }
 
 /* Detail jako spodní pruh nad mapou */
 .detail-sheet {
@@ -982,6 +999,8 @@ a.btn { text-decoration: none; color: inherit; display: inline-block; }
 }
 @media (max-width: 900px) {
   .tb-right > .sim-tag { display: none; }
+  /* Na telefonu by štítek zdroje dat zakryl přepínač Úředník / Admin. */
+  .tb-right > .mode-tag { display: none; }
   .tb-left { gap: 8px; }
   .role-switch button { padding: 3px 8px; font-size: 12px; }
 }
@@ -1073,3 +1092,102 @@ kbd { font-family: var(--font); font-size: 11px; font-weight: 600; padding: 1px 
 /* Upozornění občana (MyTrip). Nepřečtené tučně. */
 .notice { padding: 6px 0; border-bottom: 1px solid var(--line, #ddd); cursor: pointer; }
 .notice.unread { font-weight: 600; }
+
+/* Admin: malá mapa v pravém dolním rohu, po kliknutí velká (Matouš 15. 10.) */
+
+.sys-map { padding-bottom: 12px; }
+.sys-map-body { position: relative; height: 220px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); cursor: zoom-in; }
+.sys-map:not(.big) .sys-map-body > :not(.sys-map-hint) { pointer-events: none; }
+.sys-map:not(.big) .map-tools, .sys-map:not(.big) .maplibregl-ctrl-bottom-right, .sys-map:not(.big) .maplibregl-ctrl-bottom-left { display: none; }
+.sys-map-hint { position: absolute; left: 10px; bottom: 10px; background: var(--overlay); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--text-2); pointer-events: none; }
+.sys-map.big { position: fixed; inset: 24px; z-index: 60; display: grid; grid-template-rows: auto 1fr; box-shadow: var(--shadow); animation: sys-map-in .22s var(--ease); }
+.sys-map.big .sys-map-body { height: auto; min-height: 0; cursor: default; }
+.sys-map-backdrop { position: fixed; inset: 0; z-index: 59; background: rgba(15, 20, 26, 0.35); backdrop-filter: blur(2px); }
+@keyframes sys-map-in { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) { .sys-map.big { inset: 8px; } }
+
+/* ============================================================
+   Dvě prostředí (Matouš 15. 10.): občan = „moje město“, úředník = „pracovní pult“.
+   Stejné komponenty, jiné tokeny a hustota.
+   ============================================================ */
+
+/* ----- Občan: teplé světlé město, větší písmo, plovoucí zaoblené karty ----- */
+.aud-public {
+  --r-sm: 12px;
+  --r: 16px;
+  --r-lg: 22px;
+  font-size: 16px;
+}
+/* Barvy jsou pro všechny role stejné (Matouš 15. 10.), úředník se liší jen hustotou. */
+:root:not([data-theme="dark"]) .aud-public,
+:root:not([data-theme="dark"]) .aud-office {
+  --bg: #efe9df;
+  --surface-2: #faf8f4;
+  --sunken: #e8e1d5;
+  --line: #e6dfd2;
+}
+.aud-public .topbar, .aud-office .topbar { background: var(--bg); border-bottom: 0; }
+.aud-public .brand, .aud-office .brand { color: var(--accent); }
+@media (min-width: 901px) {
+  .aud-public .workspace { background: var(--bg); }
+  .aud-public .side.left {
+    margin: 4px 0 14px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .aud-public .map-wrap {
+    margin: 4px 14px 14px 14px;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .aud-public .legend { border-radius: 999px; padding-left: 14px; }
+  .aud-public .tabs button { font-size: 14px; }
+}
+
+/* ----- Úředník: pracovní pult, stejné barvy, jen hustší rozložení ----- */
+.aud-office {
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 10px;
+  --header-h: 50px;
+  font-size: 14px;
+}
+.aud-office .side { padding: 12px; }
+.aud-office .side h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.aud-office .legend { border-radius: var(--r); }
+
+/* Mobil: křížek na vysunutém panelu (žebříček, přehled, rozpočet). */
+.sheet-x { display: none; }
+@media (max-width: 900px) {
+  .sheet-x {
+    display: grid;
+    place-items: center;
+    position: sticky;
+    top: 0;
+    float: right;
+    margin: -12px -6px 0 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 3;
+    box-shadow: var(--shadow-sm);
+  }
+  .sheet-x:hover { color: var(--text); border-color: var(--line-strong); }
+  /* Na mobilu nic širšího než obrazovka, tlačítka a záložky se zalomí. */
+  .side { padding-left: 14px; padding-right: 14px; overflow-x: hidden; }
+  .tabs button { font-size: 13px; padding: 8px 2px; }
+  .row-actions { flex-wrap: wrap; }
+  .legend.map-filter { gap: 4px 8px; }
+  .filter-toggle { padding: 4px 8px; }
+  .params-body { max-height: 50vh; overflow: auto; }
+}

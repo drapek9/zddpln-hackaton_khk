@@ -1,12 +1,14 @@
 import type { Repair, Road } from "./types";
 
-// Moje cesty (v3 ★2): vlastní pojmenovaná místa (domov, práce, nemocnice, lékař…), aspoň dvě.
+// Moje cesty (v3 ★2): body 1, 2, … si občan vybere v mapě sám a může je pojmenovat. Aspoň dva.
+// Na začátku nic vybraného není.
 // Ukládá se jen v tomto prohlížeči, zaokrouhleno na ~100 m. Místo bez souřadnic = ještě nevybrané.
 export type Place = { id: string; name: string; x: number | null; y: number | null };
 export type SetPlace = Place & { x: number; y: number };
 
 export const MIN_PLACES = 2;
-const KEY = "cesty-khk-places";
+// v2: dřívější předvyplněné body (Domov, Práce) zahazujeme, občan začíná s prázdnými body.
+const KEY = "cesty-khk-places-v2";
 
 export const isSet = (p: Place): p is SetPlace => p.x != null && p.y != null;
 export const setPlaces = (places: Place[]) => places.filter(isSet);
@@ -16,7 +18,10 @@ export const newPlace = (name = ""): Place => ({ id: Math.random().toString(36).
 /** Zaokrouhlení na 3 desetinná místa (~100 m), žádná adresa (NAPADY.md, č. 5). */
 export const roundCoord = (v: number) => Math.round(v * 1000) / 1000;
 
-const defaults = () => [newPlace("Domov"), newPlace("Práce")];
+/** Zobrazovaný název: vlastní, jinak „Bod 1“, „Bod 2“, … podle pořadí. */
+export const placeLabel = (p: Place, i: number) => p.name.trim() || `Bod ${i + 1}`;
+
+const defaults = () => [newPlace(), newPlace()];
 
 /** Doplní seznam na minimum dvou míst. */
 export const ensureMin = (places: Place[]) =>
@@ -29,11 +34,10 @@ export function loadPlaces(): Place[] {
     if (!Array.isArray(list) || !list.length) return defaults();
     const parsed = list
       .map((item): Place | null => {
-        const p = item as Partial<Place> & { kind?: string };
+        const p = item as Partial<Place>;
         if (!p || typeof p !== "object") return null;
-        // Starý formát {kind: "home" | "work", x, y}.
-        const name = typeof p.name === "string" ? p.name : p.kind === "home" ? "Domov" : p.kind === "work" ? "Práce" : "";
         const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+        const name = typeof p.name === "string" ? p.name : "";
         return { id: typeof p.id === "string" ? p.id : newPlace().id, name, x: num(p.x), y: num(p.y) };
       })
       .filter((p): p is Place => p != null);

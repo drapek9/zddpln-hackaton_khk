@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import MapView, { HIGHLIGHT_COLOR } from "./MapView";
 import { useTheme } from "../lib/theme";
 import Fold from "./Fold";
-import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import SheetBar, { SheetClose, isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import type { Dataset, Weights } from "../lib/types";
 import { STAV_COLOR, formatSil, stavLabel } from "../lib/geo";
@@ -87,6 +87,7 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
       <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
       <Resizer side="right" sizes={panels.sizes} onChange={panels.update} />
       <aside className="side left">
+        <SheetClose onClose={() => setSheet("map")} />
         <div className="budget-input">
           <span className="panel-kicker">Kolik můžeme utratit</span>
           <div className="budget-value">{formatMil(budget)}</div>
@@ -192,6 +193,8 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
           }}
           theme={mapTheme}
           showCondition={false}
+          showRepairs={false}
+          showSrti={false}
           highlight={highlight}
         />
         <SheetBar value={sheet} onChange={setSheet} left="Rozpočet" right="Stavby" />
@@ -204,6 +207,7 @@ export default function BudgetPlanner({ data, weights, online }: Props) {
       </div>
 
       <aside className="side right">
+        <SheetClose onClose={() => setSheet("map")} />
         <div className="budget-kpis">
           <div>
             <span>Opravíme</span>

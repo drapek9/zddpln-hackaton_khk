@@ -22,6 +22,10 @@ type Props = {
   places?: { id: string; name: string; x: number; y: number }[];
   /** Úsek pod myší v seznamu (náhled před kliknutím). */
   hoverId?: number | null;
+  /** Opravy a uzavírky kraje (zář kolem silnice). Veřejnost je zapíná ve filtru. */
+  showRepairs?: boolean;
+  /** Právě probíhající uzavírky ŘSD (SRTI). Veřejnost je zapíná ve filtru. */
+  showSrti?: boolean;
 };
 
 // Výchozí pohled na celý kraj, tlačítko „Zpět na kraj“ se k němu vrací.
@@ -50,6 +54,29 @@ const WORLD: Ring = [
   [-180, -85],
 ];
 
+/** Hranice kraje i státu: tmavě zelená čára (v tmavém režimu světlejší, aby byla vidět). */
+export const BORDER_COLOR = { light: "#14532d", dark: "#3f9d6e" };
+
+/** Státní hranici z podkladové mapy přebarvíme stejně jako hranici kraje. */
+function styleCountryBorder(map: MapLibreMap, dark: boolean) {
+  if (!map.getLayer("boundary_country_inner")) return;
+  map.setPaintProperty("boundary_country_inner", "line-color", dark ? BORDER_COLOR.dark : BORDER_COLOR.light);
+  map.setPaintProperty("boundary_country_inner", "line-width", ["interpolate", ["linear"], ["zoom"], 6, 1.5, 12, 3]);
+  map.setPaintProperty("boundary_country_inner", "line-opacity", 0.9);
+}
+
+/**
+ * Žluté a oranžové silnice podkladu přebarvíme na neutrální šedou. Naše data leží kousek vedle
+ * silnice z OpenStreetMap, takže se při přiblížení barvy stavu míchaly se žlutou podkladu.
+ */
+function neutralBaseRoads(map: MapLibreMap, dark: boolean) {
+  if (dark) return;
+  for (const layer of map.getStyle().layers) {
+    if (layer.type !== "line" || !/^(road|bridge|tunnel)_(sec|pri|trunk|mot)_/.test(layer.id)) continue;
+    map.setPaintProperty(layer.id, "line-color", layer.id.includes("_case") ? "#dedad2" : "#ffffff");
+  }
+}
+
 function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
   if (map.getSource("kraj")) return;
   const before = map.getLayer("roads-glow") ? "roads-glow" : undefined;
@@ -66,7 +93,7 @@ function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
       id: "kraj-mask",
       type: "fill",
       source: "kraj-mask",
-      paint: { "fill-color": dark ? "#05080c" : "#8a8f96", "fill-opacity": dark ? 0.4 : 0.26 },
+      paint: { "fill-color": dark ? "#05080c" : "#8a8f96", "fill-opacity": dark ? 0.42 : 0.3 },
     },
     before,
   );
@@ -76,7 +103,11 @@ function addKraj(map: MapLibreMap, rings: Ring[], dark: boolean) {
       type: "line",
       source: "kraj",
       layout: { "line-join": "round" },
-      paint: { "line-color": dark ? "#94a3b8" : "#475569", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.4, 12, 2.4], "line-opacity": 0.9 },
+      paint: {
+        "line-color": dark ? BORDER_COLOR.dark : BORDER_COLOR.light,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.8, 12, 3.5],
+        "line-opacity": 0.9,
+      },
     },
     before,
   );
@@ -107,7 +138,8 @@ const STYLES: Record<MapTheme, string> = {
 };
 
 /** Barva zvýrazněných úseků podle podkladu (stejná v legendě). */
-export const HIGHLIGHT_COLOR: Record<MapTheme, string> = { dark: "#2bb3b1", light: "#0e7c7b", office: "#0e7c7b" };
+// Zvýraznění (stavby rozpočtu, úseky na cestě): modrá, aby se nepletla se zelenou hranicí kraje.
+export const HIGHLIGHT_COLOR: Record<MapTheme, string> = { dark: "#5eb2ff", light: "#1d5fd6", office: "#1d5fd6" };
 
 function roadsToGeo(roads: Road[], repairs: Repair[]) {
   const byRoad = new Map(repairs.map((r) => [r.roadId, r.status]));
@@ -161,6 +193,8 @@ function MapInner({
   highlight = EMPTY,
   places = EMPTY_PLACES,
   hoverId = null,
+  showRepairs = true,
+  showSrti = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -175,10 +209,15 @@ function MapInner({
   showConditionRef.current = showCondition;
   const showPoisRef = useRef(showPois);
   showPoisRef.current = showPois;
+  const showRepairsRef = useRef(showRepairs);
+  showRepairsRef.current = showRepairs;
+  const showSrtiRef = useRef(showSrti);
+  showSrtiRef.current = showSrti;
   const highlightRef = useRef(highlight);
   highlightRef.current = highlight;
   const placesRef = useRef(places);
   placesRef.current = places;
+  const fitKeyRef = useRef<string | null>(null);
   // Otáčení a náklon (3D) je ve výchozím stavu vypnuté, aby se mapa omylem nepřetočila.
   const [tilt, setTilt] = useState(false);
 
@@ -219,6 +258,8 @@ function MapInner({
     map.on("load", () => {
       const labels = map.getStyle().layers.find((l) => l.type === "symbol")?.id;
       map.addSource("roads", { type: "geojson", data: roadsToGeo(roads, repairs), promoteId: "id" });
+      styleCountryBorder(map, theme === "dark");
+      neutralBaseRoads(map, theme === "dark");
       loadKraj().then((rings) => rings && mapRef.current === map && addKraj(map, rings, theme === "dark"));
       map.addSource("pois", { type: "geojson", data: pointsToGeo(pois) });
       map.addSource("stops", { type: "geojson", data: pointsToGeo(stops.map((s) => ({ ...s, kind: "stop" }))) });
@@ -227,6 +268,7 @@ function MapInner({
         id: "roads-glow",
         type: "line",
         source: "roads",
+        layout: { visibility: showRepairsRef.current ? "visible" : "none" },
         paint: {
           "line-color": [
             "match",
@@ -239,7 +281,7 @@ function MapInner({
             "#34d399",
             "#94a3b8",
           ],
-          "line-width": 6,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 6, 12, 10, 14, 16, 16, 26, 18, 40],
           "line-opacity": ["case", ["==", ["get", "repair"], ""], 0, 0.45],
         },
       }, labels);
@@ -247,6 +289,8 @@ function MapInner({
         id: "roads-line",
         type: "line",
         source: "roads",
+        // Kulaté konce: navazující úseky se nepřekrývají zubatými rohy.
+        layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": [
             "match",
@@ -273,8 +317,15 @@ function MapInner({
             ["case", ["boolean", ["feature-state", "selected"], false], 3.5, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 3, 1.2],
             12,
             ["case", ["boolean", ["feature-state", "selected"], false], 8, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 7, 3.2],
+            // Při velkém přiblížení silnice překryje podkladovou silnici, barvy se nemíchají.
+            14,
+            ["case", ["boolean", ["feature-state", "selected"], false], 12, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 11, 7],
+            16,
+            ["case", ["boolean", ["feature-state", "selected"], false], 20, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 19, 14],
+            18,
+            ["case", ["boolean", ["feature-state", "selected"], false], 34, ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "pointer"], false]], 33, 26],
           ],
-          "line-opacity": showConditionRef.current ? 0.95 : 0.18,
+          "line-opacity": showConditionRef.current ? 1 : 0.32,
         },
       }, labels);
       // Neviditelná široká čára jen pro klik a najetí: trefit tenkou silnici prstem je jinak těžké.
@@ -286,7 +337,7 @@ function MapInner({
         paint: {
           "line-color": "#000",
           "line-opacity": 0,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 14, 12, 22],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 7, 14, 12, 22, 16, 30, 18, 40],
         },
       }, labels);
       map.addLayer(
@@ -298,11 +349,12 @@ function MapInner({
           layout: { "line-cap": "round", "line-join": "round" },
           paint: {
             "line-color": HIGHLIGHT_COLOR[theme],
-            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4, 12, 10],
-            "line-opacity": 0.85,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 4.5, 12, 10, 14, 15, 16, 24, 18, 38],
+            "line-opacity": 1,
           },
         },
-        "roads-line",
+        // Nad ostatními silnicemi, aby vybrané úseky byly vidět hned.
+        labels,
       );
       // Právě probíhající uzavírky ŘSD (SRTI, CC BY 4.0). Při chybě backendu se vrstva nezobrazí.
       map.addSource("srti", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -310,6 +362,7 @@ function MapInner({
         id: "srti-points",
         type: "circle",
         source: "srti",
+        layout: { visibility: showSrtiRef.current ? "visible" : "none" },
         // Bílý bod s tmavým okrajem, aby se nesplýval s barvami silnic.
         paint: {
           "circle-radius": 7,
@@ -516,7 +569,13 @@ function MapInner({
     if (!map) return;
     const apply = () => {
       (map.getSource("places") as GeoJSONSource | undefined)?.setData(placesToGeo(places));
-      if (!places.length) return;
+      // Přiblížit jen když se body opravdu posunuly. Přepnutí filtru nebo přejmenování
+      // bodu nechá mapu tam, kde ji uživatel má.
+      const key = places.map((p) => `${p.x},${p.y}`).join(";");
+      if (key === fitKeyRef.current) return;
+      const first = fitKeyRef.current === null;
+      fitKeyRef.current = key;
+      if (!places.length || first) return;
       const bounds = new maplibregl.LngLatBounds([places[0].x, places[0].y], [places[0].x, places[0].y]);
       places.forEach((p) => bounds.extend([p.x, p.y]));
       map.fitBounds(bounds, { padding: 120, maxZoom: 12, duration: 700 });
@@ -528,11 +587,12 @@ function MapInner({
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.getLayer("roads-line")) return;
-    map.setPaintProperty("roads-line", "line-opacity", showCondition ? 0.95 : 0.18);
-    if (map.getLayer("poi-circles")) {
-      map.setLayoutProperty("poi-circles", "visibility", showPois ? "visible" : "none");
-    }
-  }, [showCondition, showPois]);
+    map.setPaintProperty("roads-line", "line-opacity", showCondition ? 1 : 0.32);
+    const vis = (on: boolean) => (on ? "visible" : "none");
+    if (map.getLayer("poi-circles")) map.setLayoutProperty("poi-circles", "visibility", vis(showPois));
+    if (map.getLayer("roads-glow")) map.setLayoutProperty("roads-glow", "visibility", vis(showRepairs));
+    if (map.getLayer("srti-points")) map.setLayoutProperty("srti-points", "visibility", vis(showSrti));
+  }, [showCondition, showPois, showRepairs, showSrti]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Weights } from "../lib/types";
 import { DEFAULT_WEIGHTS } from "../lib/types";
 import type { Pin } from "../lib/api";
@@ -16,6 +16,9 @@ type Props = {
   live: boolean;
   /** Hlásí neuložené změny vah (AdminApp se před odchodem zeptá). */
   onDirty?: (dirty: boolean) => void;
+  /** Malá mapa kraje v rohu, po rozkliknutí velká. */
+  map?: ReactNode;
+  onOpenMap?: () => void;
 };
 
 const WEIGHT_NAME: Record<keyof Weights, string> = {
@@ -35,7 +38,14 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 
 // Admin (v4 ★3): hlavní je nastavení, ne mapa. Trvalé váhy, uživatelé a role, záznam změn, export.
-export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirty }: Props) {
+export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirty, map, onOpenMap }: Props) {
+  const [mapBig, setMapBig] = useState(false);
+  useEffect(() => {
+    if (!mapBig) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMapBig(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mapBig]);
   const [draft, setDraft] = useState<Weights>(weights);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [users, setUsers] = useState<AdminUser[]>(live ? [] : DEMO_USERS);
@@ -268,6 +278,31 @@ export default function AdminSystem({ weights, onSaveWeights, pins, live, onDirt
           </div>
           <p className="fine">Odkazy fungují, když běží backend (S9, S19).</p>
         </section>
+
+        {map && (
+          <>
+            {mapBig && <div className="sys-map-backdrop" onClick={() => setMapBig(false)} />}
+            <section className={`sys-card sys-map ${mapBig ? "big" : ""}`}>
+              <div className="sys-card-head">
+                <h3>Mapa kraje</h3>
+                <div className="row-actions">
+                  {mapBig && onOpenMap && (
+                    <button className="btn small" onClick={onOpenMap}>
+                      Otevřít v prioritách
+                    </button>
+                  )}
+                  <button className="btn small" onClick={() => setMapBig(!mapBig)} aria-expanded={mapBig}>
+                    {mapBig ? "Zmenšit ✕" : "Zvětšit ⤢"}
+                  </button>
+                </div>
+              </div>
+              <div className="sys-map-body" onClick={() => !mapBig && setMapBig(true)}>
+                {map}
+                {!mapBig && <span className="sys-map-hint">Klikněte pro velkou mapu</span>}
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { savePlacesToServer } from "../lib/notifications";
 import { toast } from "./Toaster";
 import MyTrip from "./MyTrip";
-import { loadPlaces, roundCoord, savePlaces, setPlaces as onlySet, tripImpact, type Place } from "../lib/commute";
+import { isSet, loadPlaces, placeLabel, roundCoord, savePlaces, setPlaces as onlySet, tripImpact, type Place } from "../lib/commute";
 import MapView from "./MapView";
 import RoadPanel from "./RoadPanel";
 import Fold from "./Fold";
-import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import SheetBar, { SheetClose, isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import UserMenu from "./UserMenu";
 import DetailSheet from "./DetailSheet";
@@ -41,6 +41,8 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
   const mapTheme = theme === "dark" ? "dark" : "light";
   const [places, setPlacesState] = useState<Place[]>(loadPlaces);
   const [picking, setPicking] = useState<string | null>(null);
+  // Vrstvy mapy pro veřejnost: uzavírky jen na přání (výchozí je klasická mapa stavu silnic).
+  const [layers, setLayers] = useState({ repairs: false, srti: false });
   const setPlaces = (next: Place[]) => {
     setPlacesState(next);
     savePlaces(next);
@@ -62,6 +64,11 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverKey, user]);
   const impact = useMemo(() => tripImpact(places, data.roads, repairs), [places, data.roads, repairs]);
+  // Body pro mapu: jen vybrané, s názvem „Bod N“, když si ho občan nepojmenoval.
+  const mapPlaces = useMemo(
+    () => places.map((p, i) => ({ ...p, name: placeLabel(p, i) })).filter(isSet),
+    [places],
+  );
   const highlight = useMemo(() => (impact ? impact.repairs.map((r) => r.road.id) : []), [impact]);
   const [status, setStatus] = useState<"all" | Repair["status"]>("all");
   const [busQuery, setBusQuery] = useState("");
@@ -100,7 +107,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
   }, [place, repairs, data.roads]);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell aud-public">
       <header className="topbar">
         <div className="tb-left">
           <button className="brand" onClick={onHome}>
@@ -125,6 +132,7 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
       <div className={`workspace no-right ${panels.className}`} data-sheet={sheet} style={panels.style}>
         <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
+          <SheetClose onClose={() => setSheet("map")} />
           <div className="tabs four">
             <button className={tab === "trip" ? "active" : ""} onClick={() => setTab("trip")}>
               Moje cesty
@@ -315,31 +323,35 @@ export default function PublicApp({ data, repairs, reports, onReport, onHome, us
             showCondition
             pois={data.pois}
             showPois={false}
-            places={onlySet(places)}
+            places={mapPlaces}
+            showRepairs={layers.repairs}
+            showSrti={layers.srti}
             highlight={highlight}
           />
           {picking && (
             <div className="pick-banner">
-              Klikněte do mapy: {places.find((p) => p.id === picking)?.name.trim() || "vybrané místo"}
+              Klikněte do mapy: {(() => { const i = places.findIndex((p) => p.id === picking); return i >= 0 ? placeLabel(places[i], i) : "vybraný bod"; })()}
             </div>
           )}
           <SheetBar value={sheet} onChange={setSheet} left="Přehled" />
-          <div className="legend">
-            <span>
-              <i className="active" /> probíhá
+          {/* Filtr vrstev: klasicky jen stav silnic, uzavírky si občan zapne sám. */}
+          <div className="legend map-filter" role="group" aria-label="Co ukázat na mapě">
+            <span className="map-filter-base">
+              <i style={{ background: STAV_COLOR.havarijní }} /> havarijní
+              <i style={{ background: STAV_COLOR.nevyhovující }} /> horší
+              <i style={{ background: STAV_COLOR.dobrý }} /> dobrý stav
             </span>
-            <span>
-              <i className="planned" /> plán
-            </span>
-            <span>
-              <i className="done" /> hotovo
-            </span>
-            <span>
-              <i style={{ background: STAV_COLOR.havarijní }} /> havarijní stav
-            </span>
-            <span>
-              <i style={{ background: "#ffffff", border: "2px solid #0b1220" }} /> uzavírka ŘSD (SRTI)
-            </span>
+            <button className={`filter-toggle ${layers.repairs ? "on" : ""}`} aria-pressed={layers.repairs} onClick={() => setLayers({ ...layers, repairs: !layers.repairs })}>
+              <i className="active" /> Opravy a uzavírky kraje
+            </button>
+            <button className={`filter-toggle ${layers.srti ? "on" : ""}`} aria-pressed={layers.srti} onClick={() => setLayers({ ...layers, srti: !layers.srti })}>
+              <i className="srti" /> Uzavírky ŘSD
+            </button>
+            {layers.repairs && (
+              <span className="map-filter-sub">
+                <i className="active" /> probíhá <i className="planned" /> plán <i className="done" /> hotovo
+              </span>
+            )}
             {highlight.length > 0 && (
               <span>
                 <i style={{ background: HIGHLIGHT_COLOR[mapTheme] }} /> na mé cestě

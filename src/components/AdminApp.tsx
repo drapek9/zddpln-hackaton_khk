@@ -5,7 +5,7 @@ import Fold from "./Fold";
 import { ThemeToggle, useTheme } from "../lib/theme";
 import BudgetPlanner from "./BudgetPlanner";
 import AdminSystem from "./AdminSystem";
-import SheetBar, { isNarrow, type Sheet } from "./SheetBar";
+import SheetBar, { SheetClose, isNarrow, type Sheet } from "./SheetBar";
 import Resizer, { usePanelSizes } from "./Resizer";
 import UserMenu from "./UserMenu";
 import DetailSheet from "./DetailSheet";
@@ -111,6 +111,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [stav, setStav] = useState(prefs.stav);
   const [query, setQuery] = useState("");
   const [showPois, setShowPois] = useState(prefs.showPois);
+  // Uzavírky jsou na mapě jen po zaškrtnutí ve filtru, stejně jako u veřejnosti.
+  const [layers, setLayers] = useState({ repairs: false, srti: false });
   const [showCondition, setShowCondition] = useState(prefs.showCondition);
   const [cls, setCls] = useState<PriorityClass | "vše">(prefs.cls);
   useEffect(() => saveOfficePrefs({ okres, stav, showPois, showCondition, cls }), [okres, stav, showPois, showCondition, cls]);
@@ -292,7 +294,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
     .reduce((s, r) => s + r.delka, 0);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell aud-office">
       <header className="topbar">
         <div className="tb-left">
           <button className="brand" onClick={onHome}>
@@ -338,7 +340,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             title={source === "api" ? "Data žebříčku a priority počítá backend" : "Offline režim: výpočet probíhá v prohlížeči"}
             style={{ fontSize: "12px", opacity: 0.9 }}
           >
-            {rankingLoading ? "načítám…" : source === "api" ? "● živá data" : "○ offline režim"}
+            {rankingLoading ? "načítám…" : source === "api" ? "živá data" : "offline režim"}
           </span>
           <ThemeToggle />
           {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Ukázka bez přihlášení: změny se ukládají jen v tomto prohlížeči">demo</span>}
@@ -348,12 +350,37 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
         <BudgetPlanner key="budget" data={data} weights={weights} online={user?.role === "official" || user?.role === "admin"} />
       )}
       {view === "system" && (
-        <AdminSystem key="system" weights={regionWeights} onSaveWeights={saveRegion} pins={pins} live={live} onDirty={setSystemDirty} />
+        <AdminSystem
+          key="system"
+          weights={regionWeights}
+          onSaveWeights={saveRegion}
+          pins={pins}
+          live={live}
+          onDirty={setSystemDirty}
+          onOpenMap={() => goView("map")}
+          map={
+            <MapView
+              roads={data.roads}
+              repairs={repairs}
+              selectedId={null}
+              onSelect={(id) => {
+                if (id == null) return;
+                setSelectedId(id);
+                goView("map");
+              }}
+              theme={mapTheme}
+              showCondition
+              showRepairs={false}
+              showSrti={false}
+            />
+          }
+        />
       )}
       {view === "map" && (
       <div className={`workspace no-right view-enter ${panels.className}`} data-sheet={sheet} style={panels.style}>
         <Resizer side="left" sizes={panels.sizes} onChange={panels.update} />
         <aside className="side left">
+          <SheetClose onClose={() => setSheet("map")} />
           <label className="search">
             <input
               ref={searchRef}
@@ -479,6 +506,14 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
               Školy, IZS, nemocnice
             </label>
+            <label className="check">
+              <input type="checkbox" checked={layers.repairs} onChange={(e) => setLayers({ ...layers, repairs: e.target.checked })} />
+              Opravy a uzavírky kraje
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={layers.srti} onChange={(e) => setLayers({ ...layers, srti: e.target.checked })} />
+              Uzavírky ŘSD (SRTI)
+            </label>
           </Fold>
         </aside>
         <div className="map-wrap">
@@ -493,6 +528,8 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             pois={data.pois}
             stops={data.stops}
             showPois={showPois}
+            showRepairs={layers.repairs}
+            showSrti={layers.srti}
             detour={detour}
           />
           <div className={`params ${paramsOpen ? "open" : ""}`}>
@@ -552,16 +589,25 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
             )}
           </div>
           <SheetBar value={sheet} onChange={setSheet} left="Žebříček" />
-          <div className="legend">
-            {STAV_ORDER.map((s) => (
-              <span key={s}>
-                <i style={{ background: STAV_COLOR[s] }} />
-                <span title={STAV_HINT[s]}>{stavLabel(s)}</span>
-              </span>
-            ))}
-            <span>
-              <i style={{ background: "#ffffff", border: "2px solid #0b1220" }} /> uzavírka ŘSD (SRTI)
+          <div className="legend map-filter" role="group" aria-label="Co ukázat na mapě">
+            <span className="map-filter-base">
+              {STAV_ORDER.map((s) => (
+                <span key={s} title={STAV_HINT[s]}>
+                  <i style={{ background: STAV_COLOR[s] }} /> {stavLabel(s)}
+                </span>
+              ))}
             </span>
+            <button className={`filter-toggle ${layers.repairs ? "on" : ""}`} aria-pressed={layers.repairs} onClick={() => setLayers({ ...layers, repairs: !layers.repairs })}>
+              <i className="active" /> Opravy a uzavírky kraje
+            </button>
+            <button className={`filter-toggle ${layers.srti ? "on" : ""}`} aria-pressed={layers.srti} onClick={() => setLayers({ ...layers, srti: !layers.srti })}>
+              <i className="srti" /> Uzavírky ŘSD
+            </button>
+            {layers.repairs && (
+              <span className="map-filter-sub">
+                <i className="active" /> probíhá <i className="planned" /> plán <i className="done" /> hotovo
+              </span>
+            )}
           </div>
           {selected ? (
             <DetailSheet id={`${selected.id}-${demoId === selected.id}`} onClose={() => setSelectedId(null)}>
