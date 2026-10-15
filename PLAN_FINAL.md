@@ -468,11 +468,11 @@ Odpověď na otázku 5 v kap. 11: návrh je výše; rozhodne Šimon, podle toho,
 
 ---
 
-## 16. Sloučení do `main` ve 12:00 a co zbývá (15. 10., 11:15, Tomáš)
+## 16. Sloučení do `main` ve 12:00 a co zbývá (15. 10., 10:55, Tomáš)
 
 Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všechno na `main` a šlo zkontrolovat, co máme.
 
-### 16.1 Zkušební sloučení (ověřeno 11:10, lokálně, nic se nepushlo)
+### 16.1 Zkušební sloučení (ověřeno 10:55, lokálně, nic se nepushlo)
 - `tomas` + `simon` + `matous` jdou sloučit **bez konfliktu**. `npm run build` projde.
 - Backend: 32 z 36 testů zelených. 4 padají jen proto, že Šimonovy testy čekají „data ještě nejsou“ a data už jsou (viz 16.2).
 - API po sloučení odpovídá: `/api/health` (4 726 úseků), `/api/demo-closures` (20 skutečných uzavírek 2022), `/api/obce` (448 obcí z Data KHK), `/api/flood` (po přihlášení).
@@ -495,6 +495,7 @@ Kap. 0–15 platí. Tady je jen, co je potřeba udělat, aby ve 12:00 bylo všec
 
 ### 16.4 Tomáš
 - Do 12:00: T8 uzavírky ŘSD SRTI (`engine.srti_closures()`, Šimon na něj už má místo v `api/closures.py`), pak T11 oprava 450 m.
+- **Doplněno 11:05:** T8 i T11 hotové na `tomas`. T11 změnilo počty bodů u úseků a tím skóre a pořadí. Po sloučení se žebříček ve webu bude lišit od dopoledne, je to oprava, ne chyba.
 - Ve 12:00: pomoct se sloučením a s kontrolou.
 
 ### 16.5 Kontrola ve 12:00 (všichni, 15 min)
