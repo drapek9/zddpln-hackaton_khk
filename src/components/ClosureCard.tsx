@@ -92,11 +92,60 @@ export default function ClosureCard({ road, roadsById, from, to, restriction, on
             </div>
             <div>
               <span>aut za den</span>
-              <b className="pending" title="Chybí intenzita dopravy ŘSD (úkol T7)">
-                čeká na data
-              </b>
+              {result.vehiclesPerDay != null ? (
+                <b>
+                  {result.vehiclesPerDay.toLocaleString("cs-CZ")}
+                  {result.vehiclesQuality === "odhad" && <span className="est-tag" style={{ marginLeft: "4px" }}>odhad</span>}
+                  {result.vehiclesQuality === "csd2025" && <small title="Sčítání ŘSD 2025" style={{ marginLeft: "4px", fontSize: "11px", color: "var(--accent)" }}>ŘSD</small>}
+                </b>
+              ) : (
+                <b className="pending" title="Chybí údaj o intenzitě">čeká na data</b>
+              )}
             </div>
           </div>
+
+          {(result.studentsPerDay != null && result.studentsPerDay > 0 || (result.cutOffObce && result.cutOffObce.length > 0)) && (
+            <div className="kpis" style={{ marginTop: "8px" }}>
+              {result.studentsPerDay != null && result.studentsPerDay > 0 && (
+                <div>
+                  <span>středoškoláků denně</span>
+                  <b>{result.studentsPerDay.toLocaleString("cs-CZ")}</b>
+                </div>
+              )}
+              {result.cutOffObce && result.cutOffObce.length > 0 && (
+                <div>
+                  <span>odříznuté obce</span>
+                  <b style={{ color: "var(--critical, #e11d48)" }}>
+                    {result.cutOffObce.length} ({result.cutOffObce.reduce((sum, o) => sum + o.obyvatel, 0).toLocaleString("cs-CZ")} obyv.)
+                  </b>
+                </div>
+              )}
+              {result.rescue && result.rescue.obce.length > 0 && (
+                <div>
+                  <span>dojezd IZS</span>
+                  <b style={{ color: result.rescue.zzs_over_limit > 0 ? "var(--critical, #e11d48)" : "inherit" }}>
+                    {result.rescue.obce.length} obcí zpomaleno
+                  </b>
+                </div>
+              )}
+            </div>
+          )}
+
+          {result.rescue && result.rescue.obce.length > 0 && (
+            <div className="closure-meta" style={{ marginTop: "6px" }}>
+              <strong>Zpomalení záchranných složek (dojezd):</strong>
+              <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                {result.rescue.obce.slice(0, 4).map((o) => (
+                  <li key={`${o.kod}-${o.service}`}>
+                    {o.nazev} ({o.service.toUpperCase()}): z {Math.round(o.before_min)} min na{" "}
+                    {o.after_min != null ? `${Math.round(o.after_min)} min` : "odříznuto"}
+                    {o.over_limit && <span style={{ color: "var(--critical, #e11d48)", fontWeight: "bold" }}> (nad 20 min!)</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <p className="closure-meta">
             Zavřeno {km(d.closed_km)}
             {d.havarijni_km > 0 && <> · z objížďky {km(d.havarijni_km)} po havarijních úsecích</>}
@@ -124,6 +173,11 @@ export default function ClosureCard({ road, roadsById, from, to, restriction, on
         <p className="fine">
           Snímek {result.generated} z jádra backendu (Engine.detour), výchozí váhy. Délky a časy jsou{" "}
           <span className="est-tag">odhad</span> podle grafu silnic.
+        </p>
+      )}
+      {result.source === "api" && (
+        <p className="fine">
+          Výpočet objížďky a dopadů živě z backendu (Data KHK + sčítání ŘSD 2025).
         </p>
       )}
     </div>

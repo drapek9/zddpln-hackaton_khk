@@ -248,7 +248,7 @@ export default function RoadPanel({
               </button>
             )}
           </div>
-          <p className="fine">Ukládá se zatím jen v tomto prohlížeči (backend S2/S4 ještě není).</p>
+          <p className="fine">Ukládá se na server do správy kraje (při offline režimu v tomto prohlížeči).</p>
           <h3>Proč právě tento úsek</h3>
           <Breakdown road={road} weights={weights} />
         </section>

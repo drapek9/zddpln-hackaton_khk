@@ -28,9 +28,16 @@ function loadSnapshot() {
 export type ClosureResult = {
   source: DetourSource;
   detour: DetourResult | null;
-  /** Varování k objížďce (havarijní úseky na objížďce, I. třída, prodloužení). */
+  /** Varování k objížďce (havarijní úseky na objížďce, I. třída, prodloužení, dojezd ZZS/HZS, kolize). */
   detourAlerts: ApiAlert[];
   generated?: string;
+  announcement?: string;
+  vehiclesPerDay?: number | null;
+  vehiclesQuality?: "csd2025" | "odhad" | "chybi";
+  citizensOnRoute?: number;
+  studentsPerDay?: number;
+  cutOffObce?: import("./api").CutOffObec[];
+  rescue?: import("./api").RescueImpact | null;
 };
 
 export async function simulateClosure(
@@ -40,8 +47,20 @@ export async function simulateClosure(
   restriction: string,
 ): Promise<ClosureResult> {
   try {
-    const res = await api.closure({ road_id: roadId, date_from: from, date_to: to, restriction });
-    return { source: "api", detour: res.detour, detourAlerts: res.alerts };
+    // D2: Pro náhled uzavírky volat /closures/preview, neukládá nic do DB
+    const res = await api.closurePreview({ road_id: roadId, date_from: from, date_to: to, restriction });
+    return {
+      source: "api",
+      detour: res.detour,
+      detourAlerts: res.alerts,
+      announcement: res.announcement,
+      vehiclesPerDay: res.vehicles_per_day,
+      vehiclesQuality: res.vehicles_quality,
+      citizensOnRoute: res.citizens_on_route,
+      studentsPerDay: res.students_per_day,
+      cutOffObce: res.cut_off_obce,
+      rescue: res.rescue,
+    };
   } catch (err) {
     if (!(err instanceof ApiUnavailable)) console.warn(err);
   }

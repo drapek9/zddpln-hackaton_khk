@@ -120,6 +120,7 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
   const [pins, setPins] = useState<Pin[]>(loadPins);
   const [rows, setRows] = useState<RankRow[]>([]);
   const [source, setSource] = useState<RankingSource>("local");
+  const [rankingLoading, setRankingLoading] = useState(false);
   const [detour, setDetour] = useState<[number, number][] | null>(null);
   // Úsek vybraný z ukázkových uzavírek: simulace začne úplnou uzavírkou.
   const [demoId, setDemoId] = useState<number | null>(null);
@@ -129,26 +130,62 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
 
   const roadsById = useMemo(() => new Map(data.roads.map((r) => [r.id, r])), [data.roads]);
 
-  // Žebříček se počítá nad celou sítí (třídy jsou podíly sítě), filtry jen zužují výpis.
+  // Žebříček: debounce 300 ms pro plynulý posuvník přes tunel a AbortController (D7).
   useEffect(() => {
-    let alive = true;
-    fetchRanking(data.roads, weights, pins).then((res) => {
-      if (!alive) return;
-      setRows(res.rows);
-      setSource(res.source);
-    });
+    let timer: number | null = null;
+    const controller = new AbortController();
+    setRankingLoading(true);
+
+    timer = window.setTimeout(() => {
+      fetchRanking(data.roads, weights, pins, controller.signal)
+        .then((res) => {
+          setRows(res.rows);
+          setSource(res.source);
+          setRankingLoading(false);
+          // Pokud API vrátilo serverové piny, sesynchronizujeme stav
+          if (res.source === "api" && res.apiPins) {
+            setPins(res.apiPins);
+          }
+        })
+        .catch((err) => {
+          if (err?.name !== "AbortError") {
+            setRankingLoading(false);
+          }
+        });
+    }, 300);
+
     return () => {
-      alive = false;
+      if (timer) clearTimeout(timer);
+      controller.abort();
     };
-  }, [data.roads, weights, pins]);
+  }, [data.roads, weights]);
 
   const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
-  const updatePins = (next: Pin[]) => {
-    const added = next.length >= pins.length;
+  const updatePin = async (roadId: number, pin: Pin | null) => {
+    // 1. Optimistická lokální aktualizace
+    const next = [...pins.filter((p) => p.road_id !== roadId), ...(pin ? [pin] : [])];
     setPins(next);
     savePins(next);
-    toast(added ? "Priorita připíchnuta" : "Připíchnutí zrušeno");
+
+    // 2. Odeslání na server přes API (D3)
+    if (source === "api" || live || user) {
+      try {
+        if (pin) {
+          await api.setPin({ road_id: pin.road_id, priority: pin.priority, reason: pin.reason });
+        } else {
+          await api.deletePin(roadId);
+        }
+        // Po změně pinu na serveru znovunačteme ranking
+        const res = await fetchRanking(data.roads, weights, next);
+        setRows(res.rows);
+        setSource(res.source);
+        if (res.apiPins) setPins(res.apiPins);
+      } catch (e) {
+        console.warn("Chyba při ukládání pinu na server:", e);
+      }
+    }
+    toast(pin ? "Priorita připíchnuta" : "Připíchnutí zrušeno");
   };
 
   const okresy = useMemo(
@@ -268,6 +305,13 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
               <b>{repairs.filter((r) => r.status === "planned").length}</b> v plánu
             </span>
           </div>
+          <span
+            className={`mode-tag ${source === "api" ? "live" : "local"}`}
+            title={source === "api" ? "Data žebříčku a priority počítá backend" : "Offline režim: výpočet probíhá v prohlížeči"}
+            style={{ fontSize: "12px", opacity: 0.9 }}
+          >
+            {rankingLoading ? "načítám…" : source === "api" ? "● živá data" : "○ offline režim"}
+          </span>
           <ThemeToggle />
           {user ? <UserMenu user={user} onLogout={onLogout} /> : <span className="sim-tag" title="Server s přihlášením neběží">demo</span>}
         </div>
@@ -498,12 +542,29 @@ export default function AdminApp({ data, repairs, onRepairs, onHome, role, user,
                 mode="admin"
                 rank={rowById.get(selected.id)}
                 pin={pins.find((p) => p.road_id === selected.id)}
-                onPin={(pin) => updatePins([...pins.filter((p) => p.road_id !== selected.id), ...(pin ? [pin] : [])])}
+                onPin={(pin) => updatePin(selected.id, pin)}
                 roadsById={roadsById}
                 onDetour={setDetour}
-                onPlan={(repair) => {
+                onPlan={async (repair) => {
                   const next = [repair, ...repairs.filter((r) => r.id !== repair.id && r.roadId !== repair.roadId)];
                   onRepairs(next);
+
+                  // Pokud je přihlášen úředník a je to uzavírka, potvrdíme ji i na backendu (D2)
+                  if ((user?.role === "official" || user?.role === "admin" || live) && repair.restriction.includes("uzavírka")) {
+                    try {
+                      await api.confirmClosure({
+                        road_id: repair.roadId,
+                        title: repair.title || `Uzavírka ${repair.sil}`,
+                        date_from: repair.from,
+                        date_to: repair.to,
+                        restriction: repair.restriction,
+                        note: repair.note,
+                        simulated: false,
+                      });
+                    } catch (e) {
+                      console.warn("Chyba při potvrzení uzavírky na serveru:", e);
+                    }
+                  }
                   toast(repair.restriction.includes("uzavírka") ? "Uzavírka potvrzena a je v mapě" : "Oprava zveřejněna v mapě");
                 }}
               />
