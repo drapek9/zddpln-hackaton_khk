@@ -221,6 +221,34 @@ function MapInner({
         },
         "roads-line",
       );
+      // Právě probíhající uzavírky ŘSD (SRTI, CC BY 4.0). Při chybě backendu se vrstva nezobrazí.
+      map.addSource("srti", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({
+        id: "srti-points",
+        type: "circle",
+        source: "srti",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": ["case", ["get", "full"], "#dc2626", "#f59e0b"],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+      fetch("/api/closures", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((body: { srti?: { id: string; label: string; full_closure: boolean; lon: number; lat: number }[] } | null) => {
+          const items = body?.srti ?? [];
+          const src = map.getSource("srti") as GeoJSONSource | undefined;
+          src?.setData({
+            type: "FeatureCollection",
+            features: items.map((s) => ({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+              properties: { id: s.id, label: s.label, full: s.full_closure },
+            })),
+          });
+        })
+        .catch(() => undefined);
       map.addSource("places", { type: "geojson", data: placesToGeo(placesRef.current) });
       map.addSource("detour", { type: "geojson", data: detourToGeo(detourRef.current) });
       map.addLayer({
