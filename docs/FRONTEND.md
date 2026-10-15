@@ -180,20 +180,20 @@ Navazuje na kap. 21 v `PLAN_FINAL.md`. Priorita je veřejnost (rozhodnutí týmu
 
 ---
 
-## Úkoly pro Tomášova agenta (Claude Code), 15. 10. ~16:30, do prezentace
+## Úkoly pro Matouše (a jeho agenta) po dokončení backendu, 15. 10. ~16:30, do prezentace
 
-> Written in English for the agent. Šimon owns `docs/TODO_BACKEND.md`, Matouš owns `docs/TODO_FRONTEND.md`. This list is for **Tomáš's agent only** and must not edit files they are working on (`src/` belongs to Matouš, `backend/app/api|ai|db` to Šimon). Goal: a complete, safe demo.
+> Written in English for the agent. **Start only after Šimon's backend items are done** (`docs/TODO_BACKEND.md`: B‑AI‑1 `GET /api/ranking?mode=ai`, B‑W‑1 `GET /api/weights/schema`) and after the P0 items in `docs/TODO_FRONTEND.md`. Owner: **Matouš**. Do not edit Šimon's files (`backend/app/api|ai|db`, `main.py`). Tomáš allows Matouš's agent to edit `backend/app/core/` for item 2 only. Goal: a complete, safe demo.
 
 Do these in order. Stop each one when its "done when" holds.
 
-1. **Keep `main` green.** After every push from `matous` or `simon`: `git fetch`, merge into `main` (no force push), run `cd backend && uv run pytest`, `npm run build`, `bash scripts/smoke_api.sh`. If something fails, tell the owner; do not fix their files. Tell Šimon to `git pull` and restart `./start-server.command`.
+1. **Keep `main` green.** After the last pushes from `matous` and `simon`: `git fetch`, merge into `main` (no force push), run `cd backend && uv run pytest`, `npm run build`, `bash scripts/smoke_api.sh`. If a backend test fails, tell Šimon; do not fix his files. Tell Šimon to `git pull` and restart `./start-server.command`.
    **Last merge: 20 minutes before the presentation.** After that, `main` is frozen.
    Done when: `main` builds and tests pass at the freeze.
-2. **B‑W‑2 (core, Tomáš owns it).** Check that the weights `students`, `intensity` and `detour` in `backend/app/core/` really change the ranking when they are above 0 (sensible normalization, non-zero effect). Add a test in `backend/tests/`: weight 100 on `students` moves a road with a school route up.
-   Done when: the test passes and Matouš's new sliders have a visible effect.
-3. **Demo script.** In `docs/DEMO.md`, add the exact click path for `/sprava` (★1), `/` (★2), `/admin` (★3). Pick 2–3 concrete roads with the most impact (`engine.demo_closures()` with `recommended=True`: detour, students, cut-off obce). If the AI ranking toggle (B‑AI‑1) is not ready, demo AI with the closure announcement and the road explanation instead.
+2. **B‑W‑2 (core).** Check that the weights `students`, `intensity` and `detour` in `backend/app/core/` really change the ranking when they are above 0 (sensible normalization, non-zero effect). Add a test in `backend/tests/`: weight 100 on `students` moves a road with a school route up. Then check in the UI with Playwright that moving these sliders changes the ranking.
+   Done when: the test passes and the new sliders have a visible effect.
+3. **Demo script.** In `docs/DEMO.md`, add the exact click path for `/sprava` (★1), `/` (★2), `/admin` (★3). Pick 2–3 concrete roads with the most impact (`engine.demo_closures()` with `recommended=True`: detour, students, cut-off obce). Show the "Parametry + AI" toggle; if B‑AI‑1 is not ready, demo AI with the closure announcement and the road explanation instead.
    Done when: anyone can run the demo from the document in 3 minutes.
-4. **Backup.** Run `main` locally on Tomáš's laptop (`.env` with local demo passwords) as a fallback if the tunnel fails. Remind Tomáš to record a 2–3 minute backup video (Win+G or OBS); the agent cannot do that.
+4. **Backup.** Run `main` locally as a fallback if the tunnel fails (`.env` with local demo passwords). Remind the team to record a 2–3 minute backup video (Win+G, OBS or QuickTime); the agent cannot do that.
 5. **Submission (`docs/ODEVZDANI.md`).** `bash scripts/package_submission.sh` → `odevzdani/cesty-khk-src.zip`, verify no `.env` inside. Check that the "Zdroje dat" page lists every dataset in use (Data KHK, ŘSD, OSM, SRTI).
 
 **Do not do now:** B‑R‑1 (other roads from OSM): new data, too risky before the presentation.
