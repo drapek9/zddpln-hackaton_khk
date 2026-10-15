@@ -22,6 +22,7 @@ class UserOut(BaseModel):
     email: str
     role: str
     blocked: bool
+    home: str = "/"
 
 
 class TokenOut(BaseModel):
@@ -41,6 +42,7 @@ class CompactRankItem(BaseModel):
     ai_points: int | None = None
     ai_reason: str | None = None
     ai_label: str | None = None
+    ai_shift: int = 0
 
 
 class RankedRoadOut(RankedRoad):
@@ -50,6 +52,7 @@ class RankedRoadOut(RankedRoad):
     ai_points: int | None = None
     ai_reason: str | None = None
     ai_label: str | None = None
+    ai_shift: int = 0
 
 
 class RankingOut(BaseModel):
@@ -58,6 +61,8 @@ class RankingOut(BaseModel):
     vypocteno: str
     ai: str = "vzorec"
     ai_note: str = ""
+    ai_available: bool = False
+    total: int = 0
     items: list[RankedRoadOut | CompactRankItem] = Field(default_factory=list)
 
 

@@ -109,11 +109,30 @@ def list_closures(
     user: User | None = Depends(optional_user),
     session: Session = Depends(get_session),
     include_drafts: bool = Query(default=False),
+    status: str = Query(default=""),
+    od: str = Query(default=""),
+    do: str = Query(default=""),
+    road_id: int | None = Query(default=None),
+    sort: str = Query(default="id"),
 ) -> dict:
-    rows = session.exec(select(Closure).order_by(Closure.id)).all()
+    rows = list(session.exec(select(Closure)).all())
     official = user is not None and user.role in {"official", "admin"}
     if not (official and include_drafts):
         rows = [row for row in rows if row.confirmed and row.status in PUBLIC_STATUSES]
+    if status:
+        rows = [row for row in rows if row.status == status]
+    if road_id is not None:
+        rows = [row for row in rows if row.road_id == road_id]
+    if od:
+        rows = [row for row in rows if row.date_to >= od]
+    if do:
+        rows = [row for row in rows if row.date_from <= do]
+    if sort == "od":
+        rows.sort(key=lambda row: (row.date_from, row.id))
+    elif sort == "do":
+        rows.sort(key=lambda row: (row.date_to, row.id))
+    else:
+        rows.sort(key=lambda row: row.id or 0)
     return {
         "items": [closure_dict(row) for row in rows],
         "srti": _srti(request.app.state.engine),

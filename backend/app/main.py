@@ -7,10 +7,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 from sqlmodel import Session, SQLModel, select
 
 from app.api.admin import router as admin_router
+from app.api.errors import ApiError
 from app.api.ai import router as ai_router
 from app.api.auth import router as auth_router
 from app.api.closures import router as closures_router
@@ -25,7 +27,7 @@ from app.config import get_settings, require_secret
 from app.core.engine import Engine
 from app.db.models import User
 from app.db.seed import seed_if_empty, sync_demo_accounts
-from app.db.session import get_db_engine
+from app.db.session import ensure_user_columns, get_db_engine
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +48,7 @@ async def lifespan(app: FastAPI):
     else:
         log.warning("Push vypnut: chybí VAPID")
     SQLModel.metadata.create_all(get_db_engine())
+    ensure_user_columns()
     with Session(get_db_engine()) as session:
         seed_if_empty(session, app.state.engine)
         sync_demo_accounts(session)
@@ -78,6 +81,10 @@ def create_app() -> FastAPI:
         docs_router,
     ):
         application.include_router(route, prefix="/api")
+
+    @application.exception_handler(ApiError)
+    def api_error(_request: Request, exc: ApiError) -> JSONResponse:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail, "code": exc.code})
 
     @application.get("/api/health", response_model=HealthOut)
     def health(request: Request) -> dict:

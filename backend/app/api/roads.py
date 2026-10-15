@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -13,6 +14,7 @@ from app.api.responses import RankingOut, StabilityOut
 from app.auth.deps import optional_user, require_official
 from app.config import get_settings
 from app.core.engine import Engine
+from app.core.query import SORTS, RoadQuery, apply_query, weight_presets, weight_schema
 from app.core.schemas import PriorityClass, Weights
 from app.db.models import RoadPin, User, utcnow
 from app.db.session import get_session
@@ -20,6 +22,9 @@ from app.services.access import audit, get_settings_row, intensity_of, load_pins
 from app.services.labels import stav_for_people
 
 router = APIRouter(tags=["Úseky"])
+
+_ai_cache: dict[str, tuple[list[int], dict]] = {}
+_ai_lock = threading.Lock()
 
 
 class PinBody(BaseModel):
@@ -46,6 +51,9 @@ def weights_from_query(request: Request) -> Weights | None:
         try:
             raw[key] = float(request.query_params[key])
         except ValueError as exc:
+            # stav=havarijní and trida=II,III are filters (B-1), not slider values.
+            if key in {"stav", "trida"}:
+                continue
             raise HTTPException(status_code=422, detail=f"Váha {key} není číslo.") from exc
     if not raw:
         return None
@@ -60,21 +68,36 @@ def _ai_fields(row, extras: dict[int, dict]) -> dict:
         "ai_points": extra.get("points"),
         "ai_reason": extra.get("reason"),
         "ai_label": "návrh AI" if extra and formula_rank != row.rank else None,
+        "ai_shift": formula_rank - row.rank,
     }
 
 
-def _city_view(engine: Engine, session: Session, rows, source: str, ai: bool):
-    """AI shift only for the city's stored weights. Official sliders stay on the formula."""
+def _city_view(engine: Engine, session: Session, rows, source: str, ai: bool, cache_key: str = ""):
+    """AI shift only for the city's stored weights. Official sliders stay on the formula.
+
+    The model call is cached by weights and by the formula head, so repeat clicks do not call it again.
+    """
     if source not in {"admin", "default"}:
         return rows, {}, "vzorec", "Tento pohled je podle vzorce. Návrh AI je jen u vah města."
     if not ai:
         return rows, {}, "vzorec", "Jen vzorec, bez návrhu AI."
     if not get_settings().ai_configured or not get_settings_row(session).ai_enabled:
         return rows, {}, "nedostupne", "Návrh AI teď není k dispozici. Pořadí je podle vzorce."
+    key = cache_key + "|" + ",".join(f"{row.road.id}:{row.rank}" for row in rows[:40])
+    with _ai_lock:
+        cached = _ai_cache.get(key)
+    if cached is not None:
+        order_ids, extras = cached
+        by_id = {row.road.id: row for row in rows}
+        if all(road_id in by_id for road_id in order_ids) and len(order_ids) == len(rows):
+            ordered = [by_id[road_id].model_copy(update={"rank": index}) for index, road_id in enumerate(order_ids, start=1)]
+            return ordered, extras, "navrh", "Výchozí pohled města. Úsek se posune nejvýš o 5 míst. Vypnutí: parametr ai=0."
     result = city_order(engine, rows)
     if result is None:
         return rows, {}, "nedostupne", "Návrh AI teď není k dispozici. Pořadí je podle vzorce."
     ordered, extras = result
+    with _ai_lock:
+        _ai_cache[key] = ([row.road.id for row in ordered], extras)
     return ordered, extras, "navrh", "Výchozí pohled města. Úsek se posune nejvýš o 5 míst. Vypnutí: parametr ai=0."
 
 
@@ -113,12 +136,41 @@ def ranking(
     offset: int = Query(default=0, ge=0),
     compact: bool = Query(default=False),
     ai: bool = Query(default=True),
+    mode: str | None = Query(default=None, pattern="^(params|ai)$"),
+    sort: str = Query(default="score"),
+    order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    orp: str = Query(default=""),
+    min_score: float | None = Query(default=None),
+    havarijni: int = Query(default=0),
+    q: str = Query(default=""),
     user: User | None = Depends(optional_user),
     session: Session = Depends(get_session),
 ) -> dict:
+    if sort not in SORTS:
+        raise HTTPException(status_code=422, detail="Řazení je score, intensity, students, detour nebo km.")
+    use_ai = ai
+    if mode == "params":
+        use_ai = False
+    elif mode == "ai":
+        use_ai = True
     engine: Engine = request.app.state.engine
-    rows, source = _rows(engine, session, user, weights_from_query(request))
-    rows, extras, mode, note = _city_view(engine, session, rows, source, ai)
+    query_weights = weights_from_query(request)
+    rows, source = _rows(engine, session, user, query_weights)
+    weights = query_weights if query_weights is not None else resolve_weights(session, user)[0]
+    rows, extras, ai_mode, note = _city_view(engine, session, rows, source, use_ai, weights.model_dump_json())
+    if sort in {"students", "detour"}:
+        engine._ensure_factors(Weights(students=1, detour=1))
+    filters = RoadQuery(
+        sort=sort,
+        order=order,
+        trida=_filter_text(request, "trida"),
+        orp=orp,
+        stav=_filter_text(request, "stav"),
+        min_score=min_score,
+        havarijni=bool(havarijni),
+        q=q,
+    )
+    rows = apply_query(rows, engine.data.by_id, filters)
     page = rows[offset : offset + limit if limit else None]
     if compact:
         items = [
@@ -140,10 +192,24 @@ def ranking(
         "weights_source": source,
         "count": len(rows),
         "vypocteno": date.today().isoformat(),
-        "ai": mode,
+        "ai": ai_mode,
         "ai_note": note,
+        "ai_available": bool(get_settings().ai_configured and get_settings_row(session).ai_enabled),
+        "total": len(rows),
         "items": items,
     }
+
+
+def _filter_text(request: Request, key: str) -> tuple[str, ...]:
+    """Non-numeric stav/trida query values are list filters. Numbers stay weights."""
+    raw = request.query_params.get(key, "")
+    if not raw:
+        return ()
+    try:
+        float(raw)
+    except ValueError:
+        return tuple(part.strip() for part in raw.split(",") if part.strip())
+    return ()
 
 
 @router.get("/stability", response_model=StabilityOut)
@@ -259,6 +325,93 @@ def delete_pin(
     audit(session, user, "pin.delete", f"úsek {road_id}")
     session.commit()
     return {"ok": True}
+
+
+@router.get("/ranking/diff")
+def ranking_diff(
+    request: Request,
+    top: int = Query(default=20, ge=1, le=200),
+    user: User | None = Depends(optional_user),
+    session: Session = Depends(get_session),
+) -> dict:
+    """What moves in the top when the query weights replace the stored ones."""
+    engine: Engine = request.app.state.engine
+    pins = load_pins(session)
+    votes = load_votes(session)
+    before, _source = resolve_weights(session, user)
+    after = weights_from_query(request) or before
+    return engine.rank_diff(before, after, top, pins, votes)
+
+
+@router.get("/weights/schema")
+def weights_schema() -> dict:
+    items = weight_schema()
+    return {"count": len(items), "items": items}
+
+
+@router.get("/weights/presets")
+def weights_presets() -> dict:
+    return {"items": weight_presets()}
+
+
+@router.get("/search")
+def search(request: Request, q: str = Query(min_length=1, max_length=80), limit: int = Query(default=20, ge=1, le=50)) -> dict:
+    return {"items": request.app.state.engine.search(q, limit)}
+
+
+@router.get("/pois/{poi_id}")
+def poi_detail(poi_id: str, request: Request) -> dict:
+    engine: Engine = request.app.state.engine
+    item = engine.poi(poi_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Místo neexistuje.")
+    return {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "kind": item.get("kind"),
+        "obec": item.get("obec"),
+        "address": None,
+        "source": "Data KHK",
+        "lon": item.get("x"),
+        "lat": item.get("y"),
+        "nearest_roads": engine.nearest_roads(float(item["x"]), float(item["y"])),
+    }
+
+
+@router.get("/roads/other")
+def other_roads(
+    request: Request,
+    limit: int | None = Query(default=None, ge=1, le=20000),
+    offset: int = Query(default=0, ge=0),
+) -> dict:
+    """I. class, motorways and local streets from OSM. No surface class. Private roads are excluded."""
+    rows = request.app.state.engine.other_roads()
+    page = rows[offset : offset + limit if limit else None]
+    return {
+        "type": "FeatureCollection",
+        "metadata": {
+            "src": "osm",
+            "licence": "ODbL-1.0",
+            "count": len(rows),
+            "note": "Bez stavu povrchu. Soukromé a účelové komunikace tu nejsou. Nejsou součástí žebříčku kraje.",
+        },
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": road["g"]},
+                "properties": {
+                    "id": f"osm:{road['osm_id']}",
+                    "highway": road["highway"],
+                    "ref": road["ref"],
+                    "name": road["name"],
+                    "kind": road["kind"],
+                    "src": "osm",
+                    "stav": None,
+                },
+            }
+            for road in page
+        ],
+    }
 
 
 def _metadata(source: str) -> dict:

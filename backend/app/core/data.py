@@ -25,7 +25,10 @@ class Dataset:
     point_repairs: list[dict[str, Any]]
     repairs: list[dict[str, Any]]
     osm_roads: list[dict[str, Any]]
-    """I. class roads and motorways from OSM (may be empty)."""
+    """I. class roads and motorways from OSM (may be empty). Fed to the detour graph."""
+    osm_other: list[dict[str, Any]] = field(default_factory=list)
+    """Local OSM roads for the map layer only. Not part of the detour graph."""
+    roads_path: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
     """Extra Data KHK layers from scripts/fetch_khk_extra.py (may be empty)."""
     srti: dict[str, Any] = field(default_factory=dict)
@@ -39,6 +42,23 @@ def _read(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# Local streets for the map. Private and service roads stay out (B-R-1).
+_OTHER_HIGHWAYS = {"residential", "unclassified", "living_street"}
+_BLOCKED_ACCESS = {"private", "no"}
+
+
+def _kept_osm(roads: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    kept = []
+    for road in roads:
+        highway = str(road.get("highway") or "")
+        if highway in {"track", "service", "private"} or highway not in _OTHER_HIGHWAYS:
+            continue
+        if str(road.get("access") or "") in _BLOCKED_ACCESS:
+            continue
+        kept.append(road)
+    return kept
+
+
 def load_dataset(data_dir: Path | str | None = None) -> Dataset:
     d = Path(data_dir) if data_dir else DEFAULT_DATA_DIR
     roads = _read(d / "roads.json")
@@ -47,6 +67,8 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
     repairs = _read(d / "repairs.json")
     osm_path = d / "osm_roads.json"
     osm_roads = _read(osm_path)["roads"] if osm_path.exists() else []
+    other_path = d / "osm_other.json"
+    osm_other = _kept_osm(_read(other_path)["roads"]) if other_path.exists() else []
     extra_path = d / "khk_extra.json"
     extra = _read(extra_path) if extra_path.exists() else {}
     srti_path = d / "srti.json"
@@ -69,8 +91,10 @@ def load_dataset(data_dir: Path | str | None = None) -> Dataset:
         point_repairs=transit.get("pointRepairs", []),
         repairs=repairs["repairs"],
         osm_roads=osm_roads,
+        osm_other=osm_other,
         extra=extra,
         srti=srti,
+        roads_path=str(d / "roads.json"),
     )
 
 

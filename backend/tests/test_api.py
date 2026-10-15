@@ -455,6 +455,7 @@ def test_compact_ranking_and_stability(client: TestClient):
         "ai_points",
         "ai_reason",
         "ai_label",
+        "ai_shift",
     }
     full = client.get("/api/ranking?limit=1").json()["items"][0]
     assert "road" in full
@@ -545,6 +546,151 @@ def test_demo_password_follows_env(client: TestClient, monkeypatch):
     with Session(get_db_engine()) as session:
         sync_demo_accounts(session)
         session.commit()
+    client.cookies.clear()
+
+
+def test_backend_todo_endpoints(client: TestClient):
+    params = client.get("/api/ranking?mode=params&limit=1")
+    assert params.status_code == 200, params.text
+    assert params.json()["ai"] == "vzorec"
+    assert params.json()["ai_available"] is False
+    assert params.json()["total"] == params.json()["count"]
+    assert params.json()["items"][0]["ai_shift"] == 0
+    assisted = client.get("/api/ranking?mode=ai&limit=1")
+    assert assisted.json()["ai"] == "nedostupne"
+    assert assisted.json()["items"][0]["road"]["id"] == params.json()["items"][0]["road"]["id"]
+
+    schema = client.get("/api/weights/schema")
+    assert schema.status_code == 200
+    keys = {item["key"] for item in schema.json()["items"]}
+    assert keys == {
+        "stav",
+        "worse",
+        "trida",
+        "schools",
+        "hospitals",
+        "rescue",
+        "transit",
+        "industry",
+        "social",
+        "age",
+        "votes",
+        "intensity",
+        "detour",
+        "students",
+    }
+    assert all(item["label"] and item["group"] and "default" in item and item["help"] and item["unit"] for item in schema.json()["items"])
+
+    presets = client.get("/api/weights/presets")
+    assert any(item["id"] == "skoly" and item["weights"]["students"] == 100 for item in presets.json()["items"])
+
+    found = client.get("/api/search?q=Hronov")
+    assert found.status_code == 200
+    assert found.json()["items"]
+    assert {item["type"] for item in found.json()["items"]} <= {"road", "obec"}
+
+    other = client.get("/api/roads/other?limit=1")
+    assert other.status_code == 200
+    feature = other.json()["features"][0]
+    assert feature["properties"]["src"] == "osm"
+    assert feature["properties"]["stav"] is None
+
+    poi = client.get("/api/pois/hospital-0")
+    assert poi.status_code == 200
+    assert poi.json()["source"] == "Data KHK"
+    assert poi.json()["nearest_roads"]
+    assert client.get("/api/pois/missing").status_code == 404
+
+    narrowed = client.get("/api/ranking?limit=5&trida=II&havarijni=1&q=303")
+    assert narrowed.status_code == 200
+    assert narrowed.json()["total"] < params.json()["total"]
+
+    diff = client.get("/api/ranking/diff?top=5&students=100")
+    assert diff.status_code == 200
+    body = diff.json()
+    assert set(body) >= {"entered", "left", "shifts", "top"}
+
+    me = client.get("/api/auth/me", headers=login(client, "official"))
+    assert me.json()["home"] == "/sprava"
+    assert client.post("/api/auth/login", json={"email": "admin", "password": "admin-demo"}).json()["user"]["home"] == "/admin"
+    assert client.post("/api/auth/login", json={"email": "obcan", "password": "obcan-demo"}).json()["user"]["home"] == "/"
+    client.cookies.clear()
+
+    asked = client.post(
+        "/api/auth/request-access",
+        json={
+            "name": "Jana Nováková",
+            "email": "jana.sprava@example.cz",
+            "organization": "Obec Hronov",
+            "job_title": "referentka dopravy",
+            "password": "hesloheslo",
+            "consent": True,
+        },
+    )
+    assert asked.status_code == 201, asked.text
+    pending = client.post("/api/auth/login", json={"email": "jana.sprava@example.cz", "password": "hesloheslo"})
+    assert pending.status_code == 403
+    assert pending.json()["code"] == "pending_approval"
+    same = client.post(
+        "/api/auth/request-access",
+        json={
+            "name": "Někdo jiný",
+            "email": "jana.sprava@example.cz",
+            "organization": "Jiné",
+            "job_title": "jiné",
+            "password": "jineheslo",
+            "consent": True,
+        },
+    )
+    assert same.status_code == 201
+    assert same.json()["detail"] == asked.json()["detail"]
+
+    admin = login(client, "admin")
+    requests = client.get("/api/admin/access-requests", headers=admin)
+    assert requests.status_code == 200
+    item = next(row for row in requests.json()["items"] if row["email"] == "jana.sprava@example.cz")
+    token = item["verify_url"].split("token=", 1)[1]
+    verified = client.get(f"/api/auth/verify?token={token}")
+    assert verified.status_code == 200
+    approved = client.post(f"/api/admin/access-requests/{item['id']}/approve", headers=admin)
+    assert approved.status_code == 200
+    assert approved.json()["role"] == "official"
+    logged = client.post("/api/auth/login", json={"email": "jana.sprava@example.cz", "password": "hesloheslo"})
+    assert logged.status_code == 200
+    assert logged.json()["user"]["home"] == "/sprava"
+
+    rejected = client.post(
+        "/api/auth/request-access",
+        json={
+            "name": "Petr Malý",
+            "email": "petr.maly@example.cz",
+            "organization": "Obec Test",
+            "job_title": "technik",
+            "password": "hesloheslo",
+            "consent": True,
+        },
+    )
+    assert rejected.status_code == 201
+    again = client.get("/api/admin/access-requests", headers=admin).json()["items"]
+    petr = next(row for row in again if row["email"] == "petr.maly@example.cz")
+    no = client.post(
+        f"/api/admin/access-requests/{petr['id']}/reject",
+        headers=admin,
+        json={"reason": "Neověřený úřad"},
+    )
+    assert no.status_code == 200
+    blocked = client.post("/api/auth/login", json={"email": "petr.maly@example.cz", "password": "hesloheslo"})
+    assert blocked.status_code == 403
+    assert blocked.json()["code"] == "access_rejected"
+
+    overview = client.get("/api/admin/overview", headers=admin)
+    assert overview.status_code == 200
+    assert "users_by_role" in overview.json()
+    assert "snapshot" in overview.json()
+    audit = client.get("/api/admin/audit?action=access.approve", headers=admin)
+    assert audit.status_code == 200
+    assert any(row["action"] == "access.approve" for row in audit.json()["items"])
+    assert "úředník" not in client.get("/api/docs").text
     client.cookies.clear()
 
 

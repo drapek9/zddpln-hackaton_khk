@@ -20,6 +20,7 @@ from .data import Dataset, load_dataset, summary
 from .graph import RoadGraph, to_xy
 from .people import People
 from .rescue import Rescue
+from .query import RoadQuery, apply_query, rank_diff, search_items
 from .schemas import Alert, BudgetPlan, RescueImpact, DemoClosure, StableRoad, StabilityResult, Stavba, SrtiClosure, DetourResult, FloodResult, ObecImpact, PeopleImpact, LonLat, Pin, RankedRoad, RoadSummary, RouteResult, ScorePart, Weights
 
 
@@ -81,6 +82,86 @@ class Engine:
         votes: dict[int, int] | None = None,
     ) -> list[RankedRoad]:
         return scoring.ranking(self.data.roads, self._ensure_factors(weights), pins, votes)
+
+    def query_roads(
+        self,
+        filters: RoadQuery,
+        weights: Weights | None = None,
+        pins: Iterable[Pin] = (),
+        votes: dict[int, int] | None = None,
+    ) -> list[RankedRoad]:
+        """Rank, then filter and sort (B-1). Students and detour sorts build the factor cache."""
+        if filters.sort in {"students", "detour"}:
+            self._ensure_factors(Weights(students=1, detour=1))
+        rows = self.ranking(weights, pins, votes)
+        return apply_query(rows, self.data.by_id, filters)
+
+    def search(self, q: str, limit: int = 20) -> list[dict[str, Any]]:
+        """One box for a road number, úsek or obec name (B-2)."""
+        return search_items(self.data.roads, self.obce(), q, limit)
+
+    def rank_diff(
+        self,
+        before: Weights | None,
+        after: Weights | None,
+        top: int = 20,
+        pins: Iterable[Pin] = (),
+        votes: dict[int, int] | None = None,
+    ) -> dict[str, Any]:
+        """Roads that entered, left or moved inside the top N after a weight change (B-4)."""
+        left = self.ranking(before, pins, votes)
+        right = self.ranking(after, pins, votes)
+        return rank_diff(left, right, top)
+
+    def poi(self, poi_id: str) -> dict[str, Any] | None:
+        for item in self.data.pois:
+            if str(item.get("id")) == str(poi_id):
+                return item
+        return None
+
+    def nearest_roads(self, lon: float, lat: float, limit: int = 5) -> list[dict[str, Any]]:
+        """Closest kraj úseky to a point, nearest first."""
+        grid = self._grid()
+        x, y = to_xy((lon, lat))
+        cx, cy = int(x // 200), int(y // 200)
+        best: dict[int, float] = {}
+        for dx in range(-8, 9):
+            for dy in range(-8, 9):
+                for vx, vy, road_id in grid.get((cx + dx, cy + dy), ()):
+                    distance = math.hypot(vx - x, vy - y)
+                    if road_id not in best or distance < best[road_id]:
+                        best[road_id] = distance
+        ordered = sorted(best.items(), key=lambda item: item[1])[:limit]
+        out = []
+        for road_id, distance in ordered:
+            road = self.data.by_id[road_id]
+            out.append({"id": road_id, "label": _road_label(road), "distance_m": round(distance)})
+        return out
+
+    def other_roads(self) -> list[dict[str, Any]]:
+        """I. class / motorways plus local OSM roads. No condition score. Not part of the kraj ranking."""
+        rows = []
+        for road in self.data.osm_roads:
+            rows.append(_osm_public(road, "I. třída nebo dálnice"))
+        for road in self.data.osm_other:
+            rows.append(_osm_public(road, "místní"))
+        return rows
+
+    def snapshot(self) -> dict[str, Any]:
+        """Age of the road file, for the admin overview."""
+        from pathlib import Path
+
+        path = Path(self.data.roads_path) if self.data.roads_path else None
+        mtime = None
+        if path is not None and path.exists():
+            from datetime import datetime, timezone
+
+            mtime = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+        return {
+            "roads": len(self.data.roads),
+            "updated_label": (self.data.stats or {}).get("updated"),
+            "file_mtime": mtime,
+        }
 
     def _ensure_factors(self, weights: Weights | None) -> Weights:
         """Attach T20 values to the road dicts (road["factors"]) when a T20 weight is on.
@@ -508,6 +589,19 @@ class Engine:
         if road is None:
             raise KeyError(f"Unknown road id {road_id}")
         return road
+
+
+def _osm_public(road: dict[str, Any], kind: str) -> dict[str, Any]:
+    return {
+        "osm_id": road.get("osm_id"),
+        "highway": road.get("highway", ""),
+        "ref": road.get("ref", ""),
+        "name": road.get("name", ""),
+        "kind": kind,
+        "src": "osm",
+        "stav": None,
+        "g": road.get("g") or [],
+    }
 
 
 def _num(n: float) -> str:

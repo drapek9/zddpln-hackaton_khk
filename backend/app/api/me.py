@@ -230,7 +230,7 @@ def put_my_weights(
     if user.role != "official":
         raise HTTPException(
             status_code=403,
-            detail="Váhy pro vlastní pohled ukládá úředník. Trvalé váhy mění admin.",
+            detail="Váhy pro vlastní pohled ukládá správce. Trvalé váhy mění admin.",
         )
     row = session.get(OfficialWeights, user.id)
     if row is None:

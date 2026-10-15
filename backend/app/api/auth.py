@@ -3,18 +3,23 @@
 from __future__ import annotations
 
 import logging
+import secrets
 import time
+from datetime import timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app.api.errors import ApiError
 from app.api.responses import TokenOut, UserOut
 from app.auth.deps import require_user
 from app.auth.security import COOKIE, create_token, hash_password, verify_password
 from app.config import get_settings
-from app.db.models import User
+from app.db.models import AccessToken, User, utcnow
 from app.db.session import get_session
+from app.notify.service import send_or_log
+from app.services.access import audit
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +80,22 @@ def _is_https(request: Request) -> bool:
     return request.url.scheme == "https" or forwarded == "https"
 
 
+def home_for_role(role: str) -> str:
+    if role == "admin":
+        return "/admin"
+    if role == "official":
+        return "/sprava"
+    return "/"
+
+
 def _user_payload(user: User) -> dict:
-    return {"id": user.id, "email": user.email, "role": user.role, "blocked": user.blocked}
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "blocked": user.blocked,
+        "home": home_for_role(user.role),
+    }
 
 
 def _issue(response: Response, user: User, request: Request) -> dict:
@@ -136,8 +155,94 @@ def login(
     if user.blocked:
         _failures[ip] = [*recent, time.monotonic()]
         raise HTTPException(status_code=403, detail="Účet je zablokovaný.")
+    if user.status == "pending":
+        raise ApiError(403, "Žádost čeká na schválení administrátorem.", "pending_approval")
+    if user.status == "rejected":
+        raise ApiError(403, "Žádost o přístup byla zamítnuta.", "access_rejected")
     _failures.pop(ip, None)
     return _issue(response, user, request)
+
+
+class AccessRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    email: str = Field(min_length=3, max_length=200)
+    organization: str = Field(min_length=2, max_length=200)
+    job_title: str = Field(min_length=2, max_length=120)
+    password: str = Field(min_length=8, max_length=200)
+    consent: bool
+
+
+_OFFICIAL_DOMAINS = ("kr-kralovehradecky.cz", "khk.cz", "sskhk.cz")
+
+
+def _official_domain(email: str) -> bool:
+    domain = email.rsplit("@", 1)[-1]
+    return any(domain == item or domain.endswith("." + item) for item in _OFFICIAL_DOMAINS)
+
+
+@router.post("/request-access", status_code=201)
+def request_access(
+    body: AccessRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Ask for a správce account. The answer never says whether the e-mail already exists."""
+    ip = _client_ip(request)
+    recent = _recent("access:" + ip)
+    _failures["access:" + ip] = recent
+    if len(recent) >= _MAX_FAILURES:
+        raise HTTPException(status_code=429, detail="Příliš mnoho žádostí. Zkuste to za minutu.")
+    if not body.consent:
+        raise HTTPException(status_code=400, detail="Bez souhlasu se zpracováním údajů žádost neuložíme.")
+    email = body.email.strip().lower()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="E-mail nemá platný tvar.")
+    _failures["access:" + ip] = [*recent, time.monotonic()]
+    message = "Žádost odeslána. Po schválení administrátorem vám přijde e-mail."
+    exists = session.exec(select(User).where(User.email == email)).first()
+    if exists is not None:
+        return {"ok": True, "detail": message}
+    user = User(
+        email=email,
+        password_hash=hash_password(body.password),
+        role="citizen",
+        status="pending",
+        organization=body.organization.strip(),
+        job_title=body.job_title.strip(),
+        display_name=body.name.strip(),
+    )
+    session.add(user)
+    session.flush()
+    token = secrets.token_urlsafe(32)
+    session.add(AccessToken(token=token, user_id=user.id, purpose="verify", expires_at=utcnow() + timedelta(hours=24)))
+    link = str(request.base_url).rstrip("/") + f"/api/auth/verify?token={token}"
+    audit(session, user, "access.request", f"{user.display_name}, {user.organization}")
+    session.commit()
+    send_or_log(
+        email,
+        "Ověření žádosti o přístup",
+        f"Ověřte e-mail otevřením odkazu (platí 24 hodin): {link}",
+    )
+    return {"ok": True, "detail": message}
+
+
+@router.get("/verify")
+def verify_email(token: str = Query(min_length=10), session: Session = Depends(get_session)) -> dict:
+    row = session.get(AccessToken, token)
+    expires = row.expires_at if row is not None else None
+    if expires is not None and expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if row is None or row.purpose != "verify" or expires is None or expires < utcnow():
+        raise HTTPException(status_code=400, detail="Odkaz je neplatný nebo vypršel.")
+    user = session.get(User, row.user_id)
+    if user is None:
+        raise HTTPException(status_code=400, detail="Odkaz je neplatný nebo vypršel.")
+    user.email_verified_at = utcnow()
+    session.add(user)
+    session.delete(row)
+    audit(session, user, "access.verify", user.email)
+    session.commit()
+    return {"ok": True, "detail": "E-mail je ověřený. Přístup začne platit až po schválení administrátorem."}
 
 
 @router.post("/logout")

@@ -23,6 +23,12 @@ class User(SQLModel, table=True):
     """citizen, official or admin."""
     blocked: bool = False
     token_version: int = 0
+    status: str = Field(default="active", index=True)
+    """active, pending or rejected. Pending has no extra rights until an admin approves."""
+    email_verified_at: datetime | None = None
+    organization: str = ""
+    job_title: str = ""
+    display_name: str = ""
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -118,6 +124,15 @@ class PushSubscription(SQLModel, table=True):
     p256dh: str
     auth: str
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class AccessToken(SQLModel, table=True):
+    """One-time link for verifying a správce request. Valid for 24 hours."""
+
+    token: str = Field(primary_key=True)
+    user_id: int = Field(index=True)
+    purpose: str = "verify"
+    expires_at: datetime
 
 
 class AuditEvent(SQLModel, table=True):

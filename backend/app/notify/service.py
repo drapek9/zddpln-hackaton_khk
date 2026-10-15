@@ -88,6 +88,12 @@ def _push_to_user(session: Session, user_id: int, title: str, body: str) -> bool
     return sent
 
 
+def send_or_log(recipient: str, subject: str, body: str) -> None:
+    """Send when SMTP is set. Otherwise write the message to the server log (demo without mail)."""
+    if not _send_email(recipient, subject, body):
+        log.info("e-mail bez SMTP pro %s | %s | %s", recipient, subject, body)
+
+
 def _send_email(recipient: str, subject: str, body: str) -> bool:
     settings = get_settings()
     if not settings.smtp_host or not recipient:

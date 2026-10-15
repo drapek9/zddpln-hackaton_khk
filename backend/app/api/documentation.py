@@ -23,7 +23,7 @@ PAGE = """<!DOCTYPE html>
 <body>
   <h1>Cesty KHK — veřejné API</h1>
   <p>Licence aplikace i tohoto rozhraní je <strong>EUPL-1.2</strong>. Export obsahuje skóre, třídu priority a stav úseku. Auta za den jsou ze sčítání ŘSD 2025 (CC BY-SA 4.0) nebo mají štítek <code>odhad</code>. Když údaj chybí, kvalita je <code>chybi</code>.</p>
-  <p>Simulované uzavírky mají štítek <code>demo data</code>. Texty z modelu mají štítek <code>návrh AI</code>, náhradní text bez modelu má štítek <code>šablona</code>. Veřejný žebříček města může pořadí posunout nejvýš o 5 míst a každý posun má štítek <code>návrh AI</code>. Parametr <code>ai=0</code> nechá čistý vzorec. Soukromé váhy úředníka model neposouvá.</p>
+  <p>Simulované uzavírky mají štítek <code>demo data</code>. Texty z modelu mají štítek <code>návrh AI</code>, náhradní text bez modelu má štítek <code>šablona</code>. Veřejný žebříček města může pořadí posunout nejvýš o 5 míst a každý posun má štítek <code>návrh AI</code>. Parametr <code>ai=0</code> nechá čistý vzorec. Soukromé váhy správce model neposouvá.</p>
 
   <h2>Veřejné, bez přihlášení</h2>
   <table>
@@ -41,7 +41,7 @@ PAGE = """<!DOCTYPE html>
     <tr><td>GET</td><td><code>/api/export/metadata.jsonld</code></td><td>Metadata sady ve tvaru DCAT-AP-CZ. Není to oficiální katalog kraje.</td></tr>
     <tr><td>GET</td><td><code>/api/push/vapid-public-key</code></td><td>Veřejný klíč pro Web Push. Soukromý klíč v datech není.</td></tr>
     <tr><td>GET</td><td><code>/api/obce</code></td><td>448 obcí z Data KHK: kód, název, obyvatelé a střed.</td></tr>
-    <tr><td>GET</td><td><code>/api/demo-closures</code></td><td>Skutečné plány kraje na rok 2022. Štítek je <code>skutečný plán 2022 (Data KHK)</code>. Simulace, kterou zadá úředník, má dál štítek demo data.</td></tr>
+    <tr><td>GET</td><td><code>/api/demo-closures</code></td><td>Skutečné plány kraje na rok 2022. Štítek je <code>skutečný plán 2022 (Data KHK)</code>. Simulace, kterou zadá správce, má dál štítek demo data.</td></tr>
   </table>
 
   <h2>Občan</h2>
@@ -56,7 +56,7 @@ PAGE = """<!DOCTYPE html>
     <tr><td>POST</td><td><code>/api/votes</code></td><td>Jeden hlas na úsek. Druhý hlas vrátí 409.</td></tr>
   </table>
 
-  <h2>Úředník</h2>
+  <h2>Správce</h2>
   <table>
     <tr><th>Metoda</th><th>Cesta</th><th>Co dělá</th></tr>
     <tr><td>PUT</td><td><code>/api/me/weights</code></td><td>Váhy jen pro vlastní pohled.</td></tr>
@@ -69,7 +69,7 @@ PAGE = """<!DOCTYPE html>
     <tr><td>PATCH</td><td><code>/api/closures/{id}</code></td><td>Stav práce: navrzeno, schvaleno, naplanovano, probiha, hotovo. Jen dopředu.</td></tr>
     <tr><td>POST</td><td><code>/api/ai/explain</code></td><td>Zdůvodnění skóre. Když model neběží, vrátí šablonu.</td></tr>
     <tr><td>POST</td><td><code>/api/ai/announcement</code></td><td>Návrh oznámení k existující uzavírce.</td></tr>
-    <tr><td>POST</td><td><code>/api/ai/weights</code></td><td>Návrh vah z textu. Neuloží se, dokud je úředník nepotvrdí.</td></tr>
+    <tr><td>POST</td><td><code>/api/ai/weights</code></td><td>Návrh vah z textu. Neuloží se, dokud je správce nepotvrdí.</td></tr>
     <tr><td>POST</td><td><code>/api/ai/budget</code></td><td>3–5 vět k rozpočtu, jen z čísel výpočtu. Štítek návrh AI nebo šablona. Neukládá se.</td></tr>
   </table>
 

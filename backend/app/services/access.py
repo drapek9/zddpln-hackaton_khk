@@ -108,7 +108,7 @@ def _as_count(value: object) -> int | float | None:
 
 
 def closure_label(simulated: bool) -> str:
-    return "demo data" if simulated else "zadáno úředníkem"
+    return "demo data" if simulated else "zadáno správcem"
 
 
 def dump_ids(ids: list[int]) -> str:
